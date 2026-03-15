@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* -------------------------------------------------------
+   CSS Custom Properties — Color Theme
+   ------------------------------------------------------- */
+:root {
+  /* Background */
+  --color-bg: #FAF9F6;
+  --color-bg-subtle: #F2F0EA;
+  --color-bg-muted: #E8E4DA;
+
+  /* Primary — Ocean Teal */
+  --color-primary: #0D9488;
+  --color-primary-hover: #0F766E;
+  --color-primary-light: #CCFBF1;
+  --color-primary-foreground: #ffffff;
+
+  /* Secondary — Coral */
+  --color-secondary: #F97316;
+  --color-secondary-hover: #EA580C;
+  --color-secondary-light: #FFEDD5;
+  --color-secondary-foreground: #ffffff;
+
+  /* Text */
+  --color-text: #1C1917;
+  --color-text-muted: #78716C;
+  --color-text-subtle: #A8A29E;
+
+  /* Border */
+  --color-border: #E7E5E4;
+  --color-border-muted: #F5F5F4;
+
+  /* Status colors */
+  --color-success: #16A34A;
+  --color-warning: #CA8A04;
+  --color-error: #DC2626;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-card-hover: 0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.1);
+  --shadow-soft: 0 2px 15px -3px rgba(0,0,0,0.07), 0 10px 20px -2px rgba(0,0,0,0.04);
+}
+
+/* -------------------------------------------------------
+   Base Styles
+   ------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* -------------------------------------------------------
+   Utility Classes
+   ------------------------------------------------------- */
+
+.card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-muted);
+}
+
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border-radius: 0.625rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 0.625rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-primary-light);
+}
