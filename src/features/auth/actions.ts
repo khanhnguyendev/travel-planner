@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // -------------------------------------------------------
 // Schemas
@@ -85,7 +86,8 @@ export async function signUp(
 
   // Upsert a profile row immediately if the user was auto-confirmed.
   if (data.user) {
-    await supabase.from('profiles').upsert({
+    const admin = createAdminClient();
+    await admin.from('profiles').upsert({
       id: data.user.id,
       display_name: parsed.data.displayName,
     });

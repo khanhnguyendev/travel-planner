@@ -122,21 +122,23 @@ export async function archiveProject(
   }
 
   // Verify the user is the owner before archiving.
-  const { data: member } = await supabase
+  const admin = createAdminClient();
+  const { data: memberData } = await admin
     .from('project_members')
-    .select('role')
+    .select('*')
     .eq('project_id', projectId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
+  const member = memberData as { role: string } | null;
   if (!member || member.role !== 'owner') {
     return { ok: false, error: 'Only the project owner can archive a project' };
   }
 
-  const { error } = await supabase
+  const { error } = await admin
     .from('projects')
-    .update({ status: 'archived' } satisfies Partial<Project>)
+    .update({ status: 'archived' })
     .eq('id', projectId);
 
   if (error) {

@@ -32,8 +32,12 @@ export async function getProjects(): Promise<Project[]> {
     return [];
   }
 
-  // Strip the joined project_members from the shape
-  return (data ?? []).map(({ project_members: _pm, ...project }) => project as Project);
+  // Cast the entire result to avoid SSR client type resolution issues
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { project_members: _pm, ...project } = row;
+    return project as unknown as Project;
+  });
 }
 
 /**
@@ -53,7 +57,7 @@ export async function getProject(id: string): Promise<Project | null> {
     return null;
   }
 
-  return data as Project;
+  return data as unknown as Project;
 }
 
 /**
@@ -72,7 +76,7 @@ export async function getUserRole(
 
   const { data, error } = await supabase
     .from('project_members')
-    .select('role')
+    .select('*')
     .eq('project_id', projectId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
@@ -80,5 +84,5 @@ export async function getUserRole(
 
   if (error) return null;
 
-  return (data?.role as ProjectRole) ?? null;
+  return ((data as unknown as { role: string }) ?.role as ProjectRole) ?? null;
 }

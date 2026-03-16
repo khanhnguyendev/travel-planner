@@ -6,6 +6,12 @@ export type Visibility = 'private' | 'shared';
 export type VoteType = 'upvote' | 'downvote' | 'score';
 export type SplitStatus = 'pending' | 'settled';
 
+// Json type for jsonb columns. Defined as a plain object type so that
+// Row/Insert/Update all satisfy the `Record<string, unknown>` constraint
+// that GenericTable imposes. In practice our jsonb columns store objects,
+// not bare arrays or scalars, so this is accurate.
+export type Json = Record<string, unknown> | null;
+
 // Table row types
 export interface Profile {
   id: string;
@@ -75,7 +81,7 @@ export interface Place {
   rating: number | null;
   price_level: number | null;
   editorial_summary: string | null;
-  metadata_json: Record<string, unknown> | null;
+  metadata_json: Json | null;
   created_at: string;
 }
 
@@ -88,7 +94,7 @@ export interface PlaceReview {
   text: string | null;
   published_at: string | null;
   source_provider: string | null;
-  raw_json: Record<string, unknown> | null;
+  raw_json: Json | null;
   created_at: string;
 }
 
@@ -127,91 +133,118 @@ export interface ExpenseSplit {
   created_at: string;
 }
 
-// Supabase Database generic type
+// Supabase Database generic type.
+// Notes on compatibility with @supabase/supabase-js v2.99+:
+//   1. Each table must include `Relationships: []` to satisfy `GenericTable`.
+//   2. `__InternalSupabase.PostgrestVersion` must be declared so that
+//      supabase-js uses it instead of defaulting to '12', which causes
+//      insert/update/upsert overloads to resolve the payload type as `never`.
+// R<T> widens an interface T to also satisfy Record<string, unknown>.
+// TypeScript interfaces do not automatically extend Record<string, unknown>
+// (they lack an explicit index signature), which causes the Supabase client's
+// GenericTable constraint to resolve the table as `never` for mutations.
+// Intersecting with Record<string, unknown> satisfies that constraint while
+// preserving all named property types for autocomplete and type-safety.
+type R<T> = T & Record<string, unknown>;
+
 export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: Profile;
-        Insert: Omit<Profile, 'created_at'> & { created_at?: string };
-        Update: Partial<Omit<Profile, 'id'>>;
+        Row: R<Profile>;
+        Insert: R<Omit<Profile, 'created_at' | 'avatar_url'> & { created_at?: string; avatar_url?: string | null }>;
+        Update: R<Partial<Omit<Profile, 'id'>>>;
+        Relationships: [];
       };
       projects: {
-        Row: Project;
-        Insert: Omit<Project, 'id' | 'created_at' | 'updated_at'> & {
+        Row: R<Project>;
+        Insert: R<Omit<Project, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
-        };
-        Update: Partial<Omit<Project, 'id' | 'created_at'>>;
+          cover_image_url?: string | null;
+          status?: ProjectStatus;
+        }>;
+        Update: R<Partial<Omit<Project, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       project_members: {
-        Row: ProjectMember;
-        Insert: Omit<ProjectMember, 'id' | 'created_at'> & {
+        Row: R<ProjectMember>;
+        Insert: R<Omit<ProjectMember, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
-        };
-        Update: Partial<Omit<ProjectMember, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<ProjectMember, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       project_invites: {
-        Row: ProjectInvite;
-        Insert: Omit<ProjectInvite, 'id' | 'created_at'> & {
+        Row: R<ProjectInvite>;
+        Insert: R<Omit<ProjectInvite, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
-        };
-        Update: Partial<Omit<ProjectInvite, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<ProjectInvite, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       categories: {
-        Row: Category;
-        Insert: Omit<Category, 'id' | 'created_at'> & {
+        Row: R<Category>;
+        Insert: R<Omit<Category, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
-        };
-        Update: Partial<Omit<Category, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<Category, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       places: {
-        Row: Place;
-        Insert: Omit<Place, 'id' | 'created_at'> & {
+        Row: R<Place>;
+        Insert: R<Omit<Place, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
-        };
-        Update: Partial<Omit<Place, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<Place, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       place_reviews: {
-        Row: PlaceReview;
-        Insert: Omit<PlaceReview, 'id' | 'created_at'> & {
+        Row: R<PlaceReview>;
+        Insert: R<Omit<PlaceReview, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
-        };
-        Update: Partial<Omit<PlaceReview, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<PlaceReview, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       place_votes: {
-        Row: PlaceVote;
-        Insert: Omit<PlaceVote, 'id' | 'created_at' | 'updated_at'> & {
+        Row: R<PlaceVote>;
+        Insert: R<Omit<PlaceVote, 'id' | 'created_at' | 'updated_at'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
-        };
-        Update: Partial<Omit<PlaceVote, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<PlaceVote, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       expenses: {
-        Row: Expense;
-        Insert: Omit<Expense, 'id' | 'created_at' | 'updated_at'> & {
+        Row: R<Expense>;
+        Insert: R<Omit<Expense, 'id' | 'created_at' | 'updated_at'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
-        };
-        Update: Partial<Omit<Expense, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<Expense, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       expense_splits: {
-        Row: ExpenseSplit;
-        Insert: Omit<ExpenseSplit, 'id' | 'created_at'> & {
+        Row: R<ExpenseSplit>;
+        Insert: R<Omit<ExpenseSplit, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
-        };
-        Update: Partial<Omit<ExpenseSplit, 'id' | 'created_at'>>;
+        }>;
+        Update: R<Partial<Omit<ExpenseSplit, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
     };
+    Views: Record<string, { Row: Record<string, unknown>; Relationships: [] }>;
+    Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>;
     Enums: {
       project_role: ProjectRole;
       project_status: ProjectStatus;

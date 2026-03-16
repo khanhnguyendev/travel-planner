@@ -3,15 +3,17 @@ import { MapPin, LayoutDashboard, LogOut } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/features/auth/actions';
+import type { Profile } from '@/lib/types';
 
 async function UserMenu({ userId }: { userId: string }) {
   const supabase = await createClient();
-  const { data: profile } = await supabase
+  const { data: profileData } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url')
+    .select('*')
     .eq('id', userId)
     .single();
 
+  const profile = profileData as Profile | null;
   const displayName = profile?.display_name ?? 'Traveler';
 
   return (
@@ -26,7 +28,7 @@ async function UserMenu({ userId }: { userId: string }) {
       <span className="text-sm font-medium hidden sm:block" style={{ color: 'var(--color-text)' }}>
         {displayName}
       </span>
-      <form action={signOut}>
+      <form action={async () => { await signOut(); }}>
         <button
           type="submit"
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors"
