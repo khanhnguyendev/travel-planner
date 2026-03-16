@@ -7,6 +7,7 @@ import {
   Globe,
   Lock,
   ArrowLeft,
+  Plus,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
@@ -14,8 +15,10 @@ import { getMembers } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
+import { getExpenses } from '@/features/expenses/queries';
 import { createClient } from '@/lib/supabase/server';
 import { formatDateRange } from '@/lib/date';
+import { formatCurrency } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview } from '@/lib/types';
 import type { Metadata } from 'next';
@@ -83,11 +86,12 @@ export default async function ProjectDetailPage({
   const { projectId } = await params;
   const user = await requireSession();
 
-  const [project, role, members, categories] = await Promise.all([
+  const [project, role, members, categories, expenses] = await Promise.all([
     getProject(projectId),
     getUserRole(projectId),
     getMembers(projectId),
     getCategories(projectId),
+    getExpenses(projectId),
   ]);
 
   if (!project || !role) {
@@ -253,33 +257,89 @@ export default async function ProjectDetailPage({
         />
       </div>
 
-      {/* Expenses placeholder — Phase 3 */}
-      <div
-        className="card p-6 flex flex-col items-center justify-center text-center py-12"
-        style={{ borderStyle: 'dashed' }}
-      >
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-          style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-        >
-          <Receipt className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
-        </div>
-        <h3 className="font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
-          Expenses
-        </h3>
-        <p className="text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
-          Log shared expenses, split them fairly, and upload receipts so everyone knows who owes what.
-        </p>
-        <span
-          className="mt-3 text-xs font-medium px-2 py-1 rounded-full"
-          style={{
-            backgroundColor: 'var(--color-bg-muted)',
-            color: 'var(--color-text-subtle)',
-          }}
-        >
-          Coming in Phase 3
-        </span>
-      </div>
+      {/* Expenses — Phase 3 */}
+      {(() => {
+        const totals: Record<string, number> = {};
+        for (const exp of expenses) {
+          totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
+        }
+        const totalEntries = Object.entries(totals);
+        const canEdit = ['owner', 'admin', 'editor'].includes(role);
+
+        return (
+          <div className="card p-6">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--color-primary-light)' }}
+                >
+                  <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
+                    Expenses
+                  </h2>
+                  {expenses.length > 0 && (
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
+                      {totalEntries.length > 0 && (
+                        <> &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}</>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {canEdit && (
+                  <Link
+                    href={`/projects/${projectId}/expenses/new`}
+                    className="inline-flex items-center gap-1.5 btn-primary text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </Link>
+                )}
+                <Link
+                  href={`/projects/${projectId}/expenses`}
+                  className="btn-secondary text-sm"
+                >
+                  View all
+                </Link>
+              </div>
+            </div>
+
+            {expenses.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                No expenses yet. Add one to start tracking shared costs.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {expenses.slice(0, 3).map((exp) => (
+                  <Link
+                    key={exp.id}
+                    href={`/projects/${projectId}/expenses/${exp.id}`}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)]"
+                  >
+                    <span className="text-sm truncate" style={{ color: 'var(--color-text)' }}>
+                      {exp.title}
+                    </span>
+                    <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-primary)' }}>
+                      {formatCurrency(exp.amount, exp.currency)}
+                    </span>
+                  </Link>
+                ))}
+                {expenses.length > 3 && (
+                  <p className="text-xs pt-1 pl-3" style={{ color: 'var(--color-text-subtle)' }}>
+                    +{expenses.length - 3} more
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
