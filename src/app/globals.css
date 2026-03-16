@@ -109,3 +109,33 @@ body {
 .btn-secondary:hover {
   background-color: var(--color-primary-light);
 }
+
+/* -------------------------------------------------------
+   Animation utilities (page fade-in, toast slide-in)
+   ------------------------------------------------------- */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-from-bottom {
+  from { transform: translateY(0.5rem); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slide-in-from-bottom;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}

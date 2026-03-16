@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { Plus, MapPin, Calendar, Users } from 'lucide-react';
+import { Plus, Compass, Calendar, Users } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProjects } from '@/features/projects/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
+import { PageHeader } from '@/components/ui/page-header';
 import type { Project } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -15,7 +16,7 @@ function StatusBadge({ status }: { status: Project['status'] }) {
   const isArchived = status === 'archived';
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
       style={{
         backgroundColor: isArchived ? 'var(--color-bg-muted)' : 'var(--color-primary-light)',
         color: isArchived ? 'var(--color-text-muted)' : 'var(--color-primary)',
@@ -32,21 +33,17 @@ async function ProjectCard({ project }: { project: Project }) {
   return (
     <Link
       href={`/projects/${project.id}`}
-      className="card card-hover block p-6 group"
+      className="card card-hover block p-6 group transition-all hover:scale-[1.02] hover:shadow-md"
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex-1 min-w-0">
           <h3
-            className="font-semibold text-lg truncate mb-1"
-            style={{ color: 'var(--color-text)' }}
+            className="font-semibold text-lg truncate mb-1 text-stone-800"
           >
             {project.title}
           </h3>
           {project.description && (
-            <p
-              className="text-sm line-clamp-2"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
+            <p className="text-sm line-clamp-2 text-stone-600">
               {project.description}
             </p>
           )}
@@ -54,7 +51,7 @@ async function ProjectCard({ project }: { project: Project }) {
         <StatusBadge status={project.status} />
       </div>
 
-      <div className="flex items-center gap-4 mt-4 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+      <div className="flex items-center gap-4 mt-4 text-xs text-stone-400">
         {project.start_date && project.end_date && (
           <span className="flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5" />
@@ -74,29 +71,23 @@ export default async function DashboardPage() {
   await requireSession();
   const projects = await getProjects();
 
-  return (
-    <div>
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-            My Trips
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-            {projects.length === 0
-              ? 'Create your first trip to get started'
-              : `${projects.length} trip${projects.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
+  const newTripButton = (
+    <Link
+      href="/projects/new"
+      className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
+    >
+      <Plus className="w-4 h-4" />
+      New trip
+    </Link>
+  );
 
-        <Link
-          href="/projects/new"
-          className="btn-primary inline-flex items-center gap-2 text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          New trip
-        </Link>
-      </div>
+  return (
+    <div className="animate-in fade-in duration-300">
+      <PageHeader
+        title="My Trips"
+        breadcrumbs={[{ label: 'Dashboard' }]}
+        action={newTripButton}
+      />
 
       {/* Projects grid */}
       {projects.length === 0 ? (
@@ -105,27 +96,27 @@ export default async function DashboardPage() {
           style={{ borderStyle: 'dashed' }}
         >
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
             style={{ backgroundColor: 'var(--color-primary-light)' }}
           >
-            <MapPin className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
+            <Compass className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
           </div>
-          <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-            No trips yet
+          <h2 className="text-lg font-semibold mb-2 text-stone-800">
+            Start planning your first trip
           </h2>
-          <p className="text-sm mb-6 max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
-            Create a new trip to start collecting places, voting, and planning with your group.
+          <p className="text-sm mb-6 max-w-xs text-stone-600">
+            Collect places, vote on destinations, and track shared expenses — all in one collaborative workspace.
           </p>
           <Link
             href="/projects/new"
-            className="btn-primary inline-flex items-center gap-2 text-sm"
+            className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
-            Create your first trip
+            New trip
           </Link>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

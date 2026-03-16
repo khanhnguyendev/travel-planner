@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
 import { getMembers } from '@/features/members/queries';
 import { ExpenseForm } from '@/components/expenses/expense-form';
+import { PageHeader } from '@/components/ui/page-header';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Add Expense' };
@@ -34,19 +33,15 @@ export default async function NewExpensePage({
 
   return (
     <div>
-      {/* Back link */}
-      <Link
-        href={`/projects/${projectId}/expenses`}
-        className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to expenses
-      </Link>
-
-      <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text)' }}>
-        Add Expense
-      </h1>
+      <PageHeader
+        title="Add Expense"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: project.title, href: `/projects/${projectId}` },
+          { label: 'Expenses', href: `/projects/${projectId}/expenses` },
+          { label: 'Add Expense' },
+        ]}
+      />
 
       <div className="card p-6 max-w-xl">
         <ExpenseForm

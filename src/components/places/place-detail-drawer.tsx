@@ -130,9 +130,9 @@ export function PlaceDetailDrawer({
         aria-hidden="true"
       />
 
-      {/* Drawer */}
+      {/* Drawer — full-screen on mobile, side panel on md+ */}
       <aside
-        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md flex flex-col overflow-hidden"
+        className="fixed inset-0 md:inset-auto md:right-0 md:top-0 md:bottom-0 z-50 md:w-full md:max-w-md flex flex-col overflow-hidden"
         style={{ backgroundColor: 'var(--color-bg)' }}
         role="dialog"
         aria-modal="true"
@@ -150,15 +150,13 @@ export function PlaceDetailDrawer({
               </div>
             )}
             <h2
-              className="text-xl font-bold leading-snug"
-              style={{ color: 'var(--color-text)' }}
+              className="text-xl font-bold leading-snug text-stone-800"
             >
               {place.name}
             </h2>
             {place.address && (
               <p
-                className="flex items-start gap-1 text-sm mt-1"
-                style={{ color: 'var(--color-text-muted)' }}
+                className="flex items-start gap-1 text-sm mt-1 text-stone-600"
               >
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 {place.address}
@@ -168,7 +166,7 @@ export function PlaceDetailDrawer({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg transition-colors flex-shrink-0"
+            className="p-2 rounded-lg transition-colors flex-shrink-0 hover:bg-stone-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
             style={{ color: 'var(--color-text-muted)' }}
             aria-label="Close"
           >
@@ -192,14 +190,12 @@ export function PlaceDetailDrawer({
           {place.editorial_summary && (
             <div>
               <h3
-                className="text-xs font-semibold uppercase tracking-wide mb-2"
-                style={{ color: 'var(--color-text-subtle)' }}
+                className="text-xs font-semibold uppercase tracking-wide mb-2 text-stone-400"
               >
                 About
               </h3>
               <p
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--color-text-muted)' }}
+                className="text-sm leading-relaxed text-stone-600"
               >
                 {place.editorial_summary}
               </p>
@@ -209,8 +205,7 @@ export function PlaceDetailDrawer({
           {/* Votes */}
           <div>
             <h3
-              className="text-xs font-semibold uppercase tracking-wide mb-3"
-              style={{ color: 'var(--color-text-subtle)' }}
+              className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400"
             >
               Your vote
             </h3>
@@ -227,8 +222,7 @@ export function PlaceDetailDrawer({
           {reviews.length > 0 && (
             <div>
               <h3
-                className="text-xs font-semibold uppercase tracking-wide mb-3"
-                style={{ color: 'var(--color-text-subtle)' }}
+                className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400"
               >
                 Reviews from Google
               </h3>
@@ -237,10 +231,7 @@ export function PlaceDetailDrawer({
                   <ReviewCard key={r.id} review={r} />
                 ))}
               </div>
-              <p
-                className="text-xs mt-3"
-                style={{ color: 'var(--color-text-subtle)' }}
-              >
+              <p className="text-xs mt-3 text-stone-400">
                 Reviews sourced from Google Maps.
               </p>
             </div>
@@ -252,7 +243,7 @@ export function PlaceDetailDrawer({
               href={place.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm"
+              className="inline-flex items-center gap-1.5 text-sm min-h-[44px]"
               style={{ color: 'var(--color-primary)' }}
             >
               <ExternalLink className="w-4 h-4" />

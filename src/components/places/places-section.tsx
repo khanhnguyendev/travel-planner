@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Settings2, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, ProjectRole } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -61,13 +61,10 @@ export function PlacesSection({
     <div className="space-y-5">
       {/* Section header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+        <h2 className="text-lg font-semibold text-stone-800">
           Places
           {places.length > 0 && (
-            <span
-              className="ml-2 text-sm font-normal"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
+            <span className="ml-2 text-sm font-normal text-stone-400">
               ({places.length})
             </span>
           )}
@@ -78,7 +75,7 @@ export function PlacesSection({
             <>
               <button
                 onClick={() => setShowManageCategories((v) => !v)}
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px]"
                 style={{
                   backgroundColor: showManageCategories
                     ? 'var(--color-bg-muted)'
@@ -87,7 +84,7 @@ export function PlacesSection({
                 }}
               >
                 <Settings2 className="w-4 h-4" />
-                Categories
+                <span className="hidden sm:inline">Categories</span>
                 {showManageCategories ? (
                   <ChevronUp className="w-3.5 h-3.5" />
                 ) : (
@@ -97,7 +94,7 @@ export function PlacesSection({
 
               <button
                 onClick={() => setShowAddPlace((v) => !v)}
-                className="btn-primary inline-flex items-center gap-1.5 text-sm"
+                className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
               >
                 <Plus className="w-4 h-4" />
                 Add place
@@ -113,14 +110,26 @@ export function PlacesSection({
           className="card p-5"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <h3
-            className="text-sm font-semibold mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
+          <h3 className="text-sm font-semibold mb-4 text-stone-800">
             Manage categories
           </h3>
 
-          {categories.length > 0 && (
+          {categories.length === 0 ? (
+            <div className="flex flex-col items-center py-6 text-center">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                style={{ backgroundColor: 'var(--color-primary-light)' }}
+              >
+                <Tag className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              </div>
+              <p className="text-sm font-medium text-stone-800 mb-1">
+                Create a category to organize places
+              </p>
+              <p className="text-xs text-stone-400 mb-4">
+                Categories help group places by type like restaurants, hotels, or attractions.
+              </p>
+            </div>
+          ) : (
             <div className="flex flex-wrap gap-2 mb-4">
               {categories.map((cat) => (
                 <div
@@ -151,10 +160,7 @@ export function PlacesSection({
           className="card p-5"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <h3
-            className="text-sm font-semibold mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
+          <h3 className="text-sm font-semibold mb-4 text-stone-800">
             Add a place
           </h3>
           <AddPlaceForm
@@ -184,6 +190,7 @@ export function PlacesSection({
         voteSummaries={voteSummaries}
         userVotes={userVotes}
         reviewsByPlaceId={reviewsByPlaceId}
+        onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
       />
     </div>
   );

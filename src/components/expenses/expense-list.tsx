@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Receipt, User } from 'lucide-react';
+import { Receipt, User, Plus } from 'lucide-react';
 import type { Expense } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 interface ExpenseListProps {
   expenses: Expense[];
   projectId: string;
+  canEdit?: boolean;
 }
 
 function ReceiptThumbnail({ receiptPath }: { receiptPath: string }) {
@@ -44,22 +45,31 @@ function CurrencyPill({ currency }: { currency: string }) {
   );
 }
 
-export function ExpenseList({ expenses, projectId }: ExpenseListProps) {
+export function ExpenseList({ expenses, projectId, canEdit }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <div className="card p-12 flex flex-col items-center justify-center text-center">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-          style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+          style={{ backgroundColor: 'var(--color-primary-light)' }}
         >
-          <Receipt className="w-7 h-7" style={{ color: 'var(--color-text-subtle)' }} />
+          <Receipt className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
         </div>
-        <h3 className="font-semibold text-base mb-1" style={{ color: 'var(--color-text)' }}>
-          No expenses yet
+        <h3 className="font-semibold text-base mb-1 text-stone-800">
+          Track your first shared expense
         </h3>
-        <p className="text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
-          Add your first expense to start tracking shared costs for this trip.
+        <p className="text-sm max-w-xs mb-5 text-stone-600">
+          Add expenses to keep everyone on the same page about shared costs for this trip.
         </p>
+        {canEdit && (
+          <Link
+            href={`/projects/${projectId}/expenses/new`}
+            className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
+          >
+            <Plus className="w-4 h-4" />
+            Add expense
+          </Link>
+        )}
       </div>
     );
   }
@@ -71,46 +81,50 @@ export function ExpenseList({ expenses, projectId }: ExpenseListProps) {
           key={expense.id}
           href={`/projects/${projectId}/expenses/${expense.id}`}
           className={cn(
-            'card card-hover flex items-center gap-4 p-4 group transition-all'
+            'card card-hover flex items-center gap-4 p-4 group transition-all',
+            'hover:scale-[1.01] hover:shadow-md',
+            // Mobile: stack on small screens, row on sm+
+            'flex-col sm:flex-row min-h-[72px]'
           )}
         >
           {/* Receipt thumbnail or icon */}
-          {expense.receipt_path ? (
-            <ReceiptThumbnail receiptPath={expense.receipt_path} />
-          ) : (
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: 'var(--color-primary-light)' }}
-            >
-              <Receipt className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-            </div>
-          )}
-
-          {/* Main info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span
-                className="font-semibold text-sm truncate"
-                style={{ color: 'var(--color-text)' }}
+          <div className="flex items-center gap-4 w-full sm:w-auto sm:flex-1 min-w-0">
+            {expense.receipt_path ? (
+              <ReceiptThumbnail receiptPath={expense.receipt_path} />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: 'var(--color-primary-light)' }}
               >
-                {expense.title}
-              </span>
-              <CurrencyPill currency={expense.currency} />
-            </div>
-            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              <User className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">
-                {expense.expense_date
-                  ? formatDate(expense.expense_date)
-                  : formatDate(expense.created_at)}
-              </span>
+                <Receipt className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              </div>
+            )}
+
+            {/* Main info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span
+                  className="font-semibold text-sm truncate text-stone-800"
+                >
+                  {expense.title}
+                </span>
+                <CurrencyPill currency={expense.currency} />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-stone-400">
+                <User className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">
+                  {expense.expense_date
+                    ? formatDate(expense.expense_date)
+                    : formatDate(expense.created_at)}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Amount */}
-          <div className="text-right flex-shrink-0">
+          {/* Amount — prominent on mobile */}
+          <div className="w-full sm:w-auto text-left sm:text-right flex-shrink-0">
             <span
-              className="font-bold text-base"
+              className="font-bold text-lg sm:text-base"
               style={{ color: 'var(--color-primary)' }}
             >
               {formatCurrency(expense.amount, expense.currency)}

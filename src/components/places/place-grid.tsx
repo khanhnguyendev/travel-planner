@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Plus } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview } from '@/lib/types';
 import { PlaceCard } from './place-card';
 import { PlaceDetailDrawer } from './place-detail-drawer';
@@ -15,6 +15,7 @@ interface PlaceGridProps {
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  onAddPlace?: () => void;
 }
 
 export function PlaceGrid({
@@ -25,6 +26,7 @@ export function PlaceGrid({
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
+  onAddPlace,
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -58,17 +60,28 @@ export function PlaceGrid({
         style={{ borderStyle: 'dashed' }}
       >
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-          style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+          style={{ backgroundColor: 'var(--color-primary-light)' }}
         >
-          <MapPin className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
+          <MapPin className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
         </div>
-        <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-          {selectedCategoryId ? 'No places in this category yet' : 'No places yet'}
+        <p className="font-semibold text-base text-stone-800 mb-1">
+          {selectedCategoryId ? 'No places in this category yet' : 'Add your first destination'}
         </p>
-        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-          Paste a Google Maps link above to add the first one.
+        <p className="text-sm text-stone-400 max-w-xs mb-5">
+          {selectedCategoryId
+            ? 'Try selecting a different category or add a new place.'
+            : 'Paste a Google Maps link to add places for your group to vote on.'}
         </p>
+        {!selectedCategoryId && onAddPlace && (
+          <button
+            onClick={onAddPlace}
+            className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
+          >
+            <Plus className="w-4 h-4" />
+            Add place
+          </button>
+        )}
       </div>
     );
   }
@@ -87,8 +100,7 @@ export function PlaceGrid({
                     <span className="text-lg leading-none">{cat.icon}</span>
                   )}
                   <h3
-                    className="font-semibold text-sm"
-                    style={{ color: 'var(--color-text)' }}
+                    className="font-semibold text-sm text-stone-800"
                   >
                     {cat.name}
                   </h3>
@@ -104,7 +116,8 @@ export function PlaceGrid({
                 </div>
               )}
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Responsive grid: 1 col mobile, 2 on md, 3 on lg */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {catPlaces.map((place) => (
                   <PlaceCard
                     key={place.id}

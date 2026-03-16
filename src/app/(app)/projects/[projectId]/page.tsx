@@ -6,7 +6,6 @@ import {
   Receipt,
   Globe,
   Lock,
-  ArrowLeft,
   Plus,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
@@ -20,6 +19,7 @@ import { createClient } from '@/lib/supabase/server';
 import { formatDateRange } from '@/lib/date';
 import { formatCurrency } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
+import { PageHeader } from '@/components/ui/page-header';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -103,9 +103,7 @@ export default async function ProjectDetailPage({
 
   const [voteSummaries, userVotesRaw, reviewsRaw] = await Promise.all([
     getVoteSummary(projectId),
-    // Fetch each user vote individually in parallel
     Promise.all(places.map((p) => getUserVote(p.id, user.id))),
-    // Fetch reviews for all places
     (async () => {
       if (places.length === 0) return [];
       const supabase = await createClient();
@@ -132,30 +130,31 @@ export default async function ProjectDetailPage({
   }
 
   const isArchived = project.status === 'archived';
+  const canEdit = ['owner', 'admin', 'editor'].includes(role);
 
   return (
-    <div>
-      {/* Back link */}
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to dashboard
-      </Link>
+    <div className="animate-in fade-in duration-300">
+      <PageHeader
+        title={project.title}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: project.title }]}
+        action={
+          isArchived ? null : canEdit ? (
+            <Link
+              href={`/projects/${projectId}/expenses/new`}
+              className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+            >
+              <Plus className="w-4 h-4" />
+              Add expense
+            </Link>
+          ) : null
+        }
+      />
 
-      {/* Project header */}
+      {/* Project meta card */}
       <div className="card p-6 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <h1
-                className="text-2xl font-bold truncate"
-                style={{ color: 'var(--color-text)' }}
-              >
-                {project.title}
-              </h1>
               {isArchived && (
                 <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -219,7 +218,7 @@ export default async function ProjectDetailPage({
             return (
               <div
                 key={m.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs min-h-[36px]"
                 style={{
                   backgroundColor: isCurrentUser
                     ? 'var(--color-primary-light)'
@@ -244,7 +243,7 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Places & Voting — Phase 2 */}
+      {/* Places & Voting */}
       <div className="mb-6">
         <PlacesSection
           projectId={projectId}
@@ -257,14 +256,13 @@ export default async function ProjectDetailPage({
         />
       </div>
 
-      {/* Expenses — Phase 3 */}
+      {/* Expenses */}
       {(() => {
         const totals: Record<string, number> = {};
         for (const exp of expenses) {
           totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
         }
         const totalEntries = Object.entries(totals);
-        const canEdit = ['owner', 'admin', 'editor'].includes(role);
 
         return (
           <div className="card p-6">
@@ -277,11 +275,11 @@ export default async function ProjectDetailPage({
                   <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
+                  <h2 className="font-semibold text-base text-stone-800">
                     Expenses
                   </h2>
                   {expenses.length > 0 && (
-                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                    <p className="text-xs text-stone-400">
                       {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
                       {totalEntries.length > 0 && (
                         <> &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}</>
@@ -295,7 +293,7 @@ export default async function ProjectDetailPage({
                 {canEdit && (
                   <Link
                     href={`/projects/${projectId}/expenses/new`}
-                    className="inline-flex items-center gap-1.5 btn-primary text-sm"
+                    className="inline-flex items-center gap-1.5 btn-primary text-sm min-h-[44px]"
                   >
                     <Plus className="w-4 h-4" />
                     Add
@@ -303,7 +301,7 @@ export default async function ProjectDetailPage({
                 )}
                 <Link
                   href={`/projects/${projectId}/expenses`}
-                  className="btn-secondary text-sm"
+                  className="btn-secondary text-sm min-h-[44px]"
                 >
                   View all
                 </Link>
@@ -311,18 +309,38 @@ export default async function ProjectDetailPage({
             </div>
 
             {expenses.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                No expenses yet. Add one to start tracking shared costs.
-              </p>
+              <div className="flex flex-col items-center py-8 text-center">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+                  style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+                >
+                  <Receipt className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
+                </div>
+                <p className="font-medium text-sm text-stone-800 mb-1">
+                  Track your first shared expense
+                </p>
+                <p className="text-xs text-stone-400 max-w-xs">
+                  Add expenses to keep everyone on the same page about shared costs.
+                </p>
+                {canEdit && (
+                  <Link
+                    href={`/projects/${projectId}/expenses/new`}
+                    className="mt-4 btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add expense
+                  </Link>
+                )}
+              </div>
             ) : (
               <div className="space-y-2">
                 {expenses.slice(0, 3).map((exp) => (
                   <Link
                     key={exp.id}
                     href={`/projects/${projectId}/expenses/${exp.id}`}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)]"
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)] min-h-[44px]"
                   >
-                    <span className="text-sm truncate" style={{ color: 'var(--color-text)' }}>
+                    <span className="text-sm truncate text-stone-800">
                       {exp.title}
                     </span>
                     <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-primary)' }}>
@@ -331,7 +349,7 @@ export default async function ProjectDetailPage({
                   </Link>
                 ))}
                 {expenses.length > 3 && (
-                  <p className="text-xs pt-1 pl-3" style={{ color: 'var(--color-text-subtle)' }}>
+                  <p className="text-xs pt-1 pl-3 text-stone-400">
                     +{expenses.length - 3} more
                   </p>
                 )}

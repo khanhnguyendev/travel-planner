@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Pencil, Trash2, Receipt, User, Calendar, FileText } from 'lucide-react';
+import { Pencil, Trash2, Receipt, User, Calendar, FileText } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { deleteExpense } from '@/features/expenses/actions';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 
 interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
   projectId: string;
+  projectTitle?: string;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -29,7 +30,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function ExpenseDetail({ expense, projectId }: ExpenseDetailProps) {
+export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetailProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -57,36 +58,29 @@ export function ExpenseDetail({ expense, projectId }: ExpenseDetailProps) {
     : formatDate(expense.created_at);
 
   return (
-    <div className="space-y-6">
-      {/* Back link */}
-      <Link
-        href={`/projects/${projectId}/expenses`}
-        className="inline-flex items-center gap-1.5 text-sm transition-colors"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to expenses
-      </Link>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <PageHeader
+        title={expense.title}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: projectTitle ?? 'Trip', href: `/projects/${projectId}` },
+          { label: 'Expenses', href: `/projects/${projectId}/expenses` },
+          { label: expense.title },
+        ]}
+      />
 
       {/* Header card */}
       <div className="card p-6">
         {/* Teal accent bar */}
         <div
-          className="h-1.5 rounded-t-2xl -mx-6 -mt-6 mb-5 rounded-t-2xl"
+          className="h-1.5 rounded-t-2xl -mx-6 -mt-6 mb-5"
           style={{ backgroundColor: 'var(--color-primary)' }}
         />
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1
-              className="text-2xl font-bold mb-1 leading-tight"
-              style={{ color: 'var(--color-text)' }}
-            >
-              {expense.title}
-            </h1>
-
             {/* Meta */}
-            <div className="flex items-center gap-4 flex-wrap mt-2">
+            <div className="flex items-center gap-4 flex-wrap mt-1">
               <span
                 className="inline-flex items-center gap-1.5 text-sm"
                 style={{ color: 'var(--color-text-muted)' }}
@@ -137,26 +131,23 @@ export function ExpenseDetail({ expense, projectId }: ExpenseDetailProps) {
           className="flex items-center gap-2 mt-5 pt-5 border-t"
           style={{ borderColor: 'var(--color-border-muted)' }}
         >
-          <Link
+          <a
             href={`/projects/${projectId}/expenses/${expense.id}/edit`}
             className={cn(
-              'inline-flex items-center gap-1.5 btn-secondary text-sm'
+              'inline-flex items-center gap-1.5 btn-secondary text-sm min-h-[44px]'
             )}
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
-          </Link>
+          </a>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
             className={cn(
-              'inline-flex items-center gap-1.5 px-4 py-2 rounded-[0.625rem] text-sm font-medium transition-colors',
+              'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
+              'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
-            style={{
-              backgroundColor: 'var(--color-secondary-light)',
-              color: 'var(--color-secondary)',
-            }}
           >
             <Trash2 className="w-3.5 h-3.5" />
             {isDeleting ? 'Deleting…' : 'Delete'}
@@ -167,14 +158,13 @@ export function ExpenseDetail({ expense, projectId }: ExpenseDetailProps) {
       {/* Splits */}
       <div className="card p-6">
         <h2
-          className="font-semibold text-base mb-4"
-          style={{ color: 'var(--color-text)' }}
+          className="font-semibold text-base mb-4 text-stone-800"
         >
           How it&apos;s split
         </h2>
 
         {expense.splits.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-sm text-stone-400">
             No splits recorded for this expense.
           </p>
         ) : (
@@ -232,8 +222,7 @@ export function ExpenseDetail({ expense, projectId }: ExpenseDetailProps) {
       {receiptUrl && (
         <div className="card p-6">
           <h2
-            className="font-semibold text-base mb-4 flex items-center gap-2"
-            style={{ color: 'var(--color-text)' }}
+            className="font-semibold text-base mb-4 flex items-center gap-2 text-stone-800"
           >
             <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
             Receipt

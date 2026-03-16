@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
 import { getExpenses } from '@/features/expenses/queries';
 import { ExpenseList } from '@/components/expenses/expense-list';
+import { PageHeader } from '@/components/ui/page-header';
 import { formatCurrency } from '@/lib/format';
 import type { Metadata } from 'next';
 
@@ -45,47 +46,40 @@ export default async function ExpensesPage({
   }
   const totalEntries = Object.entries(totals);
 
+  const addExpenseButton = canEdit ? (
+    <Link
+      href={`/projects/${projectId}/expenses/new`}
+      className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+    >
+      <Plus className="w-4 h-4" />
+      Add expense
+    </Link>
+  ) : null;
+
   return (
-    <div>
-      {/* Back link */}
-      <Link
-        href={`/projects/${projectId}`}
-        className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to {project.title}
-      </Link>
+    <div className="animate-in fade-in duration-300">
+      <PageHeader
+        title="Expenses"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: project.title, href: `/projects/${projectId}` },
+          { label: 'Expenses' },
+        ]}
+        action={addExpenseButton}
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-            Expenses
-          </h1>
-          {totalEntries.length > 0 && (
-            <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-              {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
-              {totalEntries
-                .map(([cur, amt]) => formatCurrency(amt, cur))
-                .join(' + ')}
-            </p>
-          )}
-        </div>
-
-        {canEdit && (
-          <Link
-            href={`/projects/${projectId}/expenses/new`}
-            className="btn-primary inline-flex items-center gap-1.5 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add expense
-          </Link>
-        )}
-      </div>
+      {/* Summary row */}
+      {totalEntries.length > 0 && (
+        <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--color-text-muted)' }}>
+          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
+          {totalEntries
+            .map(([cur, amt]) => formatCurrency(amt, cur))
+            .join(' + ')}
+        </p>
+      )}
 
       {/* List */}
-      <ExpenseList expenses={expenses} projectId={projectId} />
+      <ExpenseList expenses={expenses} projectId={projectId} canEdit={canEdit} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type { Place, Category, PlaceVote } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
+import { cn } from '@/lib/utils';
 
 interface PlaceCardProps {
   place: Place;
@@ -29,8 +30,7 @@ function StarRating({ rating }: { rating: number }) {
         );
       })}
       <span
-        className="ml-1 text-xs font-medium"
-        style={{ color: 'var(--color-text-muted)' }}
+        className="ml-1 text-xs font-medium text-stone-400"
       >
         {rating.toFixed(1)}
       </span>
@@ -65,7 +65,10 @@ export function PlaceCard({
 }: PlaceCardProps) {
   return (
     <div
-      className="card card-hover flex flex-col cursor-pointer"
+      className={cn(
+        'card card-hover flex flex-col cursor-pointer',
+        'hover:scale-[1.02] hover:shadow-md transition-all'
+      )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -95,16 +98,14 @@ export function PlaceCard({
         {/* Place name */}
         <div>
           <h3
-            className="font-semibold text-base leading-snug line-clamp-2"
-            style={{ color: 'var(--color-text)' }}
+            className="font-semibold text-base leading-snug line-clamp-2 text-stone-800"
           >
             {place.name}
           </h3>
 
           {place.address && (
             <p
-              className="flex items-start gap-1 text-xs mt-1 leading-snug line-clamp-2"
-              style={{ color: 'var(--color-text-muted)' }}
+              className="flex items-start gap-1 text-xs mt-1 leading-snug line-clamp-2 text-stone-400"
             >
               <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
               {place.address}
@@ -125,8 +126,7 @@ export function PlaceCard({
         {/* Editorial summary preview */}
         {place.editorial_summary && (
           <p
-            className="text-xs leading-relaxed line-clamp-2"
-            style={{ color: 'var(--color-text-muted)' }}
+            className="text-xs leading-relaxed line-clamp-2 text-stone-400"
           >
             {place.editorial_summary}
           </p>

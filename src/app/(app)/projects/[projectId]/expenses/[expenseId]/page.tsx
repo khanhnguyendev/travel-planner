@@ -34,6 +34,10 @@ export default async function ExpenseDetailPage({
   }
 
   return (
-    <ExpenseDetail expense={expense} projectId={projectId} />
+    <ExpenseDetail
+      expense={expense}
+      projectId={projectId}
+      projectTitle={project.title}
+    />
   );
 }
