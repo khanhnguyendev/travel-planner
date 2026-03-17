@@ -1,22 +1,25 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check } from 'lucide-react';
-import type { Place, PlaceReview, Category, PlaceVote } from '@/lib/types';
+import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Map, Navigation, Send, Trash2, MessageCircle } from 'lucide-react';
+import type { Place, PlaceReview, Category, PlaceVote, PlaceComment } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
-import { updatePlaceSchedule } from '@/features/places/actions';
+import { updatePlaceSchedule, addPlaceComment, deletePlaceComment } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
 interface PlaceDetailDrawerProps {
   place: Place;
   reviews: PlaceReview[];
+  comments: PlaceComment[];
+  commentAuthors: Record<string, string>; // userId -> displayName
+  currentUserId: string;
   category: Category | null;
   projectId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
-  allPlaces?: Place[];   // for backup place selector
+  allPlaces?: Place[];
   onClose: () => void;
 }
 
@@ -27,9 +30,7 @@ function StarFull({ rating }: { rating: number }) {
         <Star
           key={i}
           className={`w-4 h-4 ${i < Math.round(rating) ? 'fill-current' : ''}`}
-          style={{
-            color: i < Math.round(rating) ? '#EAB308' : 'var(--color-border)',
-          }}
+          style={{ color: i < Math.round(rating) ? '#EAB308' : 'var(--color-border)' }}
         />
       ))}
       <span className="ml-1 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
@@ -46,9 +47,7 @@ function PriceLevel({ level }: { level: number }) {
         <DollarSign
           key={i}
           className="w-4 h-4"
-          style={{
-            color: i < level ? 'var(--color-secondary)' : 'var(--color-border)',
-          }}
+          style={{ color: i < level ? 'var(--color-secondary)' : 'var(--color-border)' }}
         />
       ))}
     </div>
@@ -57,10 +56,7 @@ function PriceLevel({ level }: { level: number }) {
 
 function ReviewCard({ review }: { review: PlaceReview }) {
   return (
-    <div
-      className="p-4 rounded-xl"
-      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-    >
+    <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
@@ -68,10 +64,7 @@ function ReviewCard({ review }: { review: PlaceReview }) {
           </p>
           {review.published_at && (
             <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-              {new Date(review.published_at).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-              })}
+              {new Date(review.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
             </p>
           )}
         </div>
@@ -84,10 +77,7 @@ function ReviewCard({ review }: { review: PlaceReview }) {
         )}
       </div>
       {review.text && (
-        <p
-          className="text-sm leading-relaxed line-clamp-4"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
+        <p className="text-sm leading-relaxed line-clamp-4" style={{ color: 'var(--color-text-muted)' }}>
           {review.text}
         </p>
       )}
@@ -235,9 +225,128 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
   );
 }
 
+function CommentsSection({
+  placeId,
+  projectId,
+  initialComments,
+  commentAuthors,
+  currentUserId,
+}: {
+  placeId: string;
+  projectId: string;
+  initialComments: PlaceComment[];
+  commentAuthors: Record<string, string>;
+  currentUserId: string;
+}) {
+  const [comments, setComments] = useState<PlaceComment[]>(initialComments);
+  const [body, setBody] = useState('');
+  const [pending, setPending] = useState(false);
+  const loadingToast = useLoadingToast();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!body.trim()) return;
+    setPending(true);
+    const resolve = loadingToast('Posting comment…');
+    const result = await addPlaceComment(placeId, projectId, body);
+    setPending(false);
+    if (result.ok && result.data) {
+      resolve('Comment posted!', 'success');
+      setComments((prev) => [...prev, result.data!]);
+      setBody('');
+    } else {
+      resolve(!result.ok ? result.error : 'Failed', 'error');
+    }
+  }
+
+  async function handleDelete(commentId: string) {
+    const resolve = loadingToast('Deleting…');
+    const result = await deletePlaceComment(commentId, projectId);
+    if (result.ok) {
+      resolve('Comment deleted', 'success');
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } else {
+      resolve(result.error ?? 'Failed', 'error');
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {comments.length === 0 ? (
+        <p className="text-xs text-stone-400">No comments yet. Be the first!</p>
+      ) : (
+        <div className="space-y-2">
+          {comments.map((c) => (
+            <div key={c.id} className="group flex gap-2.5 p-3 rounded-xl bg-stone-50">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-semibold text-stone-700">
+                    {commentAuthors[c.user_id] ?? 'Member'}
+                  </span>
+                  <span className="text-xs text-stone-400">
+                    {new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-sm text-stone-700 leading-relaxed">{c.body}</p>
+              </div>
+              {c.user_id === currentUserId && (
+                <button
+                  onClick={() => handleDelete(c.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-50 text-stone-400 hover:text-red-500 flex-shrink-0"
+                  aria-label="Delete comment"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add comment form */}
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Add a comment…"
+          rows={2}
+          maxLength={1000}
+          disabled={pending}
+          className="flex-1 text-sm px-3 py-2 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none disabled:opacity-50"
+        />
+        <button
+          type="submit"
+          disabled={pending || !body.trim()}
+          className="self-end inline-flex items-center justify-center w-9 h-9 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors flex-shrink-0"
+          aria-label="Post comment"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function googleMapsUrl(place: Place): string {
+  if (place.lat != null && place.lng != null) {
+    return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
+  }
+  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`;
+}
+
+function vietmapUrl(place: Place): string {
+  if (place.lat != null && place.lng != null) {
+    return `https://maps.vietmap.vn/?q=${place.lat},${place.lng}`;
+  }
+  return `https://maps.vietmap.vn/?q=${encodeURIComponent(place.name)}`;
+}
+
 export function PlaceDetailDrawer({
   place,
   reviews,
+  comments,
+  commentAuthors,
+  currentUserId,
   category,
   projectId,
   voteSummary,
@@ -247,7 +356,6 @@ export function PlaceDetailDrawer({
 }: PlaceDetailDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -256,17 +364,13 @@ export function PlaceDetailDrawer({
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  // Prevent body scroll while drawer is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
   return (
     <>
-      {/* Backdrop */}
       <div
         ref={overlayRef}
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
@@ -274,7 +378,6 @@ export function PlaceDetailDrawer({
         aria-hidden="true"
       />
 
-      {/* Drawer — full-screen on mobile, side panel on md+ */}
       <aside
         className="fixed inset-0 md:inset-auto md:right-0 md:top-0 md:bottom-0 z-50 md:w-full md:max-w-md flex flex-col overflow-hidden"
         style={{ backgroundColor: 'var(--color-bg)' }}
@@ -283,29 +386,41 @@ export function PlaceDetailDrawer({
         aria-label={place.name}
       >
         {/* Header */}
-        <div
-          className="flex items-start justify-between p-5 border-b"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex-1 min-w-0 pr-3">
             {category && (
               <div className="mb-2">
                 <CategoryBadge category={category} size="sm" />
               </div>
             )}
-            <h2
-              className="text-xl font-bold leading-snug text-stone-800"
-            >
-              {place.name}
-            </h2>
+            <h2 className="text-xl font-bold leading-snug text-stone-800">{place.name}</h2>
             {place.address && (
-              <p
-                className="flex items-start gap-1 text-sm mt-1 text-stone-600"
-              >
+              <p className="flex items-start gap-1 text-sm mt-1 text-stone-600">
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 {place.address}
               </p>
             )}
+            {/* Map buttons */}
+            <div className="flex items-center gap-2 mt-3">
+              <a
+                href={googleMapsUrl(place)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium"
+              >
+                <Map className="w-3.5 h-3.5" />
+                Google Maps
+              </a>
+              <a
+                href={vietmapUrl(place)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors font-medium"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                Vietmap
+              </a>
+            </div>
           </div>
 
           <button
@@ -324,43 +439,27 @@ export function PlaceDetailDrawer({
           {(place.rating != null || place.price_level != null) && (
             <div className="flex items-center gap-4 flex-wrap">
               {place.rating != null && <StarFull rating={place.rating} />}
-              {place.price_level != null && (
-                <PriceLevel level={place.price_level} />
-              )}
+              {place.price_level != null && <PriceLevel level={place.price_level} />}
             </div>
           )}
 
           {/* Editorial summary */}
           {place.editorial_summary && (
             <div>
-              <h3
-                className="text-xs font-semibold uppercase tracking-wide mb-2 text-stone-400"
-              >
-                About
-              </h3>
-              <p
-                className="text-sm leading-relaxed text-stone-600"
-              >
-                {place.editorial_summary}
-              </p>
+              <h3 className="text-xs font-semibold uppercase tracking-wide mb-2 text-stone-400">About</h3>
+              <p className="text-sm leading-relaxed text-stone-600">{place.editorial_summary}</p>
             </div>
           )}
 
           {/* Schedule + backup */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">
-              Visit schedule
-            </h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
             <ScheduleEditor place={place} allPlaces={allPlaces} />
           </div>
 
           {/* Votes */}
           <div>
-            <h3
-              className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400"
-            >
-              Your vote
-            </h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Your vote</h3>
             <VoteButtons
               projectId={projectId}
               placeId={place.id}
@@ -370,14 +469,25 @@ export function PlaceDetailDrawer({
             />
           </div>
 
+          {/* Comments */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400 flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5" />
+              Comments {comments.length > 0 && `(${comments.length})`}
+            </h3>
+            <CommentsSection
+              placeId={place.id}
+              projectId={projectId}
+              initialComments={comments}
+              commentAuthors={commentAuthors}
+              currentUserId={currentUserId}
+            />
+          </div>
+
           {/* Reviews */}
           {reviews.length > 0 && (
             <div>
-              <h3
-                className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400"
-              >
-                Reviews
-              </h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Reviews</h3>
               <div className="space-y-3">
                 {reviews.map((r) => (
                   <ReviewCard key={r.id} review={r} />
@@ -386,7 +496,7 @@ export function PlaceDetailDrawer({
             </div>
           )}
 
-          {/* Source link — only shown when a source URL exists */}
+          {/* Source link */}
           {place.source_url && (
             <a
               href={place.source_url}

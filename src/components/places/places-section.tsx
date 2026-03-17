@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Settings2, ChevronDown, ChevronUp, Tag } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, ProjectRole } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, ProjectRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { AddPlaceForm } from '@/components/places/add-place-form';
@@ -19,6 +19,9 @@ interface PlacesSectionProps {
   initialVoteSummaries: VoteSummaryEntry[];
   initialUserVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  commentsByPlaceId: Record<string, PlaceComment[]>;
+  commentAuthors: Record<string, string>;
+  currentUserId: string;
 }
 
 const canEdit = (role: ProjectRole) =>
@@ -41,6 +44,9 @@ export function PlacesSection({
   initialVoteSummaries,
   initialUserVotes,
   reviewsByPlaceId: initialReviewsByPlaceId,
+  commentsByPlaceId,
+  commentAuthors,
+  currentUserId,
 }: PlacesSectionProps) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -55,8 +61,26 @@ export function PlacesSection({
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [searchResults, setSearchResults] = useState<Place[] | null>(null);
+  const [nextPlaceId, setNextPlaceId] = useState<string | null>(null);
 
   const editor = canEdit(role);
+
+  useEffect(() => {
+    // GMT+7 = UTC+7
+    let closest: Place | null = null;
+    let closestDiff = Infinity;
+    for (const p of places) {
+      if (!p.visit_date || !p.visit_time_from) continue;
+      const [h, m] = p.visit_time_from.split(':').map(Number);
+      const dt = new Date(`${p.visit_date}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00+07:00`).getTime();
+      const diff = dt - Date.now();
+      if (diff > 0 && diff < closestDiff) {
+        closestDiff = diff;
+        closest = p;
+      }
+    }
+    setNextPlaceId(closest?.id ?? null);
+  }, [places]);
 
   function handleCategoryCreated(cat: Category) {
     setCategories((prev) => [...prev, cat]);
@@ -285,6 +309,10 @@ export function PlacesSection({
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
+            nextPlaceId={nextPlaceId}
+            commentsByPlaceId={commentsByPlaceId}
+            commentAuthors={commentAuthors}
+            currentUserId={currentUserId}
             onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
           />
         </div>

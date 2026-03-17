@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Place, PlaceReview } from '@/lib/types';
+import type { Place, PlaceReview, PlaceComment } from '@/lib/types';
 
 export type PlaceWithReviews = Place & { reviews: PlaceReview[] };
 
@@ -64,4 +64,21 @@ export async function getPlace(id: string): Promise<PlaceWithReviews | null> {
     ...(place as Place),
     reviews: (reviews ?? []) as PlaceReview[],
   };
+}
+
+export async function getCommentsByProjectId(
+  projectId: string
+): Promise<PlaceComment[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('place_comments')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getCommentsByProjectId error:', error);
+    return [];
+  }
+  return (data ?? []) as PlaceComment[];
 }

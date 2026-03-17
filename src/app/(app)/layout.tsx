@@ -31,7 +31,7 @@ async function UserMenu({ userId }: { userId: string }) {
         <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
           {displayName}
         </span>
-        <form action={signOut}>
+        <form action={async () => { await signOut(); }}>
           <button
             type="submit"
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]"

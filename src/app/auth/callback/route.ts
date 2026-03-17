@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
       await admin.from('profiles').upsert(
         {
           id: data.user.id,
-          ...(avatarUrl && { avatar_url: avatarUrl }),
-          ...(displayName && { display_name: displayName }),
+          avatar_url: avatarUrl,
+          display_name: displayName,
         },
         { onConflict: 'id', ignoreDuplicates: false }
       );

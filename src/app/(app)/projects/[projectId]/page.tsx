@@ -13,7 +13,7 @@ import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
 import { getMembers } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
-import { getPlaces } from '@/features/places/queries';
+import { getPlaces, getCommentsByProjectId } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { createClient } from '@/lib/supabase/server';
@@ -26,7 +26,7 @@ import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/projects/cover-image-upload';
-import type { ProjectRole, Visibility, PlaceVote, PlaceReview } from '@/lib/types';
+import type { ProjectRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import type { Metadata } from 'next';
 
 // -------------------------------------------------------
@@ -158,7 +158,7 @@ export default async function ProjectDetailPage({
   // Fetch places (needed for Places + Timeline + Map tabs)
   const places = await getPlaces(projectId);
 
-  const [voteSummaries, userVotesRaw, reviewsRaw, expensesWithSplits] =
+  const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits] =
     await Promise.all([
       getVoteSummary(projectId),
       Promise.all(places.map((p) => getUserVote(p.id, user.id))),
@@ -174,6 +174,7 @@ export default async function ProjectDetailPage({
           );
         return data ?? [];
       })(),
+      getCommentsByProjectId(projectId),
       getExpensesWithSplits(projectId),
     ]);
 
@@ -185,6 +186,19 @@ export default async function ProjectDetailPage({
       reviewsByPlaceId[review.place_id] = [];
     }
     reviewsByPlaceId[review.place_id].push(review);
+  }
+
+  const commentsByPlaceId: Record<string, PlaceComment[]> = {};
+  for (const comment of commentsRaw) {
+    if (!commentsByPlaceId[comment.place_id]) {
+      commentsByPlaceId[comment.place_id] = [];
+    }
+    commentsByPlaceId[comment.place_id].push(comment);
+  }
+
+  const commentAuthors: Record<string, string> = {};
+  for (const m of members) {
+    commentAuthors[m.user_id] = m.profile.display_name ?? 'Member';
   }
 
   const isArchived = project.status === 'archived';
@@ -345,6 +359,9 @@ export default async function ProjectDetailPage({
             initialVoteSummaries={voteSummaries}
             initialUserVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
+            commentsByPlaceId={commentsByPlaceId}
+            commentAuthors={commentAuthors}
+            currentUserId={user.id}
           />
         </div>
       )}
@@ -366,6 +383,9 @@ export default async function ProjectDetailPage({
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
+            commentsByPlaceId={commentsByPlaceId}
+            commentAuthors={commentAuthors}
+            currentUserId={user.id}
           />
         </div>
       )}

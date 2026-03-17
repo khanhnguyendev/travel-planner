@@ -113,6 +113,15 @@ export interface PlaceVote {
   updated_at: string;
 }
 
+export interface PlaceComment {
+  id: string;
+  place_id: string;
+  project_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+}
+
 export interface Expense {
   id: string;
   project_id: string;
@@ -225,6 +234,12 @@ export type Database = {
           updated_at?: string;
         }>;
         Update: R<Partial<Omit<PlaceVote, 'id' | 'created_at'>>>;
+        Relationships: [];
+      };
+      place_comments: {
+        Row: R<PlaceComment>;
+        Insert: R<Omit<PlaceComment, 'id' | 'created_at'> & { id?: string; created_at?: string }>;
+        Update: R<Partial<Omit<PlaceComment, 'id' | 'created_at'>>>;
         Relationships: [];
       };
       expenses: {

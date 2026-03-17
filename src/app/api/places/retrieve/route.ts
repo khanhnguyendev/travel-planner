@@ -126,6 +126,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     price_level: null,
     editorial_summary: null,
     metadata_json: null,
+    visit_date: null,
+    visit_time_from: null,
+    visit_time_to: null,
+    backup_place_id: null,
   };
 
   const { data: inserted, error: insertError } = await admin

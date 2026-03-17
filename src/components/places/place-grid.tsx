@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MapPin, Plus } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import { PlaceCard } from './place-card';
 import { PlaceDetailDrawer } from './place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
@@ -15,6 +15,10 @@ interface PlaceGridProps {
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  nextPlaceId: string | null;
+  commentsByPlaceId: Record<string, PlaceComment[]>;
+  commentAuthors: Record<string, string>;
+  currentUserId: string;
   onAddPlace?: () => void;
 }
 
@@ -26,6 +30,10 @@ export function PlaceGrid({
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
+  nextPlaceId,
+  commentsByPlaceId,
+  commentAuthors,
+  currentUserId,
   onAddPlace,
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
@@ -126,6 +134,7 @@ export function PlaceGrid({
                     projectId={projectId}
                     voteSummary={voteSummaryMap[place.id] ?? null}
                     userVote={userVoteMap[place.id] ?? null}
+                    isNext={place.id === nextPlaceId}
                     onClick={() => setOpenPlaceId(place.id)}
                   />
                 ))}
@@ -140,10 +149,14 @@ export function PlaceGrid({
         <PlaceDetailDrawer
           place={openPlace}
           reviews={reviewsByPlaceId[openPlace.id] ?? []}
+          comments={commentsByPlaceId[openPlace.id] ?? []}
+          commentAuthors={commentAuthors}
+          currentUserId={currentUserId}
           category={categoryMap[openPlace.category_id] ?? null}
           projectId={projectId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          allPlaces={places}
           onClose={() => setOpenPlaceId(null)}
         />
       )}
