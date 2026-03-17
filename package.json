@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
+    "leaflet": "^1.9.4",
     "@supabase/supabase-js": "^2.47.10",
     "@tailwindcss/postcss": "^4.2.1",
     "clsx": "^2.1.1",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/leaflet": "^1.9.14",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

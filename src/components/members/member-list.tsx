@@ -7,6 +7,7 @@ import { useLoadingToast } from '@/components/ui/toast';
 import { removeMember, changeMemberRole } from '@/features/members/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { ProjectRole } from '@/lib/types';
+import { Avatar } from '@/components/ui/avatar';
 
 // -------------------------------------------------------
 // Role badge
@@ -29,25 +30,6 @@ function RoleBadge({ role }: { role: ProjectRole }) {
       <Shield className="w-3 h-3" />
       {role}
     </span>
-  );
-}
-
-// -------------------------------------------------------
-// Avatar
-// -------------------------------------------------------
-
-function Avatar({ name, url }: { name: string; url?: string | null }) {
-  if (url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt={name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />;
-  }
-  return (
-    <div
-      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
-      style={{ backgroundColor: 'var(--color-primary)' }}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
   );
 }
 
@@ -141,7 +123,7 @@ export function MemberList({
               isLoading && 'opacity-60 pointer-events-none'
             )}
           >
-            <Avatar name={name} url={m.profile.avatar_url} />
+            <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="md" />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">

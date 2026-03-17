@@ -106,6 +106,60 @@ export async function createProject(
 }
 
 // -------------------------------------------------------
+// updateProject
+// -------------------------------------------------------
+
+export async function updateProject(
+  projectId: string,
+  fields: { cover_image_url?: string | null; title?: string; description?: string | null }
+): Promise<ActionResult<{ projectId: string }>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: 'Not authenticated' };
+  }
+
+  const admin = createAdminClient();
+
+  // Verify role
+  const { data: memberData } = await admin
+    .from('project_members')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  const updatePayload: Record<string, unknown> = {};
+  if ('cover_image_url' in fields) updatePayload.cover_image_url = fields.cover_image_url;
+  if ('title' in fields && fields.title !== undefined) updatePayload.title = fields.title;
+  if ('description' in fields) updatePayload.description = fields.description;
+
+  const { error } = await admin
+    .from('projects')
+    .update(updatePayload)
+    .eq('id', projectId);
+
+  if (error) {
+    console.error('updateProject error:', error);
+    return { ok: false, error: 'Failed to update project' };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath('/dashboard');
+
+  return { ok: true, data: { projectId } };
+}
+
+// -------------------------------------------------------
 // archiveProject
 // -------------------------------------------------------
 

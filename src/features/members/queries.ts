@@ -5,9 +5,9 @@ import type { ProjectMember, ProjectInvite, Profile } from '@/lib/types';
 /**
  * Returns all pending (non-expired, non-revoked) invites for a project.
  * Uses admin client because the token column requires service-role access.
- * The token is excluded from the returned type.
+ * Token is included so invite links can be shared.
  */
-export type PendingInvite = Omit<ProjectInvite, 'token'>;
+export type PendingInvite = ProjectInvite;
 
 export async function getPendingInvites(
   projectId: string
@@ -16,7 +16,7 @@ export async function getPendingInvites(
 
   const { data, error } = await admin
     .from('project_invites')
-    .select('id, project_id, email, invited_by_user_id, role, status, expires_at, created_at')
+    .select('id, project_id, email, invited_by_user_id, token, role, status, expires_at, created_at')
     .eq('project_id', projectId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });

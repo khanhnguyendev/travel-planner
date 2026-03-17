@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Settings2, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, ProjectRole } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { AddPlaceForm } from '@/components/places/add-place-form';
 import { PlaceGrid } from '@/components/places/place-grid';
+import { PlaceSearch } from '@/components/places/place-search';
+import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
 interface PlacesSectionProps {
@@ -21,6 +23,15 @@ interface PlacesSectionProps {
 
 const canEdit = (role: ProjectRole) =>
   ['owner', 'admin', 'editor'].includes(role);
+
+type SortOption = 'newest' | 'most_voted' | 'visit_date' | 'name';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'most_voted', label: 'Most voted' },
+  { value: 'visit_date', label: 'Visit date' },
+  { value: 'name', label: 'Name' },
+];
 
 export function PlacesSection({
   projectId,
@@ -42,6 +53,8 @@ export function PlacesSection({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [searchResults, setSearchResults] = useState<Place[] | null>(null);
 
   const editor = canEdit(role);
 
@@ -56,6 +69,44 @@ export function PlacesSection({
     }
     setShowAddPlace(false);
   }
+
+  // The base list is either search results or all places
+  const basePlaces = searchResults ?? places;
+
+  // Build a vote summary map for sorting
+  const voteSummaryMap = Object.fromEntries(voteSummaries.map((v) => [v.placeId, v]));
+
+  // Sort the base places
+  const sortedPlaces = useMemo(() => {
+    const list = [...basePlaces];
+    switch (sortOption) {
+      case 'newest':
+        return list.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      case 'most_voted': {
+        return list.sort((a, b) => {
+          const aVotes = voteSummaryMap[a.id];
+          const bVotes = voteSummaryMap[b.id];
+          const aNet = aVotes ? aVotes.upvotes - aVotes.downvotes : 0;
+          const bNet = bVotes ? bVotes.upvotes - bVotes.downvotes : 0;
+          return bNet - aNet;
+        });
+      }
+      case 'visit_date':
+        return list.sort((a, b) => {
+          if (!a.visit_date && !b.visit_date) return 0;
+          if (!a.visit_date) return 1;
+          if (!b.visit_date) return -1;
+          return a.visit_date.localeCompare(b.visit_date);
+        });
+      case 'name':
+        return list.sort((a, b) => a.name.localeCompare(b.name));
+      default:
+        return list;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basePlaces, sortOption]);
 
   return (
     <div className="space-y-5">
@@ -172,26 +223,83 @@ export function PlacesSection({
         </div>
       )}
 
-      {/* Category filter */}
-      {categories.length > 0 && (
-        <CategoryList
-          categories={categories}
-          selectedId={selectedCategoryId}
-          onSelect={setSelectedCategoryId}
-        />
-      )}
+      {/* Main content: grid + leaderboard sidebar */}
+      <div className="flex flex-col lg:flex-row gap-5">
+        {/* Left: search + sort + category filter + grid */}
+        <div className="flex-1 min-w-0 space-y-4">
+          {/* Search */}
+          {places.length > 0 && (
+            <PlaceSearch
+              places={places}
+              onResults={(filtered) =>
+                setSearchResults(filtered.length === places.length ? null : filtered)
+              }
+            />
+          )}
 
-      {/* Place grid */}
-      <PlaceGrid
-        places={places}
-        categories={categories}
-        projectId={projectId}
-        selectedCategoryId={selectedCategoryId}
-        voteSummaries={voteSummaries}
-        userVotes={userVotes}
-        reviewsByPlaceId={reviewsByPlaceId}
-        onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
-      />
+          {/* Sort dropdown */}
+          {places.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="sort-places"
+                className="text-xs font-medium flex-shrink-0"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Sort by
+              </label>
+              <select
+                id="sort-places"
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as SortOption)}
+                className="rounded-xl border px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'white',
+                  color: 'var(--color-text)',
+                }}
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category filter */}
+          {categories.length > 0 && (
+            <CategoryList
+              categories={categories}
+              selectedId={selectedCategoryId}
+              onSelect={setSelectedCategoryId}
+            />
+          )}
+
+          {/* Place grid */}
+          <PlaceGrid
+            places={sortedPlaces}
+            categories={categories}
+            projectId={projectId}
+            selectedCategoryId={selectedCategoryId}
+            voteSummaries={voteSummaries}
+            userVotes={userVotes}
+            reviewsByPlaceId={reviewsByPlaceId}
+            onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
+          />
+        </div>
+
+        {/* Right: vote leaderboard sidebar */}
+        {places.length >= 2 && (
+          <div className="lg:w-72 flex-shrink-0">
+            <VoteLeaderboard
+              places={places}
+              voteSummaries={voteSummaries}
+              categories={categories}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

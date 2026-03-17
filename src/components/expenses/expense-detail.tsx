@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Receipt, User, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
 import type { ProjectRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
@@ -10,6 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
+import { Avatar } from '@/components/ui/avatar';
 
 interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
@@ -62,12 +63,10 @@ function SplitRow({
       style={{ backgroundColor: isSettled ? '#F0FDF4' : 'var(--color-bg-subtle)' }}
     >
       {/* Avatar */}
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
-        style={{ backgroundColor: isSettled ? '#16A34A' : 'var(--color-primary)' }}
-      >
-        {name.charAt(0).toUpperCase()}
-      </div>
+      <Avatar
+        user={{ display_name: name, avatar_url: split.profile.avatar_url ?? null }}
+        size="md"
+      />
 
       {/* Name + status */}
       <div className="flex-1 min-w-0">
@@ -233,7 +232,13 @@ export function ExpenseDetail({
                 className="inline-flex items-center gap-1.5 text-sm"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                <User className="w-4 h-4" />
+                <Avatar
+                  user={{
+                    display_name: paidByName,
+                    avatar_url: expense.paid_by_profile.avatar_url ?? null,
+                  }}
+                  size="sm"
+                />
                 Paid by <strong className="ml-0.5" style={{ color: 'var(--color-text)' }}>{paidByName}</strong>
               </span>
               <span

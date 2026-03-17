@@ -29,39 +29,72 @@ function StatusBadge({ status }: { status: Project['status'] }) {
 
 async function ProjectCard({ project }: { project: Project }) {
   const members = await getMembers(project.id);
+  const hasCover = !!project.cover_image_url;
 
   return (
     <Link
       href={`/projects/${project.id}`}
-      className="card card-hover block p-6 group transition-all hover:scale-[1.02] hover:shadow-md"
+      className="card card-hover block group transition-all hover:scale-[1.02] hover:shadow-md overflow-hidden"
     >
-      <div className="flex items-start justify-between mb-3 gap-3">
-        <div className="flex-1 min-w-0">
-          <h3
-            className="font-semibold text-lg truncate mb-1 text-stone-800"
-          >
-            {project.title}
-          </h3>
-          {project.description && (
-            <p className="text-sm line-clamp-2 text-stone-600">
-              {project.description}
-            </p>
-          )}
+      {/* Cover image or plain header */}
+      {hasCover ? (
+        <div className="relative h-36">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={project.cover_image_url!}
+            alt={`${project.title} cover`}
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          {/* Status badge on top of cover */}
+          <div className="absolute top-3 right-3">
+            <StatusBadge status={project.status} />
+          </div>
+          {/* Title on cover */}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <h3 className="font-semibold text-lg truncate text-white">
+              {project.title}
+            </h3>
+          </div>
         </div>
-        <StatusBadge status={project.status} />
-      </div>
+      ) : null}
 
-      <div className="flex items-center gap-4 mt-4 text-xs text-stone-400">
-        {project.start_date && project.end_date && (
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" />
-            {formatDateRange(project.start_date, project.end_date)}
-          </span>
+      <div className={hasCover ? 'p-4' : 'p-6'}>
+        {!hasCover && (
+          <div className="flex items-start justify-between mb-3 gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-lg truncate mb-1 text-stone-800">
+                {project.title}
+              </h3>
+              {project.description && (
+                <p className="text-sm line-clamp-2 text-stone-600">
+                  {project.description}
+                </p>
+              )}
+            </div>
+            <StatusBadge status={project.status} />
+          </div>
         )}
-        <span className="flex items-center gap-1">
-          <Users className="w-3.5 h-3.5" />
-          {members.length} {members.length === 1 ? 'member' : 'members'}
-        </span>
+
+        {hasCover && project.description && (
+          <p className="text-sm line-clamp-2 text-stone-600 mb-3">
+            {project.description}
+          </p>
+        )}
+
+        <div className="flex items-center gap-4 text-xs text-stone-400">
+          {project.start_date && project.end_date && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              {formatDateRange(project.start_date, project.end_date)}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" />
+            {members.length} {members.length === 1 ? 'member' : 'members'}
+          </span>
+        </div>
       </div>
     </Link>
   );

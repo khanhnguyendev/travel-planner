@@ -7,6 +7,7 @@ import { useLoadingToast } from '@/components/ui/toast';
 import { revokeInvite } from '@/features/members/actions';
 import type { PendingInvite } from '@/features/members/queries';
 import type { ProjectRole } from '@/lib/types';
+import { CopyButton } from '@/components/ui/copy-button';
 
 // -------------------------------------------------------
 // Props
@@ -98,6 +99,12 @@ export function PendingInvitesList({ projectId, invites, canManage }: PendingInv
             >
               {role}
             </span>
+
+            {/* Copy invite link */}
+            <CopyButton
+              text={`${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/invites/accept?token=${invite.token ?? ''}`}
+              label="Copy link"
+            />
 
             {canManage && (
               <button
