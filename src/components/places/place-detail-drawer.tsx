@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { X, MapPin, Star, DollarSign, ExternalLink } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check } from 'lucide-react';
 import type { Place, PlaceReview, Category, PlaceVote } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
+import { updatePlaceSchedule } from '@/features/places/actions';
+import { useLoadingToast } from '@/components/ui/toast';
 
 interface PlaceDetailDrawerProps {
   place: Place;
@@ -14,6 +16,7 @@ interface PlaceDetailDrawerProps {
   projectId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
+  allPlaces?: Place[];   // for backup place selector
   onClose: () => void;
 }
 
@@ -92,6 +95,146 @@ function ReviewCard({ review }: { review: PlaceReview }) {
   );
 }
 
+function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[] }) {
+  const [editing, setEditing] = useState(false);
+  const [date, setDate] = useState(place.visit_date ?? '');
+  const [from, setFrom] = useState(place.visit_time_from ?? '');
+  const [to, setTo] = useState(place.visit_time_to ?? '');
+  const [backupId, setBackupId] = useState(place.backup_place_id ?? '');
+  const [pending, setPending] = useState(false);
+  const loadingToast = useLoadingToast();
+
+  const otherPlaces = allPlaces.filter((p) => p.id !== place.id);
+  const backupPlace = allPlaces.find((p) => p.id === place.backup_place_id);
+
+  async function handleSave() {
+    setPending(true);
+    const resolve = loadingToast('Saving schedule…');
+    const result = await updatePlaceSchedule(place.id, {
+      visit_date: date || null,
+      visit_time_from: from || null,
+      visit_time_to: to || null,
+      backup_place_id: backupId || null,
+    });
+    setPending(false);
+    if (result.ok) {
+      resolve('Schedule saved!', 'success');
+      setEditing(false);
+    } else {
+      resolve(result.error, 'error');
+    }
+  }
+
+  if (!editing) {
+    const hasSchedule = place.visit_date || place.visit_time_from;
+    return (
+      <div className="space-y-2">
+        {hasSchedule ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            {place.visit_date && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
+                <CalendarDays className="w-3.5 h-3.5" />
+                {new Date(place.visit_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            )}
+            {(place.visit_time_from || place.visit_time_to) && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
+                <Clock className="w-3.5 h-3.5" />
+                {place.visit_time_from ?? '?'} – {place.visit_time_to ?? '?'}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-stone-400">No visit time set</p>
+        )}
+
+        {backupPlace && (
+          <div className="flex items-center gap-1.5 text-xs text-orange-600 bg-orange-50 px-2.5 py-1.5 rounded-lg">
+            <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Backup: <span className="font-medium">{backupPlace.name}</span></span>
+          </div>
+        )}
+
+        <button
+          onClick={() => setEditing(true)}
+          className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-teal-600 transition-colors mt-1"
+        >
+          <Pencil className="w-3 h-3" />
+          {hasSchedule || backupPlace ? 'Edit' : 'Add schedule'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 p-3 rounded-xl border border-stone-200 bg-stone-50">
+      <div>
+        <label className="block text-xs font-medium text-stone-600 mb-1">Visit date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1">From</label>
+          <input
+            type="time"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1">To</label>
+          <input
+            type="time"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
+      </div>
+      {otherPlaces.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1">
+            Backup plan <span className="text-stone-400 font-normal">(if this place is closed)</span>
+          </label>
+          <select
+            value={backupId}
+            onChange={(e) => setBackupId(e.target.value)}
+            className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          >
+            <option value="">No backup</option>
+            {otherPlaces.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={handleSave}
+          disabled={pending}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+        >
+          <Check className="w-3.5 h-3.5" />
+          Save
+        </button>
+        <button
+          onClick={() => setEditing(false)}
+          disabled={pending}
+          className="text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function PlaceDetailDrawer({
   place,
   reviews,
@@ -99,6 +242,7 @@ export function PlaceDetailDrawer({
   projectId,
   voteSummary,
   userVote,
+  allPlaces = [],
   onClose,
 }: PlaceDetailDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -201,6 +345,14 @@ export function PlaceDetailDrawer({
               </p>
             </div>
           )}
+
+          {/* Schedule + backup */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">
+              Visit schedule
+            </h3>
+            <ScheduleEditor place={place} allPlaces={allPlaces} />
+          </div>
 
           {/* Votes */}
           <div>

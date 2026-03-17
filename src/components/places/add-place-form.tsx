@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Link2, X, Loader2, AlertCircle } from 'lucide-react';
 import type { Category, Place, PlaceReview } from '@/lib/types';
+import { useLoadingToast } from '@/components/ui/toast';
 
 interface AddPlaceFormProps {
   projectId: string;
@@ -20,7 +21,15 @@ export function AddPlaceForm({
   const [url, setUrl] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
+
+  // Sync when categories load after initial render
+  useEffect(() => {
+    if (!categoryId && categories.length > 0) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categories]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isPending, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +43,8 @@ export function AddPlaceForm({
       setError('Please select a category');
       return;
     }
+
+    const resolve = loadingToast('Resolving place…');
 
     startTransition(async () => {
       try {
@@ -51,20 +62,21 @@ export function AddPlaceForm({
 
         if (!data.ok) {
           const code = data.error?.code ?? 'server_error';
-          if (code === 'rate_limited') {
-            setError('Google Places rate limit reached — please try again in a moment.');
-          } else if (code === 'conflict') {
-            setError('This place has already been added to the project.');
-          } else {
-            setError(data.error?.message ?? 'Failed to resolve place.');
-          }
+          let msg = data.error?.message ?? 'Failed to resolve place.';
+          if (code === 'rate_limited') msg = 'Google Places rate limit reached — try again in a moment.';
+          else if (code === 'conflict') msg = 'This place has already been added.';
+          resolve(msg, 'error');
+          setError(msg);
           return;
         }
 
         setUrl('');
+        resolve('Place added!', 'success');
         onAdded?.(data.data.place, data.data.reviews ?? []);
       } catch {
-        setError('Network error — please check your connection and try again.');
+        const msg = 'Network error — check your connection and try again.';
+        resolve(msg, 'error');
+        setError(msg);
       }
     });
   }

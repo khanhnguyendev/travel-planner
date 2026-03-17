@@ -17,7 +17,8 @@ export interface Toast {
 }
 
 interface ToastContextValue {
-  showToast: (message: string, variant?: ToastVariant) => void;
+  showToast: (message: string, variant?: ToastVariant) => string;
+  dismissToast: (id: string) => void;
 }
 
 // -------------------------------------------------------
@@ -30,6 +31,18 @@ export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within a ToastProvider');
   return ctx;
+}
+
+/** Convenience: show a loading toast, returns a replacer function */
+export function useLoadingToast() {
+  const { showToast, dismissToast } = useToast();
+  return (message: string) => {
+    const id = showToast(message, 'info');
+    return (result: string, variant: ToastVariant = 'success') => {
+      dismissToast(id);
+      showToast(result, variant);
+    };
+  };
 }
 
 // -------------------------------------------------------
@@ -105,9 +118,10 @@ function ToastItem({
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, variant: ToastVariant = 'success') => {
+  const showToast = useCallback((message: string, variant: ToastVariant = 'success'): string => {
     const id = Math.random().toString(36).slice(2);
     setToasts((prev) => [...prev, { id, message, variant }]);
+    return id;
   }, []);
 
   const dismiss = useCallback((id: string) => {
@@ -115,7 +129,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, dismissToast: dismiss }}>
       {children}
       {/* Fixed toast container */}
       <div

@@ -1,4 +1,4 @@
-import { Star, MapPin, DollarSign } from 'lucide-react';
+import { Star, MapPin, DollarSign, Clock, ShieldAlert } from 'lucide-react';
 import type { Place, Category, PlaceVote } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
@@ -130,6 +130,25 @@ export function PlaceCard({
           >
             {place.editorial_summary}
           </p>
+        )}
+
+        {/* Visit time */}
+        {(place.visit_date || place.visit_time_from) && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {place.visit_date && (
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">
+                <Clock className="w-3 h-3" />
+                {new Date(place.visit_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                {place.visit_time_from && ` · ${place.visit_time_from}`}
+              </span>
+            )}
+            {place.backup_place_id && (
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 font-medium">
+                <ShieldAlert className="w-3 h-3" />
+                Backup set
+              </span>
+            )}
+          </div>
         )}
 
         {/* Spacer */}

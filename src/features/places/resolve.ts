@@ -39,24 +39,40 @@ export function extractPlaceIdFromUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
 
-    // Check query param
+    // 1. Explicit query param (rare but possible)
     const qp = parsed.searchParams.get('place_id');
     if (qp) return qp;
 
-    // Check data parameter for embedded place_id (!4s<id>)
-    const data = parsed.searchParams.get('data');
-    if (data) {
-      const match = data.match(/!4s(ChIJ[A-Za-z0-9_-]+)/);
-      if (match) return match[1];
+    // 2. Extract the data blob — in Google Maps URLs it lives in the PATH
+    //    e.g. /maps/place/Name/@lat,lng/data=!3m1!...!1s<place_id>!...
+    //    NOT in searchParams.
+    const pathDataMatch = parsed.pathname.match(/\/data=([^?#]*)/);
+    const dataBlob = pathDataMatch?.[1] ?? '';
+
+    if (dataBlob) {
+      // !1s<id> is the primary place_id token. Accepts:
+      //   ChIJ...          — standard base64 place_id
+      //   0x...:<0x...>    — hex CID format (common in Vietnam / Asia)
+      const m = dataBlob.match(/!1s([^!]+)/);
+      if (m) {
+        const id = decodeURIComponent(m[1]);
+        if (
+          id.startsWith('ChIJ') ||
+          id.startsWith('0x') ||
+          id.startsWith('/g/')
+        ) {
+          return id;
+        }
+      }
     }
 
-    // maps.google.com/maps/place/Name/@lat,lng,z/data=...
-    // Sometimes place_id is in the path after the place name segment
+    // 3. Path segment directly containing a ChIJ place_id
     const pathMatch = parsed.pathname.match(/\/maps\/place\/[^/]+\/([^/]+)/);
-    if (pathMatch) {
-      const segment = pathMatch[1];
-      if (segment.startsWith('ChIJ')) return segment;
-    }
+    if (pathMatch && pathMatch[1].startsWith('ChIJ')) return pathMatch[1];
+
+    // 4. Full-URL scan for ChIJ token (last resort)
+    const fullMatch = url.match(/(?:!1s|place_id=|\/)(ChIJ[A-Za-z0-9_-]{10,})/);
+    if (fullMatch) return fullMatch[1];
 
     return null;
   } catch {
@@ -87,9 +103,12 @@ export function isGoogleMapsUrl(url: string): boolean {
 // -------------------------------------------------------
 
 async function expandShortUrl(url: string): Promise<string> {
+  // Use GET — many servers (including Google) don't follow HEAD redirects.
+  // We don't need the body; we just want response.url after redirect chain.
   const response = await fetch(url, {
-    method: 'HEAD',
+    method: 'GET',
     redirect: 'follow',
+    headers: { 'User-Agent': 'Mozilla/5.0' },
   });
   return response.url || url;
 }
@@ -163,7 +182,8 @@ async function fetchPlaceDetails(placeId: string): Promise<ResolvedPlace> {
   console.log('[places/resolve]', { placeId, status: json.status, latency });
 
   if (json.status === 'REQUEST_DENIED') {
-    throw new Error('Google Places API request denied — check API key');
+    console.error('[places/resolve] REQUEST_DENIED — full response:', JSON.stringify(json));
+    throw new Error('Google Places API request denied — check API key and ensure Places API is enabled in Google Cloud Console');
   }
 
   if (json.status === 'OVER_QUERY_LIMIT') {
@@ -217,16 +237,23 @@ async function fetchPlaceDetails(placeId: string): Promise<ResolvedPlace> {
 // Resolve a place_id from a text search (fallback)
 // -------------------------------------------------------
 
-async function findPlaceIdByQuery(query: string): Promise<string | null> {
+async function findPlaceIdByQuery(
+  query: string,
+  locationBias?: { lat: number; lng: number }
+): Promise<string | null> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) return null;
 
-  const url = `${PLACES_API_BASE}/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${apiKey}`;
+  let endpoint = `${PLACES_API_BASE}/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${apiKey}`;
+  if (locationBias) {
+    endpoint += `&locationbias=point:${locationBias.lat},${locationBias.lng}`;
+  }
 
   try {
-    const res = await fetchWithBackoff(url);
+    const res = await fetchWithBackoff(endpoint);
     if (!res.ok) return null;
     const json = await res.json();
+    console.log('[places/resolve] findPlaceIdByQuery status:', json.status, 'candidates:', json.candidates?.length ?? 0);
     if (json.status !== 'OK') return null;
     return json.candidates?.[0]?.place_id ?? null;
   } catch {
@@ -241,7 +268,13 @@ async function findPlaceIdByQuery(query: string): Promise<string | null> {
 export async function resolveGoogleMapsUrl(
   rawUrl: string
 ): Promise<ResolvedPlace> {
+  const log = (...args: unknown[]) =>
+    console.log('[places/resolve]', ...args);
+
+  log('input url:', rawUrl);
+
   if (!isGoogleMapsUrl(rawUrl)) {
+    log('rejected: not a Google Maps URL');
     throw new Error('invalid_url: not a Google Maps URL');
   }
 
@@ -252,32 +285,53 @@ export async function resolveGoogleMapsUrl(
     parsed.hostname === 'maps.app.goo.gl' ||
     parsed.hostname === 'goo.gl'
   ) {
+    log('expanding short url...');
     url = await expandShortUrl(url);
+    log('expanded url:', url);
   }
 
   // Try to extract place_id directly
+  log('extracting place_id from url...');
   let placeId = extractPlaceIdFromUrl(url);
+  log('extractPlaceIdFromUrl result:', placeId ?? 'null');
 
-  // Fallback: use the place name from the URL path as a text search
+  // Fallback: use the place name + coordinates from the URL path as a text search
   if (!placeId) {
+    log('falling back to text search...');
     try {
       const p = new URL(url);
       const pathParts = p.pathname.split('/');
+      log('path parts:', pathParts);
       const placeIndex = pathParts.indexOf('place');
       if (placeIndex !== -1 && pathParts[placeIndex + 1]) {
         const placeName = decodeURIComponent(
           pathParts[placeIndex + 1].replace(/\+/g, ' ')
         );
-        placeId = await findPlaceIdByQuery(placeName);
+        // Extract @lat,lng from path for location bias
+        let locationBias: { lat: number; lng: number } | undefined;
+        for (const part of pathParts) {
+          const m = part.match(/^@(-?\d+\.\d+),(-?\d+\.\d+)/);
+          if (m) {
+            locationBias = { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+            break;
+          }
+        }
+        log('text search query:', placeName, 'locationBias:', locationBias);
+        placeId = await findPlaceIdByQuery(placeName, locationBias);
+        log('text search result:', placeId ?? 'null');
+      } else {
+        log('no /place/ segment found in path');
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      log('text search error:', err);
     }
   }
 
   if (!placeId) {
+    log('failed: could not extract place_id. full expanded url was:', url);
     throw new Error('invalid_place: could not extract place_id from URL');
   }
 
+  log('resolved place_id:', placeId);
   return fetchPlaceDetails(placeId);
 }
