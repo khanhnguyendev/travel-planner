@@ -7,6 +7,7 @@ import {
   Globe,
   Lock,
   Plus,
+  UserCog,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
@@ -208,9 +209,19 @@ export default async function ProjectDetailPage({
 
       {/* Members strip */}
       <div className="card p-5 mb-6">
-        <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
-          Members
-        </h2>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+            Members
+          </h2>
+          <Link
+            href={`/projects/${projectId}/members`}
+            className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
+            style={{ color: 'var(--color-text-subtle)' }}
+          >
+            <UserCog className="w-3.5 h-3.5" />
+            Manage
+          </Link>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           {members.map((m) => {
             const name = m.profile.display_name ?? 'Unknown';
