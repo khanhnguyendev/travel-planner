@@ -376,20 +376,17 @@ export function PlaceDetailDrawer({
               <h3
                 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400"
               >
-                Reviews from Google
+                Reviews
               </h3>
               <div className="space-y-3">
                 {reviews.map((r) => (
                   <ReviewCard key={r.id} review={r} />
                 ))}
               </div>
-              <p className="text-xs mt-3 text-stone-400">
-                Reviews sourced from Google Maps.
-              </p>
             </div>
           )}
 
-          {/* Source link */}
+          {/* Source link — only shown when a source URL exists */}
           {place.source_url && (
             <a
               href={place.source_url}
@@ -399,7 +396,7 @@ export function PlaceDetailDrawer({
               style={{ color: 'var(--color-primary)' }}
             >
               <ExternalLink className="w-4 h-4" />
-              View on Google Maps
+              View on map
             </a>
           )}
         </div>
