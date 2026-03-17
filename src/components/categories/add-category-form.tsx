@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Plus, X } from 'lucide-react';
 import { createCategory } from '@/features/categories/actions';
 import type { Category } from '@/lib/types';
+import { useLoadingToast } from '@/components/ui/toast';
 
 const PRESET_COLORS = [
   '#0D9488', // teal
@@ -32,6 +33,7 @@ export function AddCategoryForm({
   const [icon, setIcon] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +44,8 @@ export function AddCategoryForm({
       return;
     }
 
+    const resolve = loadingToast('Adding category…');
+
     startTransition(async () => {
       const result = await createCategory(
         projectId,
@@ -51,10 +55,12 @@ export function AddCategoryForm({
       );
 
       if (!result.ok) {
+        resolve(result.error, 'error');
         setError(result.error);
         return;
       }
 
+      resolve('Category added!', 'success');
       setName('');
       setIcon('');
       setColor(PRESET_COLORS[0]);

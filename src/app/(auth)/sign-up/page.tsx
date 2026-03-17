@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { signUp } from '@/features/auth/actions';
 import { signInWithGoogle } from '@/features/auth/oauth';
+import { useLoadingToast } from '@/components/ui/toast';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -11,15 +12,18 @@ export default function SignUpPage() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const loadingToast = useLoadingToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
     setError(null);
 
+    const resolve = loadingToast('Creating account…');
     const result = await signUp(email, password, displayName);
 
     if (!result.ok) {
+      resolve(result.error, 'error');
       setError(result.error);
       setPending(false);
     }

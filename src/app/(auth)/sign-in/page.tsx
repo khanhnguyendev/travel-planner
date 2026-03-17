@@ -4,21 +4,25 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { signIn } from '@/features/auth/actions';
 import { signInWithGoogle } from '@/features/auth/oauth';
+import { useLoadingToast } from '@/components/ui/toast';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const loadingToast = useLoadingToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
     setError(null);
 
+    const resolve = loadingToast('Signing in…');
     const result = await signIn(email, password);
 
     if (!result.ok) {
+      resolve(result.error, 'error');
       setError(result.error);
       setPending(false);
     }

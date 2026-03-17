@@ -7,6 +7,7 @@ import { createExpense, type CreateExpenseInput, type SplitInput } from '@/featu
 import type { MemberWithProfile } from '@/features/members/queries';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { useLoadingToast } from '@/components/ui/toast';
 
 // -------------------------------------------------------
 // Constants
@@ -141,6 +142,7 @@ export function ExpenseForm({ projectId, members, currentUserId }: ExpenseFormPr
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadingToast = useLoadingToast();
 
   // -------------------------------------------------------
   // Computed values
@@ -317,12 +319,16 @@ export function ExpenseForm({ projectId, members, currentUserId }: ExpenseFormPr
     };
 
     setIsSubmitting(true);
+    const resolve = loadingToast('Creating expense…');
     try {
       const result = await createExpense(input);
       if (result.ok) {
+        resolve('Expense added!', 'success');
         router.push(`/projects/${projectId}/expenses`);
       } else {
-        setError(result.error ?? 'Failed to create expense');
+        const msg = result.error ?? 'Failed to create expense';
+        resolve(msg, 'error');
+        setError(msg);
       }
     } finally {
       setIsSubmitting(false);

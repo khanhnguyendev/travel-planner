@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { PlaceVote, VoteType } from '@/lib/types';
+import { useLoadingToast } from '@/components/ui/toast';
 
 interface VoteButtonsProps {
   projectId: string;
@@ -23,6 +24,7 @@ export function VoteButtons({
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [downvotes, setDownvotes] = useState(initialDownvotes);
   const [isPending, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
 
   function handleVote(voteType: VoteType) {
     startTransition(async () => {
@@ -47,6 +49,8 @@ export function VoteButtons({
         else setDownvotes((v) => v + 1);
       }
 
+      const resolve = loadingToast('Saving vote…');
+
       try {
         if (isSameVote) {
           const res = await fetch('/api/votes', {
@@ -55,6 +59,7 @@ export function VoteButtons({
             body: JSON.stringify({ projectId, placeId }),
           });
           if (!res.ok) throw new Error('delete failed');
+          resolve('Vote removed', 'success');
         } else {
           const res = await fetch('/api/votes', {
             method: 'POST',
@@ -64,12 +69,14 @@ export function VoteButtons({
           if (!res.ok) throw new Error('upsert failed');
           const data = await res.json();
           if (data.ok) setUserVote(data.data);
+          resolve('Vote saved!', 'success');
         }
       } catch {
         // Rollback on error
         setUserVote(prevVote);
         setUpvotes(prevUp);
         setDownvotes(prevDown);
+        resolve('Failed to save vote', 'error');
       }
     });
   }

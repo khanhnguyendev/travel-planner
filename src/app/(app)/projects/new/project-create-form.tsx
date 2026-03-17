@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProject } from '@/features/projects/actions';
+import { useLoadingToast } from '@/components/ui/toast';
 
 export default function ProjectCreateForm() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function ProjectCreateForm() {
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const loadingToast = useLoadingToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +28,8 @@ export default function ProjectCreateForm() {
       return;
     }
 
+    const resolve = loadingToast('Creating trip…');
+
     const result = await createProject(
       title,
       description || undefined,
@@ -35,11 +39,13 @@ export default function ProjectCreateForm() {
     );
 
     if (!result.ok) {
+      resolve(result.error, 'error');
       setError(result.error);
       setPending(false);
       return;
     }
 
+    resolve('Trip created!', 'success');
     router.push(`/projects/${result.data.projectId}`);
   }
 

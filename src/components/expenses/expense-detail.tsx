@@ -8,6 +8,7 @@ import { deleteExpense } from '@/features/expenses/actions';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
+import { useLoadingToast } from '@/components/ui/toast';
 
 interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
@@ -33,6 +34,7 @@ function StatusBadge({ status }: { status: string }) {
 export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetailProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const loadingToast = useLoadingToast();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const receiptUrl =
@@ -43,11 +45,14 @@ export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetai
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this expense? This cannot be undone.')) return;
     setIsDeleting(true);
+    const resolve = loadingToast('Deleting expense…');
     const result = await deleteExpense(expense.id);
     if (result.ok) {
+      resolve('Expense deleted', 'success');
       router.push(`/projects/${projectId}/expenses`);
     } else {
-      alert(result.error ?? 'Failed to delete expense');
+      const msg = result.error ?? 'Failed to delete expense';
+      resolve(msg, 'error');
       setIsDeleting(false);
     }
   }
