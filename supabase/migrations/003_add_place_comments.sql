@@ -14,12 +14,36 @@ ALTER TABLE place_comments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "members can read comments"
   ON place_comments FOR SELECT
-  USING (is_member(project_id));
+  USING (
+    EXISTS (
+      SELECT 1 FROM project_members
+      WHERE project_members.project_id = place_comments.project_id
+        AND project_members.user_id = auth.uid()
+        AND project_members.invite_status = 'accepted'
+    )
+  );
 
 CREATE POLICY "members can insert own comments"
   ON place_comments FOR INSERT
-  WITH CHECK (is_member(project_id) AND auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id AND
+    EXISTS (
+      SELECT 1 FROM project_members
+      WHERE project_members.project_id = place_comments.project_id
+        AND project_members.user_id = auth.uid()
+        AND project_members.invite_status = 'accepted'
+    )
+  );
 
 CREATE POLICY "author or admin can delete comments"
   ON place_comments FOR DELETE
-  USING (auth.uid() = user_id OR is_role(project_id, 'admin') OR is_role(project_id, 'owner'));
+  USING (
+    auth.uid() = user_id OR
+    EXISTS (
+      SELECT 1 FROM project_members
+      WHERE project_members.project_id = place_comments.project_id
+        AND project_members.user_id = auth.uid()
+        AND project_members.role IN ('admin', 'owner')
+        AND project_members.invite_status = 'accepted'
+    )
+  );
