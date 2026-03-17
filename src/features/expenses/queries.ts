@@ -31,6 +31,87 @@ export async function getExpenses(projectId: string): Promise<Expense[]> {
 }
 
 /**
+ * Returns all expenses for a project with their splits and member profiles joined.
+ * Used for debt calculation on the expenses list page.
+ */
+export async function getExpensesWithSplits(
+  projectId: string
+): Promise<ExpenseWithSplits[]> {
+  const supabase = await createClient();
+
+  const { data: expensesData, error: expensesError } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('expense_date', { ascending: false });
+
+  if (expensesError || !expensesData || expensesData.length === 0) {
+    if (expensesError) console.error('getExpensesWithSplits error:', expensesError);
+    return [];
+  }
+
+  const expenses = expensesData as unknown as Expense[];
+  const expenseIds = expenses.map((e) => e.id);
+
+  // Collect all relevant user IDs
+  const paidByIds = expenses.map((e) => e.paid_by_user_id);
+
+  // Fetch all splits for these expenses
+  const { data: splitsData } = await supabase
+    .from('expense_splits')
+    .select('*')
+    .in('expense_id', expenseIds);
+
+  const splits = (splitsData as unknown as ExpenseSplit[]) ?? [];
+  const splitUserIds = splits.map((s) => s.user_id);
+
+  // Fetch all profiles needed
+  const allUserIds = Array.from(new Set([...paidByIds, ...splitUserIds]));
+  let profilesMap: Record<string, Pick<Profile, 'id' | 'display_name' | 'avatar_url'>> = {};
+
+  if (allUserIds.length > 0) {
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', allUserIds);
+
+    const profiles =
+      (profilesData as unknown as Pick<Profile, 'id' | 'display_name' | 'avatar_url'>[]) ?? [];
+    profilesMap = Object.fromEntries(profiles.map((p) => [p.id, p]));
+  }
+
+  // Group splits by expense_id
+  const splitsByExpenseId: Record<string, ExpenseSplit[]> = {};
+  for (const split of splits) {
+    if (!splitsByExpenseId[split.expense_id]) {
+      splitsByExpenseId[split.expense_id] = [];
+    }
+    splitsByExpenseId[split.expense_id].push(split);
+  }
+
+  return expenses.map((expense) => {
+    const expenseSplits = (splitsByExpenseId[expense.id] ?? []).map((split) => ({
+      ...split,
+      profile: profilesMap[split.user_id] ?? {
+        id: split.user_id,
+        display_name: null,
+        avatar_url: null,
+      },
+    }));
+
+    return {
+      ...expense,
+      paid_by_profile: profilesMap[expense.paid_by_user_id] ?? {
+        id: expense.paid_by_user_id,
+        display_name: null,
+        avatar_url: null,
+      },
+      splits: expenseSplits,
+    };
+  });
+}
+
+/**
  * Returns a single expense with its splits and member profiles joined.
  */
 export async function getExpense(id: string): Promise<ExpenseWithSplits | null> {

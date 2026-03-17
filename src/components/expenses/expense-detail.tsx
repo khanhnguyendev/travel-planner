@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Receipt, User, Calendar, FileText } from 'lucide-react';
-import type { ExpenseWithSplits } from '@/features/expenses/queries';
+import { Pencil, Trash2, Receipt, User, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
+import type { ProjectRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
@@ -14,26 +15,128 @@ interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
   projectId: string;
   projectTitle?: string;
+  currentUserId: string;
+  role: ProjectRole;
 }
 
 function StatusBadge({ status }: { status: string }) {
   const isPending = status === 'pending';
   return (
     <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
+      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
       style={{
         backgroundColor: isPending ? 'var(--color-secondary-light)' : 'var(--color-primary-light)',
         color: isPending ? 'var(--color-secondary)' : 'var(--color-primary)',
       }}
     >
+      {!isPending && <CheckCircle2 className="w-3 h-3" />}
       {status}
     </span>
   );
 }
 
-export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetailProps) {
+function SplitRow({
+  split,
+  expenseAmount,
+  currency,
+  canMarkSettled,
+  onMarkSettled,
+  isSettling,
+}: {
+  split: ExpenseSplitWithProfile;
+  expenseAmount: number;
+  currency: string;
+  canMarkSettled: boolean;
+  onMarkSettled: (splitId: string) => void;
+  isSettling: boolean;
+}) {
+  const name = split.profile.display_name ?? 'Unknown';
+  const pct = expenseAmount > 0
+    ? ((split.amount_owed / expenseAmount) * 100).toFixed(0)
+    : '0';
+  const isSettled = split.status === 'settled';
+
+  return (
+    <div
+      className="flex items-center gap-3 p-3 rounded-xl"
+      style={{ backgroundColor: isSettled ? '#F0FDF4' : 'var(--color-bg-subtle)' }}
+    >
+      {/* Avatar */}
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+        style={{ backgroundColor: isSettled ? '#16A34A' : 'var(--color-primary)' }}
+      >
+        {name.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Name + status */}
+      <div className="flex-1 min-w-0">
+        <div
+          className={cn(
+            'font-medium text-sm truncate',
+            isSettled && 'line-through opacity-60'
+          )}
+          style={{ color: 'var(--color-text)' }}
+        >
+          {name}
+        </div>
+        <StatusBadge status={split.status} />
+      </div>
+
+      {/* Amounts */}
+      <div className="text-right flex-shrink-0">
+        <div
+          className={cn(
+            'font-semibold text-sm',
+            isSettled && 'line-through opacity-60'
+          )}
+          style={{ color: 'var(--color-text)' }}
+        >
+          {formatCurrency(split.amount_owed, currency)}
+        </div>
+        <div className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+          {pct}%
+        </div>
+      </div>
+
+      {/* Mark settled button */}
+      {canMarkSettled && split.status === 'pending' && (
+        <button
+          onClick={() => onMarkSettled(split.id)}
+          disabled={isSettling}
+          className={cn(
+            'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[32px] flex-shrink-0',
+            'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+          title="Mark as settled"
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          {isSettling ? 'Saving…' : 'Settle'}
+        </button>
+      )}
+
+      {/* Settled green checkmark badge */}
+      {isSettled && (
+        <div className="flex-shrink-0">
+          <CheckCircle2 className="w-5 h-5 text-green-600" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ExpenseDetail({
+  expense,
+  projectId,
+  projectTitle,
+  currentUserId,
+  role,
+}: ExpenseDetailProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [splits, setSplits] = useState<ExpenseSplitWithProfile[]>(expense.splits);
   const loadingToast = useLoadingToast();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,6 +144,8 @@ export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetai
     expense.receipt_path && supabaseUrl
       ? `${supabaseUrl}/storage/v1/object/public/receipts/${expense.receipt_path}`
       : null;
+
+  const isOwnerOrAdmin = ['owner', 'admin'].includes(role);
 
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this expense? This cannot be undone.')) return;
@@ -54,6 +159,44 @@ export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetai
       const msg = result.error ?? 'Failed to delete expense';
       resolve(msg, 'error');
       setIsDeleting(false);
+    }
+  }
+
+  async function handleMarkSettled(splitId: string) {
+    setSettlingId(splitId);
+    const resolve = loadingToast('Marking as settled…');
+
+    // Optimistic update
+    setSplits((prev) =>
+      prev.map((s) => (s.id === splitId ? { ...s, status: 'settled' as const } : s))
+    );
+
+    try {
+      const res = await fetch('/api/expenses/splits', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ splitId, status: 'settled' }),
+      });
+
+      const data = (await res.json()) as { ok: boolean; error?: { message: string } };
+
+      if (!res.ok || !data.ok) {
+        // Rollback optimistic update
+        setSplits((prev) =>
+          prev.map((s) => (s.id === splitId ? { ...s, status: 'pending' as const } : s))
+        );
+        resolve(data.error?.message ?? 'Failed to update split', 'error');
+      } else {
+        resolve('Split marked as settled', 'success');
+      }
+    } catch {
+      // Rollback
+      setSplits((prev) =>
+        prev.map((s) => (s.id === splitId ? { ...s, status: 'pending' as const } : s))
+      );
+      resolve('Failed to update split', 'error');
+    } finally {
+      setSettlingId(null);
     }
   }
 
@@ -168,55 +311,25 @@ export function ExpenseDetail({ expense, projectId, projectTitle }: ExpenseDetai
           How it&apos;s split
         </h2>
 
-        {expense.splits.length === 0 ? (
+        {splits.length === 0 ? (
           <p className="text-sm text-stone-400">
             No splits recorded for this expense.
           </p>
         ) : (
           <div className="space-y-2">
-            {expense.splits.map((split) => {
-              const name = split.profile.display_name ?? 'Unknown';
-              const pct = expense.amount > 0
-                ? ((split.amount_owed / expense.amount) * 100).toFixed(0)
-                : '0';
+            {splits.map((split) => {
+              const canMarkSettled =
+                split.user_id === currentUserId || isOwnerOrAdmin;
               return (
-                <div
+                <SplitRow
                   key={split.id}
-                  className="flex items-center gap-3 p-3 rounded-xl"
-                  style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-                >
-                  {/* Avatar */}
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
-                    style={{ backgroundColor: 'var(--color-primary)' }}
-                  >
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Name + status */}
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="font-medium text-sm truncate"
-                      style={{ color: 'var(--color-text)' }}
-                    >
-                      {name}
-                    </div>
-                    <StatusBadge status={split.status} />
-                  </div>
-
-                  {/* Amounts */}
-                  <div className="text-right flex-shrink-0">
-                    <div
-                      className="font-semibold text-sm"
-                      style={{ color: 'var(--color-text)' }}
-                    >
-                      {formatCurrency(split.amount_owed, expense.currency)}
-                    </div>
-                    <div className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                      {pct}%
-                    </div>
-                  </div>
-                </div>
+                  split={split}
+                  expenseAmount={expense.amount}
+                  currency={expense.currency}
+                  canMarkSettled={canMarkSettled}
+                  onMarkSettled={handleMarkSettled}
+                  isSettling={settlingId === split.id}
+                />
               );
             })}
           </div>

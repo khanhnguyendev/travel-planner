@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
-import { getExpenses } from '@/features/expenses/queries';
+import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
+import { getMembers } from '@/features/members/queries';
 import { ExpenseList } from '@/components/expenses/expense-list';
+import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
 import { formatCurrency } from '@/lib/format';
 import type { Metadata } from 'next';
@@ -25,12 +27,14 @@ export default async function ExpensesPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  await requireSession();
+  const user = await requireSession();
 
-  const [project, role, expenses] = await Promise.all([
+  const [project, role, expenses, expensesWithSplits, members] = await Promise.all([
     getProject(projectId),
     getUserRole(projectId),
     getExpenses(projectId),
+    getExpensesWithSplits(projectId),
+    getMembers(projectId),
   ]);
 
   if (!project || !role) {
@@ -45,6 +49,14 @@ export default async function ExpensesPage({
     totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
   }
   const totalEntries = Object.entries(totals);
+
+  // Build members list in the format DebtSummary expects
+  const memberProfiles = members.map((m) => ({
+    id: m.profile.id,
+    display_name: m.profile.display_name,
+    avatar_url: m.profile.avatar_url,
+    user_id: m.user_id,
+  }));
 
   const addExpenseButton = canEdit ? (
     <Link
@@ -76,6 +88,15 @@ export default async function ExpensesPage({
             .map(([cur, amt]) => formatCurrency(amt, cur))
             .join(' + ')}
         </p>
+      )}
+
+      {/* Debt summary */}
+      {expensesWithSplits.length > 0 && (
+        <DebtSummary
+          expenses={expensesWithSplits}
+          members={memberProfiles}
+          currentUserId={user.id}
+        />
       )}
 
       {/* List */}

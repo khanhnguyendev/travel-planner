@@ -15,11 +15,13 @@ import { getMembers } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
-import { getExpenses } from '@/features/expenses/queries';
+import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { createClient } from '@/lib/supabase/server';
 import { formatDateRange } from '@/lib/date';
 import { formatCurrency } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
+import { TripTimeline } from '@/components/places/trip-timeline';
+import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview } from '@/lib/types';
 import type { Metadata } from 'next';
@@ -75,17 +77,67 @@ function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   );
 }
 
+type TabValue = 'places' | 'timeline' | 'expenses';
+
+function TabBar({
+  activeTab,
+  projectId,
+}: {
+  activeTab: TabValue;
+  projectId: string;
+}) {
+  const tabs: { label: string; value: TabValue }[] = [
+    { label: 'Places', value: 'places' },
+    { label: 'Timeline', value: 'timeline' },
+    { label: 'Expenses', value: 'expenses' },
+  ];
+
+  return (
+    <div
+      className="flex items-center gap-1 p-1 rounded-2xl mb-6"
+      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+    >
+      {tabs.map((tab) => {
+        const isActive = tab.value === activeTab;
+        return (
+          <Link
+            key={tab.value}
+            href={`/projects/${projectId}?tab=${tab.value}`}
+            className="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px] flex items-center justify-center"
+            style={{
+              backgroundColor: isActive ? 'white' : 'transparent',
+              color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            }}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 // -------------------------------------------------------
 // Page
 // -------------------------------------------------------
 
 export default async function ProjectDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { projectId } = await params;
+  const { tab: tabParam } = await searchParams;
   const user = await requireSession();
+
+  const validTabs: TabValue[] = ['places', 'timeline', 'expenses'];
+  const activeTab: TabValue =
+    tabParam && validTabs.includes(tabParam as TabValue)
+      ? (tabParam as TabValue)
+      : 'places';
 
   const [project, role, members, categories, expenses] = await Promise.all([
     getProject(projectId),
@@ -99,25 +151,28 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
-  // Fetch places and votes in parallel
+  // Fetch places (needed for Places + Timeline tabs)
   const places = await getPlaces(projectId);
 
-  const [voteSummaries, userVotesRaw, reviewsRaw] = await Promise.all([
-    getVoteSummary(projectId),
-    Promise.all(places.map((p) => getUserVote(p.id, user.id))),
-    (async () => {
-      if (places.length === 0) return [];
-      const supabase = await createClient();
-      const { data } = await supabase
-        .from('place_reviews')
-        .select('*')
-        .in(
-          'place_id',
-          places.map((p) => p.id)
-        );
-      return data ?? [];
-    })(),
-  ]);
+  // Only fetch votes and reviews if on the places tab
+  const [voteSummaries, userVotesRaw, reviewsRaw, expensesWithSplits] =
+    await Promise.all([
+      getVoteSummary(projectId),
+      Promise.all(places.map((p) => getUserVote(p.id, user.id))),
+      (async () => {
+        if (places.length === 0) return [];
+        const supabase = await createClient();
+        const { data } = await supabase
+          .from('place_reviews')
+          .select('*')
+          .in(
+            'place_id',
+            places.map((p) => p.id)
+          );
+        return data ?? [];
+      })(),
+      getExpensesWithSplits(projectId),
+    ]);
 
   // Build data maps
   const userVotes = userVotesRaw.filter(Boolean) as PlaceVote[];
@@ -132,6 +187,14 @@ export default async function ProjectDetailPage({
 
   const isArchived = project.status === 'archived';
   const canEdit = ['owner', 'admin', 'editor'].includes(role);
+
+  // Build member profiles list for DebtSummary
+  const memberProfiles = members.map((m) => ({
+    id: m.profile.id,
+    display_name: m.profile.display_name,
+    avatar_url: m.profile.avatar_url,
+    user_id: m.user_id,
+  }));
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -254,121 +317,147 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Places & Voting */}
-      <div className="mb-6">
-        <PlacesSection
-          projectId={projectId}
-          role={role}
-          initialPlaces={places}
-          initialCategories={categories}
-          initialVoteSummaries={voteSummaries}
-          initialUserVotes={userVotes}
-          reviewsByPlaceId={reviewsByPlaceId}
-        />
-      </div>
+      {/* Tab bar */}
+      <TabBar activeTab={activeTab} projectId={projectId} />
 
-      {/* Expenses */}
-      {(() => {
-        const totals: Record<string, number> = {};
-        for (const exp of expenses) {
-          totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
-        }
-        const totalEntries = Object.entries(totals);
+      {/* Tab: Places */}
+      {activeTab === 'places' && (
+        <div className="mb-6">
+          <PlacesSection
+            projectId={projectId}
+            role={role}
+            initialPlaces={places}
+            initialCategories={categories}
+            initialVoteSummaries={voteSummaries}
+            initialUserVotes={userVotes}
+            reviewsByPlaceId={reviewsByPlaceId}
+          />
+        </div>
+      )}
 
-        return (
-          <div className="card p-6">
-            <div className="flex items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: 'var(--color-primary-light)' }}
-                >
-                  <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-base text-stone-800">
-                    Expenses
-                  </h2>
-                  {expenses.length > 0 && (
-                    <p className="text-xs text-stone-400">
-                      {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
-                      {totalEntries.length > 0 && (
-                        <> &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}</>
+      {/* Tab: Timeline */}
+      {activeTab === 'timeline' && (
+        <div className="card p-6 mb-6">
+          <TripTimeline places={places} categories={categories} />
+        </div>
+      )}
+
+      {/* Tab: Expenses */}
+      {activeTab === 'expenses' && (
+        <div className="mb-6">
+          {/* Debt summary card */}
+          {expensesWithSplits.length > 0 && (
+            <DebtSummary
+              expenses={expensesWithSplits}
+              members={memberProfiles}
+              currentUserId={user.id}
+            />
+          )}
+
+          {/* Expense list preview card */}
+          {(() => {
+            const totals: Record<string, number> = {};
+            for (const exp of expenses) {
+              totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
+            }
+            const totalEntries = Object.entries(totals);
+
+            return (
+              <div className="card p-6">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--color-primary-light)' }}
+                    >
+                      <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-base text-stone-800">
+                        Expenses
+                      </h2>
+                      {expenses.length > 0 && (
+                        <p className="text-xs text-stone-400">
+                          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
+                          {totalEntries.length > 0 && (
+                            <> &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}</>
+                          )}
+                        </p>
                       )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {canEdit && (
+                      <Link
+                        href={`/projects/${projectId}/expenses/new`}
+                        className="inline-flex items-center gap-1.5 btn-primary text-sm min-h-[44px]"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add
+                      </Link>
+                    )}
+                    <Link
+                      href={`/projects/${projectId}/expenses`}
+                      className="btn-secondary text-sm min-h-[44px]"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                </div>
+
+                {expenses.length === 0 ? (
+                  <div className="flex flex-col items-center py-8 text-center">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+                      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+                    >
+                      <Receipt className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
+                    </div>
+                    <p className="font-medium text-sm text-stone-800 mb-1">
+                      Track your first shared expense
                     </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {canEdit && (
-                  <Link
-                    href={`/projects/${projectId}/expenses/new`}
-                    className="inline-flex items-center gap-1.5 btn-primary text-sm min-h-[44px]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add
-                  </Link>
-                )}
-                <Link
-                  href={`/projects/${projectId}/expenses`}
-                  className="btn-secondary text-sm min-h-[44px]"
-                >
-                  View all
-                </Link>
-              </div>
-            </div>
-
-            {expenses.length === 0 ? (
-              <div className="flex flex-col items-center py-8 text-center">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                  style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-                >
-                  <Receipt className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
-                </div>
-                <p className="font-medium text-sm text-stone-800 mb-1">
-                  Track your first shared expense
-                </p>
-                <p className="text-xs text-stone-400 max-w-xs">
-                  Add expenses to keep everyone on the same page about shared costs.
-                </p>
-                {canEdit && (
-                  <Link
-                    href={`/projects/${projectId}/expenses/new`}
-                    className="mt-4 btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add expense
-                  </Link>
+                    <p className="text-xs text-stone-400 max-w-xs">
+                      Add expenses to keep everyone on the same page about shared costs.
+                    </p>
+                    {canEdit && (
+                      <Link
+                        href={`/projects/${projectId}/expenses/new`}
+                        className="mt-4 btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add expense
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {expenses.slice(0, 3).map((exp) => (
+                      <Link
+                        key={exp.id}
+                        href={`/projects/${projectId}/expenses/${exp.id}`}
+                        className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)] min-h-[44px]"
+                      >
+                        <span className="text-sm truncate text-stone-800">
+                          {exp.title}
+                        </span>
+                        <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-primary)' }}>
+                          {formatCurrency(exp.amount, exp.currency)}
+                        </span>
+                      </Link>
+                    ))}
+                    {expenses.length > 3 && (
+                      <p className="text-xs pt-1 pl-3 text-stone-400">
+                        +{expenses.length - 3} more
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                {expenses.slice(0, 3).map((exp) => (
-                  <Link
-                    key={exp.id}
-                    href={`/projects/${projectId}/expenses/${exp.id}`}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)] min-h-[44px]"
-                  >
-                    <span className="text-sm truncate text-stone-800">
-                      {exp.title}
-                    </span>
-                    <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-primary)' }}>
-                      {formatCurrency(exp.amount, exp.currency)}
-                    </span>
-                  </Link>
-                ))}
-                {expenses.length > 3 && (
-                  <p className="text-xs pt-1 pl-3 text-stone-400">
-                    +{expenses.length - 3} more
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }

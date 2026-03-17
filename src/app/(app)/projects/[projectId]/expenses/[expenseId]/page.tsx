@@ -21,7 +21,7 @@ export default async function ExpenseDetailPage({
   params: Promise<{ projectId: string; expenseId: string }>;
 }) {
   const { projectId, expenseId } = await params;
-  await requireSession();
+  const user = await requireSession();
 
   const [project, role, expense] = await Promise.all([
     getProject(projectId),
@@ -38,6 +38,8 @@ export default async function ExpenseDetailPage({
       expense={expense}
       projectId={projectId}
       projectTitle={project.title}
+      currentUserId={user.id}
+      role={role}
     />
   );
 }
