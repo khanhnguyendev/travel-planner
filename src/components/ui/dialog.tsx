@@ -27,9 +27,9 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 sm:pt-16">
         <div
-          className={`relative w-full ${maxWidth} rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[95dvh] sm:max-h-[85dvh]`}
+          className={`relative w-full ${maxWidth} rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[95dvh] sm:max-h-[92dvh]`}
           style={{ backgroundColor: 'var(--color-bg)' }}
           role="dialog"
           aria-modal="true"
