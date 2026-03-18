@@ -237,7 +237,7 @@ export default async function TripDetailPage({
     <div className="animate-in fade-in duration-300">
       {/* Cover image strip */}
       {canManage ? (
-        <div className="mb-6 rounded-2xl overflow-hidden">
+        <div className="mb-6 rounded-2xl overflow-hidden group">
           <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
         </div>
       ) : trip.cover_image_url ? (

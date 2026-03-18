@@ -50,7 +50,19 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
           </div>
         </div>
       ) : (
-        <div className="h-1.5 rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, #5EEAD4 100%)' }} />
+        /* Gradient header with initials when no cover */
+        <div
+          className="relative h-24 flex items-center px-5 rounded-t-[1.25rem] overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #0D9488 0%, #0891B2 60%, #6366F1 100%)' }}
+        >
+          {/* Decorative circle */}
+          <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-20" style={{ background: 'white' }} />
+          <div className="absolute -right-2 bottom-0 w-16 h-16 rounded-full opacity-10" style={{ background: 'white' }} />
+          {/* Initials */}
+          <span className="relative text-3xl font-black tracking-tight text-white/90 leading-none select-none">
+            {trip.title.charAt(0).toUpperCase()}
+          </span>
+        </div>
       )}
 
       <div className="p-4 space-y-3">

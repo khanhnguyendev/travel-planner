@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, X } from 'lucide-react';
 import { updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
@@ -13,6 +13,7 @@ interface CoverImageUploadProps {
 export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentCoverUrl ?? null);
   const loadingToast = useLoadingToast();
 
@@ -24,15 +25,10 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
     const resolve = loadingToast('Uploading cover image…');
 
     try {
-      // 1. Get signed URL
       const res = await fetch('/api/uploads/cover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tripId,
-          filename: file.name,
-          contentType: file.type,
-        }),
+        body: JSON.stringify({ tripId, filename: file.name, contentType: file.type }),
       });
 
       const json = (await res.json()) as {
@@ -48,22 +44,15 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
 
       const { uploadUrl, coverPath } = json.data;
 
-      // 2. Upload to signed URL
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
         body: file,
       });
 
-      if (!uploadRes.ok) {
-        resolve('Upload failed', 'error');
-        return;
-      }
+      if (!uploadRes.ok) { resolve('Upload failed', 'error'); return; }
 
-      // 3. Build public URL and save to trip
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/covers/${coverPath}`;
-
+      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/covers/${coverPath}`;
       const result = await updateTrip(tripId, { cover_image_url: publicUrl });
 
       if (result.ok) {
@@ -76,62 +65,63 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
       resolve('Upload failed', 'error');
     } finally {
       setUploading(false);
-      // Reset input so the same file can be re-selected
       if (inputRef.current) inputRef.current.value = '';
     }
   }
 
+  async function handleRemove(e: React.MouseEvent) {
+    e.stopPropagation();
+    setRemoving(true);
+    const resolve = loadingToast('Removing cover image…');
+    try {
+      const result = await updateTrip(tripId, { cover_image_url: null });
+      if (result.ok) {
+        setPreviewUrl(null);
+        resolve('Cover image removed', 'success');
+      } else {
+        resolve(result.error ?? 'Failed to remove cover image', 'error');
+      }
+    } catch {
+      resolve('Failed to remove cover image', 'error');
+    } finally {
+      setRemoving(false);
+    }
+  }
+
+  const busy = uploading || removing;
+
   return (
     <div className="relative">
-      {/* Cover strip */}
       <div
         className="w-full flex items-center justify-center cursor-pointer group"
         style={{ height: 200, backgroundColor: previewUrl ? undefined : 'var(--color-bg-subtle)' }}
-        onClick={() => !uploading && inputRef.current?.click()}
+        onClick={() => !busy && inputRef.current?.click()}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (!uploading) inputRef.current?.click();
-          }
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!busy) inputRef.current?.click(); }
         }}
         aria-label="Upload cover image"
       >
-        {previewUrl ? (
+        {previewUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={previewUrl}
-            alt="Cover"
-            className="w-full h-full object-cover"
-          />
-        ) : null}
+          <img src={previewUrl} alt="Cover" className="w-full h-full object-cover" />
+        )}
 
-        {/* Overlay */}
+        {/* Hover overlay */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-center transition-opacity"
-          style={{
-            backgroundColor: previewUrl
-              ? 'rgba(0,0,0,0.35)'
-              : 'transparent',
-            opacity: uploading ? 1 : undefined,
-          }}
+          style={{ backgroundColor: previewUrl ? 'rgba(0,0,0,0.35)' : 'transparent', opacity: busy ? 1 : undefined }}
         >
-          {uploading ? (
+          {busy ? (
             <Loader2 className="w-8 h-8 text-white animate-spin" />
           ) : (
             <div
               className="flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
               style={{ opacity: previewUrl ? undefined : 1 }}
             >
-              <Camera
-                className="w-8 h-8"
-                style={{ color: previewUrl ? 'white' : 'var(--color-text-subtle)' }}
-              />
-              <span
-                className="text-sm font-medium"
-                style={{ color: previewUrl ? 'white' : 'var(--color-text-muted)' }}
-              >
+              <Camera className="w-8 h-8" style={{ color: previewUrl ? 'white' : 'var(--color-text-subtle)' }} />
+              <span className="text-sm font-medium" style={{ color: previewUrl ? 'white' : 'var(--color-text-muted)' }}>
                 {previewUrl ? 'Change cover' : 'Add cover image'}
               </span>
             </div>
@@ -139,13 +129,21 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
         </div>
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      {/* Remove button — only shown when a cover exists */}
+      {previewUrl && !busy && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-red-600 opacity-0 group-hover:opacity-100"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)', color: 'white' }}
+          aria-label="Remove cover image"
+        >
+          <X className="w-3.5 h-3.5" />
+          Remove
+        </button>
+      )}
+
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
     </div>
   );
 }
