@@ -15,7 +15,7 @@ import { Avatar } from '@/components/ui/avatar';
 interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
   tripId: string;
-  projectTitle?: string;
+  tripTitle?: string;
   currentUserId: string;
   role: TripRole;
 }
@@ -128,7 +128,7 @@ function SplitRow({
 export function ExpenseDetail({
   expense,
   tripId,
-  projectTitle,
+  tripTitle,
   currentUserId,
   role,
 }: ExpenseDetailProps) {
@@ -210,7 +210,7 @@ export function ExpenseDetail({
         title={expense.title}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: projectTitle ?? 'Trip', href: `/trips/${tripId}` },
+          { label: tripTitle ?? 'Trip', href: `/trips/${tripId}` },
           { label: 'Expenses', href: `/trips/${tripId}/expenses` },
           { label: expense.title },
         ]}

@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ProjectDetailLoading() {
+export default function TripDetailLoading() {
   return (
     <div className="space-y-6">
       {/* Back link skeleton */}

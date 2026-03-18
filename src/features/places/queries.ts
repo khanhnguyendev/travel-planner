@@ -66,7 +66,7 @@ export async function getPlace(id: string): Promise<PlaceWithReviews | null> {
   };
 }
 
-export async function getCommentsByProjectId(
+export async function getCommentsByTripId(
   tripId: string
 ): Promise<PlaceComment[]> {
   const supabase = await createClient();
@@ -77,7 +77,7 @@ export async function getCommentsByProjectId(
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('getCommentsByProjectId error:', error);
+    console.error('getCommentsByTripId error:', error);
     return [];
   }
   return (data ?? []) as PlaceComment[];

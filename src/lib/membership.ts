@@ -10,7 +10,7 @@ const EDITOR_ROLES: TripRole[] = ['owner', 'admin', 'editor'];
 /**
  * Returns the user's accepted role in a trip, or null if not a member.
  */
-export async function getProjectRole(
+export async function getTripRole(
   tripId: string,
   userId: string
 ): Promise<TripRole | null> {
@@ -33,7 +33,7 @@ export async function requireMember(
   tripId: string,
   userId: string
 ): Promise<TripRole | null> {
-  return getProjectRole(tripId, userId);
+  return getTripRole(tripId, userId);
 }
 
 /**
@@ -44,7 +44,7 @@ export async function requireEditor(
   tripId: string,
   userId: string
 ): Promise<TripRole | null> {
-  const role = await getProjectRole(tripId, userId);
+  const role = await getTripRole(tripId, userId);
   if (!role || !EDITOR_ROLES.includes(role)) return null;
   return role;
 }

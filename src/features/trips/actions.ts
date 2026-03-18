@@ -11,7 +11,7 @@ import type { Trip } from '@/lib/types';
 // Schemas
 // -------------------------------------------------------
 
-const createProjectSchema = z.object({
+const createTripSchema = z.object({
   title: z.string().min(1, 'Title is required').max(120),
   description: z.string().max(500).optional(),
   visibility: z.enum(['private', 'public']).default('private'),
@@ -34,7 +34,7 @@ export async function createTrip(
   budget?: number | null,
   budgetCurrency?: string
 ): Promise<ActionResult<{ tripId: string }>> {
-  const parsed = createProjectSchema.safeParse({
+  const parsed = createTripSchema.safeParse({
     title,
     description,
     visibility,
@@ -74,7 +74,7 @@ export async function createTrip(
     return { ok: false, error: 'Failed to initialize profile' };
   }
 
-  const { data: trip, error: projectError } = await admin
+  const { data: trip, error: tripError } = await admin
     .from('trips')
     .insert({
       owner_user_id: user.id,
@@ -89,8 +89,8 @@ export async function createTrip(
     .select('id')
     .single();
 
-  if (projectError || !trip) {
-    console.error('createTrip error:', projectError);
+  if (tripError || !trip) {
+    console.error('createTrip error:', tripError);
     return { ok: false, error: 'Failed to create trip' };
   }
 
@@ -168,10 +168,10 @@ export async function updateTrip(
 }
 
 // -------------------------------------------------------
-// updateProjectBudget
+// updateTripBudget
 // -------------------------------------------------------
 
-export async function updateProjectBudget(
+export async function updateTripBudget(
   tripId: string,
   budget: number | null,
   budgetCurrency: string,
@@ -207,7 +207,7 @@ export async function updateProjectBudget(
     .eq('id', tripId);
 
   if (error) {
-    console.error('updateProjectBudget error:', error);
+    console.error('updateTripBudget error:', error);
     return { ok: false, error: 'Failed to update budget' };
   }
 
@@ -217,10 +217,10 @@ export async function updateProjectBudget(
 }
 
 // -------------------------------------------------------
-// archiveProject
+// archiveTrip
 // -------------------------------------------------------
 
-export async function archiveProject(
+export async function archiveTrip(
   tripId: string
 ): Promise<ActionResult> {
   const supabase = await createClient();
@@ -253,7 +253,7 @@ export async function archiveProject(
     .eq('id', tripId);
 
   if (error) {
-    console.error('archiveProject error:', error);
+    console.error('archiveTrip error:', error);
     return { ok: false, error: 'Failed to archive trip' };
   }
 

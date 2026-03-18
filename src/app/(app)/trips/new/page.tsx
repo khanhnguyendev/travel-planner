@@ -1,5 +1,5 @@
 import { requireSession } from '@/features/auth/session';
-import ProjectCreateForm from './trip-create-form';
+import TripCreateForm from './trip-create-form';
 import { PageHeader } from '@/components/ui/page-header';
 import type { Metadata } from 'next';
 
@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Tạo chuyến đi mới',
 };
 
-export default async function NewProjectPage() {
+export default async function NewTripPage() {
   await requireSession();
 
   return (
@@ -24,7 +24,7 @@ export default async function NewProjectPage() {
         <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
           Give your trip a name and invite your crew when you&apos;re ready.
         </p>
-        <ProjectCreateForm />
+        <TripCreateForm />
       </div>
     </div>
   );

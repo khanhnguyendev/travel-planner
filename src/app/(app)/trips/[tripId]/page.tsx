@@ -16,7 +16,7 @@ import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
-import { getPlaces, getCommentsByProjectId } from '@/features/places/queries';
+import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { createClient } from '@/lib/supabase/server';
@@ -137,7 +137,7 @@ function TabBar({
 // Page
 // -------------------------------------------------------
 
-export default async function ProjectDetailPage({
+export default async function TripDetailPage({
   params,
   searchParams,
 }: {
@@ -194,7 +194,7 @@ export default async function ProjectDetailPage({
           );
         return data ?? [];
       })(),
-      getCommentsByProjectId(tripId),
+      getCommentsByTripId(tripId),
       getExpensesWithSplits(tripId),
       getTripActivity(tripId),
     ]);

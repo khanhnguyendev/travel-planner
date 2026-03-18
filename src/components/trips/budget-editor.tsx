@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { updateProjectBudget } from '@/features/trips/actions';
+import { updateTripBudget } from '@/features/trips/actions';
 import { formatCurrency } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 
@@ -49,7 +49,7 @@ export function BudgetEditor({
     }
     setPending(true);
     setError(null);
-    const result = await updateProjectBudget(tripId, parsed ?? null, currency, parsed ? payerUserId : null);
+    const result = await updateTripBudget(tripId, parsed ?? null, currency, parsed ? payerUserId : null);
     setPending(false);
     if (!result.ok) {
       setError(result.error);

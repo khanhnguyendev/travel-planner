@@ -96,13 +96,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('not_found', 'Place not found in this trip', 404);
   }
 
-  const { data: projectData } = await supabase
+  const { data: tripData } = await supabase
     .from('trips')
     .select('*')
     .eq('id', tripId)
     .single();
 
-  const trip = projectData as Trip | null;
+  const trip = tripData as Trip | null;
   if (trip?.status === 'archived') {
     return errorResponse('forbidden', 'Cannot vote on an archived trip', 403);
   }
@@ -179,7 +179,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
 
   const { tripId, placeId } = parsed.data;
 
-  const [{ data: membershipData }, { data: projectData }] = await Promise.all([
+  const [{ data: membershipData }, { data: tripData }] = await Promise.all([
     supabase
       .from('trip_members')
       .select('*')
@@ -191,7 +191,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
   ]);
 
   const membership = membershipData as TripMember | null;
-  const trip = projectData as Trip | null;
+  const trip = tripData as Trip | null;
 
   if (!membership) {
     return errorResponse('forbidden', 'Not a member of this trip', 403);

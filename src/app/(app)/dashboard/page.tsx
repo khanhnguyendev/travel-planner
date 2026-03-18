@@ -62,7 +62,7 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-async function ProjectCard({ trip }: { trip: TripWithRole }) {
+async function TripCard({ trip }: { trip: TripWithRole }) {
   const members = await getMembers(trip.id);
   const hasCover = !!trip.cover_image_url;
 
@@ -168,7 +168,7 @@ export default async function DashboardPage() {
         action={newTripButton}
       />
 
-      {/* Projects grid */}
+      {/* Trips grid */}
       {trips.length === 0 ? (
         <div
           className="card flex flex-col items-center justify-center py-20 text-center"
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {trips.map((trip) => (
-            <ProjectCard key={trip.id} trip={trip} />
+            <TripCard key={trip.id} trip={trip} />
           ))}
         </div>
       )}

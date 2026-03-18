@@ -37,7 +37,7 @@ export default async function ExpenseDetailPage({
     <ExpenseDetail
       expense={expense}
       tripId={tripId}
-      projectTitle={trip.title}
+      tripTitle={trip.title}
       currentUserId={user.id}
       role={role}
     />

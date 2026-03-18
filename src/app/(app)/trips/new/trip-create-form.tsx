@@ -6,7 +6,7 @@ import { Camera, Loader2, X } from 'lucide-react';
 import { createTrip, updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
-export default function ProjectCreateForm() {
+export default function TripCreateForm() {
   const router = useRouter();
 
   const [title, setTitle] = useState('');

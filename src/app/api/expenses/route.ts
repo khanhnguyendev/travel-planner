@@ -107,13 +107,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Check trip is active
-  const { data: projectData } = await admin
+  const { data: tripData } = await admin
     .from('trips')
     .select('status')
     .eq('id', tripId)
     .single();
 
-  if ((projectData as { status: string } | null)?.status === 'archived') {
+  if ((tripData as { status: string } | null)?.status === 'archived') {
     return errorResponse('forbidden', 'Cannot add expenses to an archived trip', 403);
   }
 
