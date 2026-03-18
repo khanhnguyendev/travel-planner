@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Tag, Receipt, X, Sparkles, MapPinned, Clock3 } from 'lucide-react';
+import { Plus, Tag, Receipt, X, MapPinned, Clock3 } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -176,16 +176,9 @@ export function PlacesSection({
         <div className="relative flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-xl">
-              <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
-                <Sparkles className="h-3.5 w-3.5" />
-                Collaborative picks
-              </p>
               <h2 className="text-xl font-semibold leading-tight text-white section-title md:text-2xl">
                 Places, votes, and notes all stay in one planning lane.
               </h2>
-              <p className="mt-2 hidden text-sm leading-relaxed text-white/78 md:block md:text-base">
-                Search fast, sort the shortlist, and keep the group moving from ideas to a shared itinerary.
-              </p>
             </div>
 
             {editor && (
@@ -284,9 +277,6 @@ export function PlacesSection({
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
               Filter and focus
             </p>
-            <h3 className="mt-1 text-base font-semibold section-title sm:text-lg" style={{ color: 'var(--color-text)' }}>
-              Search, sort, and narrow the shortlist
-            </h3>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>

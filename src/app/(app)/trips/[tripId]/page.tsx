@@ -13,7 +13,6 @@ import {
   Info,
   MapPin,
   Activity,
-  BedDouble,
   Sparkles,
   Coins,
   Clock3,
@@ -103,29 +102,75 @@ function getTripPhase(trip: { start_date: string | null; end_date: string | null
   return 'Planning';
 }
 
-function getTopPick(places: Place[], summaries: Array<{ placeId: string; upvotes: number; downvotes: number }>) {
-  const summaryMap = new Map(summaries.map((entry) => [entry.placeId, entry]));
-  return [...places]
-    .map((place) => {
-      const summary = summaryMap.get(place.id);
-      return {
-        place,
-        score: (summary?.upvotes ?? 0) - (summary?.downvotes ?? 0),
-        activity: (summary?.upvotes ?? 0) + (summary?.downvotes ?? 0),
-      };
-    })
-    .filter((entry) => entry.activity > 0)
-    .sort((a, b) => b.score - a.score)[0] ?? null;
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function getNextStop(places: Place[]) {
-  return [...places]
+function timeToMinutes(value: string | null, fallback: number) {
+  if (!value) return fallback;
+  const [hours, minutes] = value.split(':').map((part) => Number(part));
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return fallback;
+  return (hours * 60) + minutes;
+}
+
+function getStopPointers(places: Place[]) {
+  const scheduledPlaces = [...places]
     .filter((place) => place.visit_date)
     .sort((a, b) => {
       const aValue = `${a.visit_date ?? ''}-${a.visit_time_from ?? '99:99'}`;
       const bValue = `${b.visit_date ?? ''}-${b.visit_time_from ?? '99:99'}`;
       return aValue.localeCompare(bValue);
-    })[0] ?? null;
+    });
+
+  if (scheduledPlaces.length === 0) {
+    return { previous: null, current: null, next: null };
+  }
+
+  const now = new Date();
+  const todayKey = getLocalDateKey(now);
+  const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+
+  const activeTodayIndex = scheduledPlaces.findIndex((place) => {
+    if (place.visit_date !== todayKey) return false;
+    const start = timeToMinutes(place.visit_time_from, 0);
+    const end = timeToMinutes(place.visit_time_to, place.visit_time_from ? start + 90 : (24 * 60));
+    return currentMinutes >= start && currentMinutes <= end;
+  });
+
+  const firstTodayIndex = scheduledPlaces.findIndex((place) => place.visit_date === todayKey);
+  const currentIndex = activeTodayIndex !== -1 ? activeTodayIndex : firstTodayIndex;
+
+  if (currentIndex !== -1) {
+    return {
+      previous: currentIndex > 0 ? scheduledPlaces[currentIndex - 1] : null,
+      current: scheduledPlaces[currentIndex],
+      next: currentIndex < scheduledPlaces.length - 1 ? scheduledPlaces[currentIndex + 1] : null,
+    };
+  }
+
+  const nextIndex = scheduledPlaces.findIndex((place) => {
+    if (!place.visit_date) return false;
+    if (place.visit_date > todayKey) return true;
+    if (place.visit_date < todayKey) return false;
+    return timeToMinutes(place.visit_time_from, 24 * 60) > currentMinutes;
+  });
+
+  if (nextIndex === -1) {
+    return {
+      previous: scheduledPlaces[scheduledPlaces.length - 1],
+      current: null,
+      next: null,
+    };
+  }
+
+  return {
+    previous: nextIndex > 0 ? scheduledPlaces[nextIndex - 1] : null,
+    current: null,
+    next: scheduledPlaces[nextIndex],
+  };
 }
 
 function SnapshotPill({
@@ -298,12 +343,7 @@ export default async function TripDetailPage({
   }));
 
   const tripPhase = getTripPhase(trip);
-  const topPick = getTopPick(places, voteSummaries);
-  const nextStop = getNextStop(places);
-  const accommodationCategoryIds = new Set(
-    categories.filter((category) => category.category_type === 'accommodation').map((category) => category.id)
-  );
-  const accommodationPlaces = places.filter((place) => accommodationCategoryIds.has(place.category_id));
+  const stopPointers = getStopPointers(places);
   const scheduledPlaces = places.filter((place) => place.visit_date);
   const totalsByCurrency: Record<string, number> = {};
   for (const expense of expenses) {
@@ -426,24 +466,24 @@ export default async function TripDetailPage({
 
           <div className="flex flex-wrap gap-2">
             <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
-              <Sparkles className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>Top pick:</span>
+              <MapPin className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+              <span style={{ color: 'var(--color-text-muted)' }}>Previous stop:</span>
               <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                {topPick ? `${topPick.place.name} (${topPick.score > 0 ? '+' : ''}${topPick.score})` : 'No votes yet'}
+                {stopPointers.previous?.name ?? 'None yet'}
               </span>
             </span>
             <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
               <Clock3 className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>Next stop:</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>Current:</span>
               <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                {nextStop ? nextStop.name : 'Not scheduled'}
+                {stopPointers.current?.name ?? (scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled')}
               </span>
             </span>
             <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
-              <BedDouble className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>Stay:</span>
+              <MapPin className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+              <span style={{ color: 'var(--color-text-muted)' }}>Next stop:</span>
               <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                {accommodationPlaces[0]?.name ?? 'Not set'}
+                {stopPointers.next?.name ?? (scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled')}
               </span>
             </span>
           </div>
