@@ -58,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         {/* Top nav — glassmorphism */}
         <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'rgba(229,231,235,0.6)' }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr]">
 
             {/* Logo */}
             <div className="flex items-center gap-6">
