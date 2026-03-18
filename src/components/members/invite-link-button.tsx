@@ -6,9 +6,12 @@ import { generateInviteLink } from '@/features/members/actions';
 import type { TripRole } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
 import { Dialog } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface InviteLinkButtonProps {
   tripId: string;
+  label?: string;
+  className?: string;
 }
 
 const ROLES: { value: TripRole; label: string; description: string }[] = [
@@ -17,7 +20,11 @@ const ROLES: { value: TripRole; label: string; description: string }[] = [
   { value: 'admin', label: 'Admin', description: 'Can manage members and settings' },
 ];
 
-export function InviteLinkButton({ tripId }: InviteLinkButtonProps) {
+export function InviteLinkButton({
+  tripId,
+  label = 'Invite link',
+  className,
+}: InviteLinkButtonProps) {
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState<TripRole>('editor');
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
@@ -56,16 +63,20 @@ export function InviteLinkButton({ tripId }: InviteLinkButtonProps) {
     <>
       <button
         onClick={handleOpen}
-        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-colors min-h-[36px]"
+        className={cn('inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-colors min-h-[36px]', className)}
         style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
       >
         <UserPlus className="w-3.5 h-3.5" />
-        Invite
+        {label}
       </button>
 
       {open && (
-        <Dialog title="Invite via link" onClose={() => setOpen(false)} maxWidth="max-w-sm">
+        <Dialog title="Share invite link" onClose={() => setOpen(false)} maxWidth="max-w-sm">
           <div className="space-y-5">
+            <div className="rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+              Invite links are the only sharing method right now. Generate a link, then send it manually in chat or any messaging app.
+            </div>
+
             {/* Role selector */}
             <div>
               <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
@@ -106,7 +117,7 @@ export function InviteLinkButton({ tripId }: InviteLinkButtonProps) {
               style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-              Generate invite link
+              Generate shareable link
             </button>
 
             {/* Link display */}
@@ -131,7 +142,7 @@ export function InviteLinkButton({ tripId }: InviteLinkButtonProps) {
                   </button>
                 </div>
                 <p className="text-xs text-stone-400">
-                  Link expires in 7 days. Anyone with it can join as <span className="font-medium capitalize">{role}</span>.
+                  Link expires in 7 days. Anyone with it can join as <span className="font-medium capitalize">{role}</span>. Copy it and share it manually.
                 </p>
               </div>
             )}

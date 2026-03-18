@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, X } from 'lucide-react';
+import { Mail, Link2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 import { revokeInvite } from '@/features/members/actions';
@@ -38,8 +38,12 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
   const [revoking, setRevoking] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
 
-  async function handleRevoke(inviteId: string, email: string) {
-    const confirmed = window.confirm(`Revoke invite for ${email}?`);
+  function isLinkInvite(email: string) {
+    return email.startsWith('link-invite-') && email.endsWith('@noemail.local');
+  }
+
+  async function handleRevoke(inviteId: string, label: string) {
+    const confirmed = window.confirm(`Revoke ${label}?`);
     if (!confirmed) return;
 
     setRevoking(inviteId);
@@ -70,6 +74,8 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
         const isRevoking = revoking === invite.id;
         const expiresAt = new Date(invite.expires_at);
         const role = invite.role as TripRole;
+        const linkInvite = isLinkInvite(invite.email);
+        const label = linkInvite ? 'this invite link' : `invite for ${invite.email}`;
 
         return (
           <div
@@ -80,14 +86,18 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
             )}
             style={{ backgroundColor: 'var(--color-bg-subtle)' }}
           >
-            <Mail className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+            {linkInvite ? (
+              <Link2 className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+            ) : (
+              <Mail className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+            )}
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
-                {invite.email}
+                {linkInvite ? 'Invite link' : invite.email}
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                Expires {expiresAt.toLocaleDateString()}
+                {role} access · Expires {expiresAt.toLocaleDateString()}
               </p>
             </div>
 
@@ -109,7 +119,7 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
             {canManage && (
               <button
                 type="button"
-                onClick={() => handleRevoke(invite.id, invite.email)}
+                onClick={() => handleRevoke(invite.id, label)}
                 disabled={isRevoking}
                 title="Revoke invite"
                 className="p-1.5 rounded-lg transition-colors hover:bg-red-50 disabled:opacity-50 flex-shrink-0"

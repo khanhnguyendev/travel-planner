@@ -6,7 +6,7 @@ import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers, getPendingInvites } from '@/features/members/queries';
 import { PageHeader } from '@/components/ui/page-header';
 import { MemberList } from '@/components/members/member-list';
-import { InviteForm } from '@/components/members/invite-form';
+import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { PendingInvitesList } from '@/components/members/pending-invites-list';
 import type { Metadata } from 'next';
 
@@ -72,21 +72,34 @@ export default async function MembersPage({
       />
 
       <div className="space-y-6">
-        {/* Invite form — owner/admin only */}
+        {/* Invite link — owner/admin only */}
         {canManage && (
           <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-primary-light)' }}
-              >
-                <Users className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--color-primary-light)' }}
+                >
+                  <Users className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
+                    Share invite link
+                  </h2>
+                  <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
+                    Generate a link and send it manually. Email invites are not enabled yet.
+                  </p>
+                </div>
               </div>
-              <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
-                Invite someone
-              </h2>
+              <InviteLinkButton tripId={tripId} />
             </div>
-            <InviteForm tripId={tripId} />
+            <div
+              className="rounded-xl px-4 py-3 text-sm"
+              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+            >
+              Invite links expire after 7 days. You can create separate links for viewers, editors, or admins.
+            </div>
           </div>
         )}
 
@@ -94,7 +107,7 @@ export default async function MembersPage({
         {canManage && (
           <div className="card p-6">
             <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
-              Pending invites
+              Active invite links
               {pendingInvites.length > 0 && (
                 <span
                   className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600"
