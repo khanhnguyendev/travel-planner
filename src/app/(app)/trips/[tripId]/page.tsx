@@ -214,6 +214,21 @@ function formatSnapshotDate(value: string | null) {
   });
 }
 
+function getTripDurationLabel(startDate: string | null, endDate: string | null) {
+  if (!startDate || !endDate) return null;
+
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const nights = Math.max(0, Math.round((end.getTime() - start.getTime()) / msPerDay));
+  const days = nights + 1;
+
+  const dayLabel = `${days} day${days === 1 ? '' : 's'}`;
+  const nightLabel = `${nights} night${nights === 1 ? '' : 's'}`;
+
+  return `${dayLabel} · ${nightLabel}`;
+}
+
 function getBalancePresentation(net: number, currency: string) {
   if (Math.abs(net) < 0.01) {
     return {
@@ -490,6 +505,7 @@ export default async function TripDetailPage({
   const tripPhase = getTripPhase(trip);
   const stopPointers = getStopPointers(places);
   const scheduledPlaces = places.filter((place) => place.visit_date);
+  const tripDurationLabel = getTripDurationLabel(trip.start_date, trip.end_date);
   const placeNameById = Object.fromEntries(places.map((place) => [place.id, place.name]));
   const placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]> = {};
   for (const expense of expensesWithSplits) {
@@ -633,9 +649,19 @@ export default async function TripDetailPage({
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 <div className="rounded-[1.2rem] bg-white/70 px-3 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                    Planning dates
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                      Planning dates
+                    </p>
+                    {tripDurationLabel && (
+                      <span
+                        className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold shadow-sm"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {tripDurationLabel}
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                     <div className="mini-stat flex min-w-0 items-center gap-3 overflow-hidden px-3 py-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
