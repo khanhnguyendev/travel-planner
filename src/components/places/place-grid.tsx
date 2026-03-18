@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MapPin, Plus } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { PlaceCard } from './place-card';
 import { extractLocationTag } from '@/lib/address';
 import { PlaceDetailDrawer } from './place-detail-drawer';
@@ -18,12 +18,14 @@ interface PlaceGridProps {
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]>;
   nextPlaceId: string | null;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
   canVote: boolean;
   canComment: boolean;
+  showExpenseHistory?: boolean;
   canEdit?: boolean;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
@@ -44,12 +46,14 @@ export function PlaceGrid({
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
+  placeExpensesByPlaceId,
   nextPlaceId,
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
   canVote,
   canComment,
+  showExpenseHistory = false,
   canEdit = false,
   tripStartDate,
   tripEndDate,
@@ -181,6 +185,7 @@ export function PlaceGrid({
                         voteSummary={voteSummaryMap[place.id] ?? null}
                         userVote={userVoteMap[place.id] ?? null}
                         comments={commentsByPlaceId[place.id] ?? []}
+                        placeExpenses={placeExpensesByPlaceId[place.id] ?? []}
                         canVote={!selectMode && canVote}
                         isNext={place.id === nextPlaceId}
                         onClick={selectMode ? () => onToggleSelect?.(place.id) : () => setOpenPlaceId(place.id)}
@@ -207,8 +212,10 @@ export function PlaceGrid({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          placeExpenses={placeExpensesByPlaceId[openPlace.id] ?? []}
           canVote={canVote}
           canComment={canComment}
+          showExpenseHistory={showExpenseHistory}
           allPlaces={places}
           canEdit={canEdit}
           tripStartDate={tripStartDate}

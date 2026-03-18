@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Map, Navigation, Send, Trash2, MessageCircle, NotebookPen, AlertTriangle } from 'lucide-react';
-import type { Place, PlaceReview, Category, PlaceVote, PlaceComment } from '@/lib/types';
+import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Send, Trash2, MessageCircle, NotebookPen, AlertTriangle, Receipt } from 'lucide-react';
+import type { Place, PlaceReview, Category, PlaceVote, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
@@ -10,6 +10,8 @@ import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComme
 import type { ConflictingPlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
+import { PlaceMapLinks } from '@/components/places/place-map-links';
+import { PlaceExpenseHistory } from '@/components/places/place-expense-history';
 
 interface PlaceDetailDrawerProps {
   place: Place;
@@ -21,8 +23,10 @@ interface PlaceDetailDrawerProps {
   tripId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
+  placeExpenses?: PlaceExpenseHistoryEntry[];
   canVote?: boolean;
   canComment?: boolean;
+  showExpenseHistory?: boolean;
   allPlaces?: Place[];
   canEdit?: boolean;
   tripStartDate?: string | null;
@@ -486,20 +490,6 @@ function CommentsSection({
   );
 }
 
-function googleMapsUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) {
-    return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
-  }
-  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`;
-}
-
-function vietmapUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) {
-    return `https://maps.vietmap.vn/?q=${place.lat},${place.lng}`;
-  }
-  return `https://maps.vietmap.vn/?q=${encodeURIComponent(place.name)}`;
-}
-
 export function PlaceDetailDrawer({
   place,
   reviews,
@@ -510,8 +500,10 @@ export function PlaceDetailDrawer({
   tripId,
   voteSummary,
   userVote,
+  placeExpenses = [],
   canVote = true,
   canComment = true,
+  showExpenseHistory = false,
   allPlaces = [],
   canEdit = false,
   tripStartDate,
@@ -604,27 +596,7 @@ export function PlaceDetailDrawer({
                 {place.address}
               </p>
             )}
-            {/* Map buttons */}
-            <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <a
-                href={googleMapsUrl(place)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium"
-              >
-                <Map className="w-3.5 h-3.5" />
-                Google Maps
-              </a>
-              <a
-                href={vietmapUrl(place)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors font-medium"
-              >
-                <Navigation className="w-3.5 h-3.5" />
-                Vietmap
-              </a>
-            </div>
+            <PlaceMapLinks place={place} className="mt-3 flex-wrap" />
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -696,6 +668,20 @@ export function PlaceDetailDrawer({
                 {!canEdit && <span className="font-normal normal-case text-stone-300">(editor only)</span>}
               </h3>
               <NoteEditor place={place} canEdit={canEdit} />
+            </div>
+          )}
+
+          {showExpenseHistory && (
+            <div>
+              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400">
+                <Receipt className="h-3.5 w-3.5" />
+                Place expenses {placeExpenses.length > 0 && `(${placeExpenses.length})`}
+              </h3>
+              <PlaceExpenseHistory
+                tripId={tripId}
+                expenses={placeExpenses}
+                emptyLabel="No expenses are linked to this place yet."
+              />
             </div>
           )}
 

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { BedDouble, CalendarDays, Map, Navigation, Pencil, Check, X } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import { BedDouble, CalendarDays, Pencil, Check, X } from 'lucide-react';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { updatePlaceSchedule } from '@/features/places/actions';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { useLoadingToast } from '@/components/ui/toast';
+import { PlaceMapLinks } from '@/components/places/place-map-links';
+import { PlaceExpenseSummary } from '@/components/places/place-expense-summary';
 
 interface AccommodationSectionProps {
   places: Place[];
@@ -19,6 +21,7 @@ interface AccommodationSectionProps {
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]>;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   tripStartDate?: string | null;
@@ -29,16 +32,6 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
     weekday: 'short', month: 'short', day: 'numeric',
   });
-}
-
-function googleMapsUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
-  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`;
-}
-
-function vietmapUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) return `https://maps.vietmap.vn/?q=${place.lat},${place.lng}`;
-  return `https://maps.vietmap.vn/?q=${encodeURIComponent(place.name)}`;
 }
 
 function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
@@ -137,10 +130,12 @@ function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
 
 function AccommodationCard({
   place,
+  placeExpenses,
   canEdit,
   onClick,
 }: {
   place: Place;
+  placeExpenses: PlaceExpenseHistoryEntry[];
   canEdit: boolean;
   onClick: () => void;
 }) {
@@ -165,27 +160,13 @@ function AccommodationCard({
         <DatesEditor place={place} canEdit={canEdit} />
       </div>
 
+      {placeExpenses.length > 0 && (
+        <PlaceExpenseSummary expenses={placeExpenses} />
+      )}
+
       {/* Direction buttons */}
       <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }} onClick={(e) => e.stopPropagation()}>
-        <a
-          href={googleMapsUrl(place)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium"
-        >
-          <Map className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Google Maps</span>
-          <span className="sm:hidden">Maps</span>
-        </a>
-        <a
-          href={vietmapUrl(place)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors font-medium"
-        >
-          <Navigation className="w-3.5 h-3.5" />
-          Vietmap
-        </a>
+        <PlaceMapLinks place={place} />
       </div>
     </div>
   );
@@ -202,6 +183,7 @@ export function AccommodationSection({
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
+  placeExpensesByPlaceId,
   commentsByPlaceId,
   commentAuthors,
   tripStartDate,
@@ -251,6 +233,7 @@ export function AccommodationSection({
             <AccommodationCard
               key={place.id}
               place={place}
+              placeExpenses={placeExpensesByPlaceId[place.id] ?? []}
               canEdit={canEdit}
               onClick={() => setOpenPlaceId(place.id)}
             />
@@ -269,8 +252,10 @@ export function AccommodationSection({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          placeExpenses={placeExpensesByPlaceId[openPlace.id] ?? []}
           canVote={canVote}
           canComment={canComment}
+          showExpenseHistory={canComment}
           allPlaces={places}
           canEdit={canEdit}
           tripStartDate={tripStartDate}

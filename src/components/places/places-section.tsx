@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Plus, Tag, X, Trash2, CheckSquare } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { AddPlaceForm } from '@/components/places/add-place-form';
@@ -22,6 +22,7 @@ interface PlacesSectionProps {
   initialVoteSummaries: VoteSummaryEntry[];
   initialUserVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]>;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
@@ -51,6 +52,7 @@ export function PlacesSection({
   initialVoteSummaries,
   initialUserVotes,
   reviewsByPlaceId: initialReviewsByPlaceId,
+  placeExpensesByPlaceId,
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
@@ -329,12 +331,14 @@ export function PlacesSection({
         voteSummaries={voteSummaries}
         userVotes={userVotes}
         reviewsByPlaceId={reviewsByPlaceId}
+        placeExpensesByPlaceId={placeExpensesByPlaceId}
         nextPlaceId={nextPlaceId}
         commentsByPlaceId={commentsByPlaceId}
         commentAuthors={commentAuthors}
         currentUserId={currentUserId}
         canVote={canVote}
         canComment={canComment}
+        showExpenseHistory={canComment}
         canEdit={editor}
         tripStartDate={tripStartDate}
         tripEndDate={tripEndDate}

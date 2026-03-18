@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CalendarDays, Clock, Bookmark } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
@@ -17,6 +17,7 @@ interface TripTimelineProps {
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]>;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   tripStartDate?: string | null;
@@ -124,6 +125,7 @@ export function TripTimeline({
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
+  placeExpensesByPlaceId,
   commentsByPlaceId,
   commentAuthors,
   tripStartDate,
@@ -275,8 +277,10 @@ export function TripTimeline({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          placeExpenses={placeExpensesByPlaceId[openPlace.id] ?? []}
           canVote={canVote}
           canComment={canComment}
+          showExpenseHistory={canComment}
           allPlaces={places}
           canEdit={canEdit}
           tripStartDate={tripStartDate}

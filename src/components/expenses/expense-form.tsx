@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2 } from 'lucide-react';
+import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, MapPin, PencilLine } from 'lucide-react';
 import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place } from '@/lib/types';
@@ -38,6 +38,8 @@ interface SplitRow {
   userId: string;
   amountOwed: string; // raw string for controlled input
 }
+
+type ExpenseSubjectMode = 'manual' | 'place';
 
 interface ExpenseFormProps {
   tripId: string;
@@ -140,6 +142,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
 
   // Form fields
   const [title, setTitle] = useState('');
+  const [subjectMode, setSubjectMode] = useState<ExpenseSubjectMode>('manual');
   const [category, setCategory] = useState<string | null>(null);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
@@ -172,6 +175,15 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
   const splitsTotal = splits.reduce((s, r) => s + parseAmount(r.amountOwed), 0);
   const diff = roundTo2(Math.abs(roundTo2(splitsTotal) - roundTo2(totalAmount)));
   const splitsValid = totalAmount > 0 && diff <= 0.01;
+  const selectedPlace = places.find((place) => place.id === placeId) ?? null;
+
+  function changeSubjectMode(nextMode: ExpenseSubjectMode) {
+    setSubjectMode(nextMode);
+    setError(null);
+    if (nextMode === 'manual') {
+      setPlaceId(null);
+    }
+  }
 
   // -------------------------------------------------------
   // Split helpers
@@ -293,8 +305,18 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
     e.preventDefault();
     setError(null);
 
-    if (!title.trim()) {
+    const resolvedTitle =
+      subjectMode === 'place'
+        ? selectedPlace?.name.trim() ?? ''
+        : title.trim();
+
+    if (subjectMode === 'manual' && !resolvedTitle) {
       setError('Title is required.');
+      return;
+    }
+
+    if (subjectMode === 'place' && !selectedPlace) {
+      setError('Pick a linked place for this expense.');
       return;
     }
     if (totalAmount <= 0) {
@@ -323,7 +345,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
 
     const input: CreateExpenseInput = {
       tripId,
-      title: title.trim(),
+      title: resolvedTitle,
       category: category ?? null,
       amount: totalAmount,
       currency,
@@ -371,16 +393,110 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
         </div>
       )}
 
-      {/* Title */}
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <InputField
-          id="title"
-          value={title}
-          onChange={setTitle}
-          placeholder="e.g. Lunch at the market"
-          required
-        />
+      {/* Expense subject */}
+      <div className="rounded-[1.35rem] border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)' }}>
+        <div className="mb-4">
+          <Label>Expense title source</Label>
+          {places.length > 0 ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => changeSubjectMode('manual')}
+                className="flex min-h-[52px] items-center gap-3 rounded-[1.1rem] border px-4 py-3 text-left transition-colors"
+                style={{
+                  borderColor: subjectMode === 'manual' ? 'var(--color-primary)' : 'var(--color-border)',
+                  backgroundColor: subjectMode === 'manual' ? 'var(--color-primary-light)' : 'white',
+                  color: subjectMode === 'manual' ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
+                  <PencilLine className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Write a title</p>
+                  <p className="text-xs opacity-75">Use a custom expense name</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => changeSubjectMode('place')}
+                className="flex min-h-[52px] items-center gap-3 rounded-[1.1rem] border px-4 py-3 text-left transition-colors"
+                style={{
+                  borderColor: subjectMode === 'place' ? 'var(--color-primary)' : 'var(--color-border)',
+                  backgroundColor: subjectMode === 'place' ? 'var(--color-primary-light)' : 'white',
+                  color: subjectMode === 'place' ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Use a place</p>
+                  <p className="text-xs opacity-75">Link the expense to a saved stop</p>
+                </div>
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              No saved places yet, so this expense will use a custom title.
+            </p>
+          )}
+        </div>
+
+        {(places.length === 0 || subjectMode === 'manual') ? (
+          <div>
+            <Label htmlFor="title">Title</Label>
+            <InputField
+              id="title"
+              value={title}
+              onChange={setTitle}
+              placeholder="e.g. Lunch at the market"
+              required
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="placeId">Linked place</Label>
+              <select
+                id="placeId"
+                value={placeId ?? ''}
+                onChange={(e) => setPlaceId(e.target.value || null)}
+                className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'white',
+                  color: 'var(--color-text)',
+                }}
+              >
+                <option value="">Select a place</option>
+                {places.map((place) => (
+                  <option key={place.id} value={place.id}>
+                    {place.name}
+                    {place.visit_date ? ` · ${new Date(`${place.visit_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rounded-[1rem] border border-dashed border-teal-200 bg-white/80 px-3 py-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {selectedPlace ? (
+                <>
+                  <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                    Expense title will use: {selectedPlace.name}
+                  </p>
+                  <p className="mt-1 text-xs">
+                    {selectedPlace.visit_date
+                      ? `Scheduled for ${new Date(`${selectedPlace.visit_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      : 'No visit schedule set yet'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs">Pick one saved place and this expense will use that place name as its title.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Category */}
@@ -456,32 +572,6 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
           onChange={setExpenseDate}
         />
       </div>
-
-      {/* Linked place (optional) */}
-      {places.length > 0 && (
-        <div>
-          <Label htmlFor="placeId">Linked place (optional)</Label>
-          <select
-            id="placeId"
-            value={placeId ?? ''}
-            onChange={(e) => setPlaceId(e.target.value || null)}
-            className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'white',
-              color: 'var(--color-text)',
-            }}
-          >
-            <option value="">— No place —</option>
-            {places.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.visit_date ? ` · ${new Date(p.visit_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {/* Paid by */}
       <div>

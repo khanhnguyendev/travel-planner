@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2, MapPin } from 'lucide-react';
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
 import type { TripRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
@@ -16,6 +17,7 @@ interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
   tripId: string;
   tripTitle?: string;
+  linkedPlaceName?: string | null;
   currentUserId: string;
   role: TripRole;
 }
@@ -129,6 +131,7 @@ export function ExpenseDetail({
   expense,
   tripId,
   tripTitle,
+  linkedPlaceName,
   currentUserId,
   role,
 }: ExpenseDetailProps) {
@@ -255,6 +258,16 @@ export function ExpenseDetail({
                 >
                   {expense.category}
                 </span>
+              )}
+              {linkedPlaceName && (
+                <Link
+                  href={`/trips/${tripId}?tab=places`}
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm"
+                  style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {linkedPlaceName}
+                </Link>
               )}
             </div>
           </div>

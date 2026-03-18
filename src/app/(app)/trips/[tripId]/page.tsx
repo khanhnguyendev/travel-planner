@@ -43,7 +43,7 @@ import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
 import { ActivityFeed } from '@/components/activity/activity-feed';
 import { getTripActivity } from '@/features/activity/queries';
-import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment, Place } from '@/lib/types';
+import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment, Place, PlaceExpenseHistoryEntry } from '@/lib/types';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -479,6 +479,29 @@ export default async function TripDetailPage({
   const tripPhase = getTripPhase(trip);
   const stopPointers = getStopPointers(places);
   const scheduledPlaces = places.filter((place) => place.visit_date);
+  const placeNameById = Object.fromEntries(places.map((place) => [place.id, place.name]));
+  const placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]> = {};
+  for (const expense of expensesWithSplits) {
+    if (!expense.place_id) continue;
+    if (!placeExpensesByPlaceId[expense.place_id]) {
+      placeExpensesByPlaceId[expense.place_id] = [];
+    }
+    placeExpensesByPlaceId[expense.place_id].push({
+      id: expense.id,
+      trip_id: expense.trip_id,
+      place_id: expense.place_id,
+      title: expense.title,
+      amount: expense.amount,
+      currency: expense.currency,
+      expense_date: expense.expense_date,
+      note: expense.note,
+      category: expense.category,
+      receipt_path: expense.receipt_path,
+      created_at: expense.created_at,
+      paid_by_name: expense.paid_by_profile.display_name,
+      splits_count: expense.splits.length,
+    });
+  }
   const totalsByCurrency: Record<string, number> = {};
   for (const expense of expenses) {
     totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
@@ -721,6 +744,12 @@ export default async function TripDetailPage({
                           {expense.category ? ` · ${expense.category}` : ''}
                           {expense.expense_date ? ` · ${formatDate(expense.expense_date)}` : ''}
                         </p>
+                        {expense.place_id && placeNameById[expense.place_id] && (
+                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                            <MapPin className="h-3 w-3" />
+                            {placeNameById[expense.place_id]}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
@@ -860,6 +889,7 @@ export default async function TripDetailPage({
             initialVoteSummaries={voteSummaries}
             initialUserVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
+            placeExpensesByPlaceId={placeExpensesByPlaceId}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}
@@ -881,6 +911,7 @@ export default async function TripDetailPage({
               voteSummaries={voteSummaries}
               userVotes={userVotes}
               reviewsByPlaceId={reviewsByPlaceId}
+              placeExpensesByPlaceId={placeExpensesByPlaceId}
               commentsByPlaceId={commentsByPlaceId}
               commentAuthors={commentAuthors}
               tripStartDate={trip.start_date}
@@ -903,6 +934,7 @@ export default async function TripDetailPage({
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
+            placeExpensesByPlaceId={placeExpensesByPlaceId}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             tripStartDate={trip.start_date}
@@ -922,6 +954,7 @@ export default async function TripDetailPage({
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
+            placeExpensesByPlaceId={placeExpensesByPlaceId}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}
@@ -997,6 +1030,12 @@ export default async function TripDetailPage({
                       <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                         {expense.category ?? 'General'}{expense.expense_date ? ` · ${expense.expense_date}` : ''}
                       </p>
+                      {expense.place_id && placeNameById[expense.place_id] && (
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                          <MapPin className="h-3 w-3" />
+                          {placeNameById[expense.place_id]}
+                        </p>
+                      )}
                     </div>
                     <span className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
                       {formatCurrency(expense.amount, expense.currency)}

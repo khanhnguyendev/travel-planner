@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Receipt, User, Plus, Trash2, CheckSquare, X } from 'lucide-react';
+import { Receipt, User, Plus, Trash2, CheckSquare, X, MapPin } from 'lucide-react';
 import type { Expense } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { deleteExpense } from '@/features/expenses/actions';
@@ -25,6 +25,7 @@ const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
 interface ExpenseListProps {
   expenses: Expense[];
   tripId: string;
+  placeNameById?: Record<string, string>;
   canEdit?: boolean;
 }
 
@@ -61,7 +62,7 @@ function CurrencyPill({ currency }: { currency: string }) {
   );
 }
 
-export function ExpenseList({ expenses: initialExpenses, tripId, canEdit }: ExpenseListProps) {
+export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById = {}, canEdit }: ExpenseListProps) {
   const [expenses, setExpenses] = useState(initialExpenses);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -243,6 +244,12 @@ export function ExpenseList({ expenses: initialExpenses, tripId, canEdit }: Expe
                       </span>
                       {expense.category && <span className="truncate text-stone-500">{expense.category}</span>}
                     </div>
+                    {expense.place_id && placeNameById[expense.place_id] && (
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-stone-500">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{placeNameById[expense.place_id]}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="w-full sm:w-auto text-left sm:text-right flex-shrink-0">

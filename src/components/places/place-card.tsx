@@ -1,5 +1,5 @@
 import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, MessageCircle, NotebookPen } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceComment } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { extractLocationTag } from '@/lib/address';
 import { PlaceMapLinks } from './place-map-links';
 import { CheckInStatusBadge } from './check-in-out-button';
+import { PlaceExpenseSummary } from './place-expense-summary';
 
 interface PlaceCardProps {
   place: Place;
@@ -15,6 +16,7 @@ interface PlaceCardProps {
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
   comments?: PlaceComment[];
+  placeExpenses?: PlaceExpenseHistoryEntry[];
   canVote?: boolean;
   isNext?: boolean;
   onClick?: () => void;
@@ -62,6 +64,7 @@ export function PlaceCard({
   voteSummary,
   userVote,
   comments = [],
+  placeExpenses = [],
   canVote = true,
   isNext = false,
   onClick,
@@ -184,6 +187,10 @@ export function PlaceCard({
               </p>
             )}
           </div>
+        )}
+
+        {placeExpenses.length > 0 && (
+          <PlaceExpenseSummary expenses={placeExpenses} />
         )}
 
         {/* Schedule */}

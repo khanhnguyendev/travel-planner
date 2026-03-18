@@ -5,6 +5,7 @@ import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { getMembers } from '@/features/members/queries';
+import { getPlaces } from '@/features/places/queries';
 import { ExpenseList } from '@/components/expenses/expense-list';
 import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
@@ -29,12 +30,13 @@ export default async function ExpensesPage({
   const { tripId } = await params;
   const user = await requireSession();
 
-  const [trip, role, expenses, expensesWithSplits, members] = await Promise.all([
+  const [trip, role, expenses, expensesWithSplits, members, places] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getExpenses(tripId),
     getExpensesWithSplits(tripId),
     getMembers(tripId),
+    getPlaces(tripId),
   ]);
 
   if (!trip || !role) {
@@ -49,6 +51,7 @@ export default async function ExpensesPage({
     totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
   }
   const totalEntries = Object.entries(totals);
+  const placeNameById = Object.fromEntries(places.map((place) => [place.id, place.name]));
 
   // Build members list in the format DebtSummary expects
   const memberProfiles = members.map((m) => ({
@@ -100,7 +103,7 @@ export default async function ExpensesPage({
       )}
 
       {/* List */}
-      <ExpenseList expenses={expenses} tripId={tripId} canEdit={canEdit} />
+      <ExpenseList expenses={expenses} tripId={tripId} placeNameById={placeNameById} canEdit={canEdit} />
     </div>
   );
 }

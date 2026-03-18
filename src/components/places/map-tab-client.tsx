@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { PlacesMap } from '@/components/places/places-map';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
@@ -15,6 +15,7 @@ interface MapTabClientProps {
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
+  placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]>;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
@@ -31,6 +32,7 @@ export function MapTabClient({
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
+  placeExpensesByPlaceId,
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
@@ -61,8 +63,10 @@ export function MapTabClient({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          placeExpenses={placeExpensesByPlaceId[openPlace.id] ?? []}
           canVote={canVote}
           canComment={canComment}
+          showExpenseHistory={canComment}
           allPlaces={places}
           tripStartDate={tripStartDate}
           tripEndDate={tripEndDate}

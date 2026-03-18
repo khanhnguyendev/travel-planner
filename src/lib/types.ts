@@ -148,6 +148,22 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface PlaceExpenseHistoryEntry {
+  id: string;
+  trip_id: string;
+  place_id: string;
+  title: string;
+  amount: number;
+  currency: string;
+  expense_date: string | null;
+  note: string | null;
+  category: string | null;
+  receipt_path: string | null;
+  created_at: string;
+  paid_by_name: string | null;
+  splits_count: number;
+}
+
 export interface TripActivity {
   id: string;
   trip_id: string;
