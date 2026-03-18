@@ -125,60 +125,28 @@ function getNextStop(places: Place[]) {
     })[0] ?? null;
 }
 
-function OverviewStat({
+function SnapshotPill({
   icon,
   label,
   value,
-  hint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  hint: string;
 }) {
   return (
-    <div className="metric-tile px-4 py-4">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+    <div className="mini-stat flex min-w-[172px] items-center gap-3 px-3 py-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
         {icon}
       </div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-        {label}
-      </p>
-      <p className="mt-1 text-base font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
-        {value}
-      </p>
-      <p className="mt-1 text-sm leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-        {hint}
-      </p>
-    </div>
-  );
-}
-
-function PulseCard({
-  icon,
-  label,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="section-shell p-4">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-        {icon}
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+          {label}
+        </p>
+        <p className="mt-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+          {value}
+        </p>
       </div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-        {label}
-      </p>
-      <p className="mt-1 text-base font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
-        {title}
-      </p>
-      <p className="mt-1 text-sm leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-        {body}
-      </p>
     </div>
   );
 }
@@ -341,7 +309,6 @@ export default async function TripDetailPage({
   const spendSummary = Object.entries(totalsByCurrency).length > 0
     ? Object.entries(totalsByCurrency).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
     : 'No expenses yet';
-  const totalVotes = voteSummaries.reduce((sum, entry) => sum + entry.upvotes + entry.downvotes, 0);
   const memberPreview = members.slice(0, 4);
   const remainingMembers = Math.max(0, members.length - memberPreview.length);
 
@@ -452,190 +419,166 @@ export default async function TripDetailPage({
         </div>
       </section>
 
-      <div className="-mt-8 relative z-10 grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto pb-1 sm:-mt-14 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-4">
-        <OverviewStat
-          label="Dates"
-          value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
-          hint={trip.start_date ? 'Trip dates are set' : 'Add start and end dates'}
-          icon={<Calendar className="h-4 w-4" />}
-        />
-        <OverviewStat
-          label="Crew"
-          value={`${members.length} ${members.length === 1 ? 'member' : 'members'}`}
-          hint={isMember ? 'Roles and invites stay close' : 'Public preview only'}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <OverviewStat
-          label="Places"
-          value={`${places.length} saved`}
-          hint={`${scheduledPlaces.length} scheduled so far`}
-          icon={<MapPin className="h-4 w-4" />}
-        />
-        <OverviewStat
-          label="Money"
-          value={expenses.length > 0 ? spendSummary : 'No spending yet'}
-          hint={expenses.length > 0 ? `${expenses.length} shared expenses` : 'Track receipts and balances here'}
-          icon={<Receipt className="h-4 w-4" />}
-        />
-      </div>
+      <section className="-mt-8 relative z-10 section-shell p-4 sm:-mt-12 sm:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Trip overview
+              </p>
+              <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                Planning, crew, and money in one place
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                Keep the essentials close, then jump straight into places, map, timeline, or expenses.
+              </p>
+            </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-        <div className="section-shell p-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Trip cockpit
-                </p>
-                <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                  Quick actions and shared context
-                </h2>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {canManage && <InviteLinkButton tripId={tripId} />}
+              {canEdit && <AddExpenseDialog tripId={tripId} members={members} currentUserId={currentUserId} />}
+              {isMember && (
+                <Link href={`/trips/${tripId}/members`} className="btn-secondary min-h-[40px] text-sm">
+                  <span className="inline-flex items-center gap-2">
+                    <UserCog className="h-4 w-4" />
+                    Crew
+                  </span>
+                </Link>
+              )}
+            </div>
+          </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {canManage && <InviteLinkButton tripId={tripId} />}
-                {canEdit && <AddExpenseDialog tripId={tripId} members={members} currentUserId={currentUserId} />}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <SnapshotPill
+              label="Dates"
+              value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
+              icon={<Calendar className="h-4 w-4" />}
+            />
+            <SnapshotPill
+              label="Crew"
+              value={`${members.length} ${members.length === 1 ? 'member' : 'members'}`}
+              icon={<Users className="h-4 w-4" />}
+            />
+            <SnapshotPill
+              label="Places"
+              value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
+              icon={<MapPin className="h-4 w-4" />}
+            />
+            <SnapshotPill
+              label="Money"
+              value={expenses.length > 0 ? spendSummary : 'No spending yet'}
+              icon={<Receipt className="h-4 w-4" />}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
+              <Sparkles className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+              <span style={{ color: 'var(--color-text-muted)' }}>Top pick:</span>
+              <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                {topPick ? `${topPick.place.name} (${topPick.score > 0 ? '+' : ''}${topPick.score})` : 'No votes yet'}
+              </span>
+            </span>
+            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
+              <Clock3 className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+              <span style={{ color: 'var(--color-text-muted)' }}>Next stop:</span>
+              <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                {nextStop ? nextStop.name : 'Not scheduled'}
+              </span>
+            </span>
+            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
+              <BedDouble className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+              <span style={{ color: 'var(--color-text-muted)' }}>Stay:</span>
+              <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                {accommodationPlaces[0]?.name ?? 'Not set'}
+              </span>
+            </span>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
+            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Budget
+              </p>
+              <BudgetEditor
+                tripId={tripId}
+                budget={trip.budget}
+                budgetCurrency={trip.budget_currency}
+                budgetPayerUserId={trip.budget_payer_user_id}
+                canManage={canManage}
+                totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
+                members={members}
+              />
+            </div>
+
+            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Crew
+                  </p>
+                  <h3 className="mt-1 text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                    Shared visibility
+                  </h3>
+                </div>
                 {isMember && (
-                  <Link href={`/trips/${tripId}/members`} className="btn-secondary min-h-[40px] text-sm">
-                    <span className="inline-flex items-center gap-2">
-                      <UserCog className="h-4 w-4" />
-                      Members
-                    </span>
+                  <Link
+                    href={`/trips/${tripId}/members`}
+                    className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    <UserCog className="h-4 w-4" />
+                    Manage
                   </Link>
                 )}
               </div>
-            </div>
 
-            <BudgetEditor
-              tripId={tripId}
-              budget={trip.budget}
-              budgetCurrency={trip.budget_currency}
-              budgetPayerUserId={trip.budget_payer_user_id}
-              canManage={canManage}
-              totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
-              members={members}
-            />
-          </div>
-        </div>
-
-        <div className="section-shell p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Crew
-              </p>
-              <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                Shared visibility
-              </h2>
-            </div>
-            {isMember && (
-              <Link
-                href={`/trips/${tripId}/members`}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-stone-950/[0.04] px-3 py-2 text-sm font-medium"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                <UserCog className="h-4 w-4" />
-                Manage
-              </Link>
-            )}
-          </div>
-
-          {isMember ? (
-            <>
-              <div className="mb-4 hidden flex-wrap items-center gap-2 sm:flex">
-                {members.map((member) => {
-                  const name = member.profile.display_name ?? 'Unknown';
-                  const isCurrentUser = member.user_id === currentUserId;
-                  return (
-                    <div
-                      key={member.id}
-                      className="mini-stat flex items-center gap-2 px-3 py-2"
-                    >
-                      <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                          {name}{isCurrentUser ? ' (you)' : ''}
-                        </p>
-                        <p className="text-xs capitalize" style={{ color: 'var(--color-text-subtle)' }}>
-                          {member.role}
-                        </p>
-                      </div>
+              {isMember ? (
+                <>
+                  <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3">
+                    <div className="flex items-center -space-x-2">
+                      {memberPreview.map((member) => {
+                        const name = member.profile.display_name ?? 'Unknown';
+                        return (
+                          <div key={member.id} className="rounded-full border-2 border-white">
+                            <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
+                          </div>
+                        );
+                      })}
+                      {remainingMembers > 0 && (
+                        <span className="ml-1 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-white px-2 text-xs font-semibold text-stone-600 shadow-sm">
+                          +{remainingMembers}
+                        </span>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                        {members.length} members
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                        Roles and invite links live in Crew
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="mb-4 sm:hidden">
-                <div className="flex items-center justify-between gap-3 rounded-[1.2rem] bg-stone-950/[0.03] px-3 py-3">
-                  <div className="flex items-center -space-x-2">
-                    {memberPreview.map((member) => {
-                      const name = member.profile.display_name ?? 'Unknown';
-                      return (
-                        <div key={member.id} className="rounded-full border-2 border-white">
-                          <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
-                        </div>
-                      );
-                    })}
-                    {remainingMembers > 0 && (
-                      <span className="ml-1 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-white px-2 text-xs font-semibold text-stone-600 shadow-sm">
-                        +{remainingMembers}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                      {members.length} members
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                      Roles and invites stay in Members
-                    </p>
-                  </div>
+                  <MemberBalances
+                    expenses={expensesWithSplits}
+                    members={members}
+                    currentUserId={currentUserId}
+                    budgetAmount={trip.budget}
+                    budgetCurrency={trip.budget_currency}
+                    budgetPayerUserId={trip.budget_payer_user_id}
+                  />
+                </>
+              ) : (
+                <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  Join the trip to vote, comment, add places, manage crew, and track shared spending.
                 </div>
-              </div>
-
-              <MemberBalances
-                expenses={expensesWithSplits}
-                members={members}
-                currentUserId={currentUserId}
-                budgetAmount={trip.budget}
-                budgetCurrency={trip.budget_currency}
-                budgetPayerUserId={trip.budget_payer_user_id}
-              />
-            </>
-          ) : (
-            <div className="rounded-[1.25rem] bg-stone-950/[0.03] px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-              Join the trip to vote, comment, add places, manage members, and track expenses together.
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-
-      <div className="mt-4 grid grid-flow-col auto-cols-[84%] gap-3 overflow-x-auto pb-1 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 xl:grid-cols-4">
-        <PulseCard
-          label="Top pick"
-          icon={<Sparkles className="h-4 w-4" />}
-          title={topPick ? topPick.place.name : 'No votes yet'}
-          body={topPick ? `${topPick.score > 0 ? '+' : ''}${topPick.score} net votes so far` : 'Start voting to surface the group favorite.'}
-        />
-        <PulseCard
-          label="Next stop"
-          icon={<Clock3 className="h-4 w-4" />}
-          title={nextStop ? nextStop.name : 'Nothing scheduled'}
-          body={nextStop?.visit_date ? `Planned for ${new Date(`${nextStop.visit_date}T00:00:00`).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}` : 'Add a visit date to shape the itinerary.'}
-        />
-        <PulseCard
-          label="Stay"
-          icon={<BedDouble className="h-4 w-4" />}
-          title={accommodationPlaces[0]?.name ?? 'No accommodation yet'}
-          body={accommodationPlaces.length > 0 ? `${accommodationPlaces.length} saved stay option${accommodationPlaces.length === 1 ? '' : 's'}` : 'Pin accommodation so the plan has a base.'}
-        />
-        <PulseCard
-          label="Collaboration"
-          icon={<Activity className="h-4 w-4" />}
-          title={`${totalVotes} vote actions`}
-          body={Object.keys(commentsByPlaceId).length > 0 ? `${Object.keys(commentsByPlaceId).length} places already have discussion` : 'Comments and activity show up here as the trip evolves.'}
-        />
-      </div>
+      </section>
 
       <TabBar activeTab={activeTab} tripId={tripId} tabs={visibleTabs} />
 
