@@ -174,46 +174,38 @@ export function PlacesSection({
       <section className="hero-orb relative overflow-hidden rounded-[1.6rem] p-4 text-white md:rounded-[2rem] md:p-6">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%)]" />
         <div className="relative flex flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="max-w-xl">
-              <h2 className="text-xl font-semibold leading-tight text-white section-title md:text-2xl">
-                Places, votes, and notes all stay in one planning lane.
-              </h2>
+          {editor && (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                onClick={() => setShowAddPlace(true)}
+                className="hidden min-h-[44px] items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
+              >
+                <Plus className="h-4 w-4" />
+                Add place
+              </button>
+
+              <button
+                onClick={() => setShowAddCategory(true)}
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18"
+                aria-label="Add category"
+              >
+                <Tag className="h-4 w-4" />
+                <span className="hidden sm:inline">Category</span>
+              </button>
+
+              <AddExpenseDialog
+                tripId={tripId}
+                members={members}
+                currentUserId={currentUserId}
+                trigger={
+                  <button className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18" aria-label="Add expense">
+                    <Receipt className="h-4 w-4" />
+                    <span className="hidden sm:inline">Expense</span>
+                  </button>
+                }
+              />
             </div>
-
-            {editor && (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => setShowAddPlace(true)}
-                  className="hidden min-h-[44px] items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add place
-                </button>
-
-                <button
-                  onClick={() => setShowAddCategory(true)}
-                  className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18"
-                  aria-label="Add category"
-                >
-                  <Tag className="h-4 w-4" />
-                  <span className="hidden sm:inline">Category</span>
-                </button>
-
-                <AddExpenseDialog
-                  tripId={tripId}
-                  members={members}
-                  currentUserId={currentUserId}
-                  trigger={
-                    <button className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18" aria-label="Add expense">
-                      <Receipt className="h-4 w-4" />
-                      <span className="hidden sm:inline">Expense</span>
-                    </button>
-                  }
-                />
-              </div>
-            )}
-          </div>
+          )}
 
           <div className="grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto pb-1 md:grid-flow-row md:auto-cols-auto md:grid-cols-4">
             <div className="metric-tile min-w-0 px-4 py-3">
