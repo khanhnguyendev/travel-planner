@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Map, Navigation, Send, Trash2, MessageCircle } from 'lucide-react';
+import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Map, Navigation, Send, Trash2, MessageCircle, NotebookPen } from 'lucide-react';
 import type { Place, PlaceReview, Category, PlaceVote, PlaceComment } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
-import { updatePlaceSchedule, addPlaceComment, deletePlaceComment } from '@/features/places/actions';
+import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComment } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
 interface PlaceDetailDrawerProps {
@@ -20,6 +20,7 @@ interface PlaceDetailDrawerProps {
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
   allPlaces?: Place[];
+  canEdit?: boolean;
   onClose: () => void;
 }
 
@@ -147,7 +148,7 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
 
         <button
           onClick={() => setEditing(true)}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1"
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1 cursor-pointer"
           style={{
             backgroundColor: hasSchedule || backupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
             color: hasSchedule || backupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
@@ -160,46 +161,47 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
     );
   }
 
+  // Compact editing layout: date + from + to all in one row
   return (
-    <div className="space-y-3 p-3 rounded-xl border border-stone-200 bg-stone-50">
-      <div>
-        <label className="block text-xs font-medium text-stone-600 mb-1">Visit date</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-2 p-3 rounded-xl border border-stone-200 bg-stone-50">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-1">
+          <label className="block text-xs font-medium text-stone-500 mb-1">Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
         <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">From</label>
+          <label className="block text-xs font-medium text-stone-500 mb-1">From</label>
           <input
             type="time"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">To</label>
+          <label className="block text-xs font-medium text-stone-500 mb-1">To</label>
           <input
             type="time"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
       </div>
       {otherPlaces.length > 0 && (
         <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">
-            Backup plan <span className="text-stone-400 font-normal">(if this place is closed)</span>
+          <label className="block text-xs font-medium text-stone-500 mb-1">
+            Backup <span className="text-stone-400 font-normal">(if closed)</span>
           </label>
           <select
             value={backupId}
             onChange={(e) => setBackupId(e.target.value)}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             <option value="">No backup</option>
             {otherPlaces.map((p) => (
@@ -208,7 +210,7 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
           </select>
         </div>
       )}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2">
         <button
           onClick={handleSave}
           disabled={pending}
@@ -219,6 +221,93 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
         </button>
         <button
           onClick={() => setEditing(false)}
+          disabled={pending}
+          className="text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NoteEditor({
+  place,
+  canEdit,
+}: {
+  place: Place;
+  canEdit: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(place.note ?? '');
+  const [pending, setPending] = useState(false);
+  const loadingToast = useLoadingToast();
+
+  async function handleSave() {
+    setPending(true);
+    const resolve = loadingToast('Saving note…');
+    const result = await updatePlaceNote(place.id, text.trim() || null);
+    setPending(false);
+    if (result.ok) {
+      resolve('Note saved!', 'success');
+      setEditing(false);
+    } else {
+      resolve(result.error, 'error');
+    }
+  }
+
+  if (!canEdit) {
+    if (!place.note) return null;
+    return (
+      <p className="text-sm leading-relaxed text-stone-600 whitespace-pre-wrap">{place.note}</p>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <div className="space-y-2">
+        {place.note ? (
+          <p className="text-sm leading-relaxed text-stone-600 whitespace-pre-wrap">{place.note}</p>
+        ) : (
+          <p className="text-xs text-stone-400">No note yet</p>
+        )}
+        <button
+          onClick={() => setEditing(true)}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer"
+          style={{
+            backgroundColor: place.note ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
+            color: place.note ? 'var(--color-text-muted)' : 'var(--color-primary)',
+          }}
+        >
+          <Pencil className="w-3 h-3" />
+          {place.note ? 'Edit note' : 'Add note'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Add a private note visible only to editors…"
+        rows={4}
+        maxLength={2000}
+        disabled={pending}
+        className="w-full text-sm px-3 py-2 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none disabled:opacity-50"
+      />
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSave}
+          disabled={pending}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+        >
+          <Check className="w-3.5 h-3.5" />
+          Save
+        </button>
+        <button
+          onClick={() => { setEditing(false); setText(place.note ?? ''); }}
           disabled={pending}
           className="text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
         >
@@ -308,7 +397,7 @@ function CommentsSection({
       )}
 
       {/* Add comment form */}
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
@@ -321,10 +410,11 @@ function CommentsSection({
         <button
           type="submit"
           disabled={pending || !body.trim()}
-          className="self-end inline-flex items-center justify-center w-9 h-9 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors flex-shrink-0"
+          className="self-end inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:w-9 sm:h-9 sm:px-0 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors flex-shrink-0 text-sm sm:text-base"
           aria-label="Post comment"
         >
           <Send className="w-4 h-4" />
+          <span className="sm:hidden">Send</span>
         </button>
       </form>
     </div>
@@ -356,6 +446,7 @@ export function PlaceDetailDrawer({
   voteSummary,
   userVote,
   allPlaces = [],
+  canEdit = false,
   onClose,
 }: PlaceDetailDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -414,7 +505,7 @@ export function PlaceDetailDrawer({
               </p>
             )}
             {/* Map buttons */}
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
               <a
                 href={googleMapsUrl(place)}
                 target="_blank"
@@ -461,6 +552,18 @@ export function PlaceDetailDrawer({
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide mb-2 text-stone-400">About</h3>
               <p className="text-sm leading-relaxed text-stone-600">{place.editorial_summary}</p>
+            </div>
+          )}
+
+          {/* Note (editors write, viewers read) */}
+          {(canEdit || place.note) && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400 flex items-center gap-1.5">
+                <NotebookPen className="w-3.5 h-3.5" />
+                Note
+                {!canEdit && <span className="font-normal normal-case text-stone-300">(editor only)</span>}
+              </h3>
+              <NoteEditor place={place} canEdit={canEdit} />
             </div>
           )}
 

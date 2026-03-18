@@ -1,9 +1,10 @@
-import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, Map } from 'lucide-react';
-import type { Place, Category, PlaceVote } from '@/lib/types';
+import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, Map, MessageCircle, NotebookPen } from 'lucide-react';
+import type { Place, Category, PlaceVote, PlaceComment } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { cn } from '@/lib/utils';
+import { extractLocationTag } from '@/lib/address';
 
 interface PlaceCardProps {
   place: Place;
@@ -11,8 +12,10 @@ interface PlaceCardProps {
   projectId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
+  comments?: PlaceComment[];
   isNext?: boolean;
   onClick?: () => void;
+  onLocationTagClick?: (tag: string) => void;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -49,17 +52,7 @@ function PriceDots({ level }: { level: number }) {
   );
 }
 
-/** Extract a short location tag from the address.
- *  e.g. "123 Phố Huế, Hai Bà Trưng, Hà Nội, Việt Nam" → "Hà Nội"
- */
-function extractLocationTag(address: string): string | null {
-  const parts = address.split(',').map((p) => p.trim()).filter(Boolean);
-  if (parts.length < 2) return null;
-  // Skip last part if it looks like a country name (length > 2 chars and mostly letters)
-  const last = parts[parts.length - 1];
-  const isCountry = /^[A-Za-zÀ-ỹ\s.]+$/.test(last) && last.length > 3;
-  return isCountry ? (parts[parts.length - 2] ?? null) : last;
-}
+export { extractLocationTag } from '@/lib/address';
 
 function googleMapsUrl(place: Place): string {
   if (place.lat != null && place.lng != null) {
@@ -81,11 +74,13 @@ export function PlaceCard({
   projectId,
   voteSummary,
   userVote,
+  comments = [],
   isNext = false,
   onClick,
+  onLocationTagClick,
 }: PlaceCardProps) {
-  const locationTag = place.address ? extractLocationTag(place.address) : null;
   const hasSchedule = place.visit_date || place.visit_time_from;
+  const locationTag = place.address ? extractLocationTag(place.address) : null;
 
   return (
     <div
@@ -119,10 +114,28 @@ export function PlaceCard({
           </div>
         )}
 
-        {/* Category badge */}
-        {category && (
-          <div>
-            <CategoryBadge category={category} size="sm" />
+        {/* Category + location tags */}
+        {(category || locationTag) && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {category && <CategoryBadge category={category} size="sm" />}
+            {locationTag && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLocationTagClick?.(locationTag);
+                }}
+                className="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors"
+                style={{
+                  backgroundColor: '#EFF6FF',
+                  color: '#2563EB',
+                  cursor: onLocationTagClick ? 'pointer' : 'default',
+                }}
+                title={onLocationTagClick ? `Filter by ${locationTag}` : undefined}
+              >
+                {locationTag}
+              </button>
+            )}
           </div>
         )}
 
@@ -132,19 +145,12 @@ export function PlaceCard({
             {place.name}
           </h3>
 
-          <div className="flex items-start gap-2 mt-1 flex-wrap">
-            {place.address && (
-              <p className="flex items-start gap-1 text-xs leading-snug line-clamp-1 text-stone-400 flex-1 min-w-0">
-                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                {place.address}
-              </p>
-            )}
-            {locationTag && (
-              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium flex-shrink-0 whitespace-nowrap">
-                {locationTag}
-              </span>
-            )}
-          </div>
+          {place.address && (
+            <p className="flex items-start gap-1 text-xs leading-snug line-clamp-1 text-stone-400 mt-1">
+              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              {place.address}
+            </p>
+          )}
         </div>
 
         {/* Rating + price */}
@@ -160,6 +166,26 @@ export function PlaceCard({
           <p className="text-xs leading-relaxed line-clamp-2 text-stone-400">
             {place.editorial_summary}
           </p>
+        )}
+
+        {/* Note + comment previews */}
+        {(place.note || comments.length > 0) && (
+          <div className="flex flex-col gap-1">
+            {place.note && (
+              <p className="flex items-start gap-1.5 text-xs text-amber-700 leading-snug line-clamp-2">
+                <NotebookPen className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-70" />
+                {place.note}
+              </p>
+            )}
+            {comments.length > 0 && (
+              <p className="flex items-center gap-1.5 text-xs text-stone-400 leading-snug line-clamp-1">
+                <MessageCircle className="w-3 h-3 flex-shrink-0" />
+                {comments.length === 1
+                  ? comments[0].body
+                  : `${comments.length} comments — ${comments[comments.length - 1].body}`}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Schedule */}
@@ -212,7 +238,8 @@ export function PlaceCard({
               title="Open in Google Maps"
             >
               <Map className="w-3.5 h-3.5" />
-              Google Maps
+              <span className="hidden sm:inline">Google Maps</span>
+              <span className="sm:hidden">Maps</span>
             </a>
             <a
               href={vietmapUrl(place)}

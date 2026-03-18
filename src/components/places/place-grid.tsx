@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MapPin, Plus } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import { PlaceCard } from './place-card';
+import { extractLocationTag } from '@/lib/address';
 import { PlaceDetailDrawer } from './place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
@@ -12,6 +13,8 @@ interface PlaceGridProps {
   categories: Category[];
   projectId: string;
   selectedCategoryId: string | null;
+  selectedLocationTag: string | null;
+  onLocationTagClick: (tag: string) => void;
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -19,6 +22,7 @@ interface PlaceGridProps {
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
+  canEdit?: boolean;
   onAddPlace?: () => void;
 }
 
@@ -27,6 +31,8 @@ export function PlaceGrid({
   categories,
   projectId,
   selectedCategoryId,
+  selectedLocationTag,
+  onLocationTagClick,
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
@@ -34,6 +40,7 @@ export function PlaceGrid({
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
+  canEdit = false,
   onAddPlace,
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
@@ -46,10 +53,15 @@ export function PlaceGrid({
     userVotes.map((v) => [v.place_id, v])
   );
 
-  // Filter by selected category
-  const filtered = selectedCategoryId
-    ? places.filter((p) => p.category_id === selectedCategoryId)
-    : places;
+  // Filter by selected category and/or location tag
+  const filtered = places.filter((p) => {
+    if (selectedCategoryId && p.category_id !== selectedCategoryId) return false;
+    if (selectedLocationTag) {
+      const tag = p.address ? extractLocationTag(p.address) : null;
+      if (tag !== selectedLocationTag) return false;
+    }
+    return true;
+  });
 
   // Group by category for display headers
   const grouped = new Map<string, Place[]>();
@@ -134,8 +146,10 @@ export function PlaceGrid({
                     projectId={projectId}
                     voteSummary={voteSummaryMap[place.id] ?? null}
                     userVote={userVoteMap[place.id] ?? null}
+                    comments={commentsByPlaceId[place.id] ?? []}
                     isNext={place.id === nextPlaceId}
                     onClick={() => setOpenPlaceId(place.id)}
+                    onLocationTagClick={onLocationTagClick}
                   />
                 ))}
               </div>
@@ -157,6 +171,7 @@ export function PlaceGrid({
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
           allPlaces={places}
+          canEdit={canEdit}
           onClose={() => setOpenPlaceId(null)}
         />
       )}

@@ -1,12 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { CalendarDays, Clock, Bookmark } from 'lucide-react';
-import type { Place, Category } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
+import type { VoteSummaryEntry } from '@/features/votes/queries';
 
 interface TripTimelineProps {
   places: Place[];
   categories: Category[];
-  onPlaceClick?: (place: Place) => void;
+  projectId: string;
+  currentUserId: string;
+  canEdit?: boolean;
+  voteSummaries: VoteSummaryEntry[];
+  userVotes: PlaceVote[];
+  reviewsByPlaceId: Record<string, PlaceReview[]>;
+  commentsByPlaceId: Record<string, PlaceComment[]>;
+  commentAuthors: Record<string, string>;
 }
 
 function formatDayHeader(dateStr: string): string {
@@ -99,11 +109,29 @@ function PlaceRow({ place, category, onClick }: PlaceRowProps) {
   );
 }
 
-export function TripTimeline({ places, categories, onPlaceClick }: TripTimelineProps) {
+export function TripTimeline({
+  places,
+  categories,
+  projectId,
+  currentUserId,
+  canEdit = false,
+  voteSummaries,
+  userVotes,
+  reviewsByPlaceId,
+  commentsByPlaceId,
+  commentAuthors,
+}: TripTimelineProps) {
+  const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
+
   // Build category lookup
   const categoryMap = new Map<string, Category>(
     categories.map((c) => [c.id, c])
   );
+
+  const voteSummaryMap = Object.fromEntries(voteSummaries.map((v) => [v.placeId, v]));
+  const userVoteMap = Object.fromEntries(userVotes.map((v) => [v.place_id, v]));
+
+  const openPlace = openPlaceId ? places.find((p) => p.id === openPlaceId) ?? null : null;
 
   // Separate scheduled vs unscheduled
   const scheduled = places.filter((p) => p.visit_date);
@@ -188,7 +216,7 @@ export function TripTimeline({ places, categories, onPlaceClick }: TripTimelineP
                         key={place.id}
                         place={place}
                         category={categoryMap.get(place.category_id)}
-                        onClick={onPlaceClick}
+                        onClick={(p) => setOpenPlaceId(p.id)}
                       />
                     ))}
                   </div>
@@ -220,11 +248,29 @@ export function TripTimeline({ places, categories, onPlaceClick }: TripTimelineP
                 key={place.id}
                 place={place}
                 category={categoryMap.get(place.category_id)}
-                onClick={onPlaceClick}
+                onClick={(p) => setOpenPlaceId(p.id)}
               />
             ))}
           </div>
         </div>
+      )}
+
+      {/* Place detail drawer */}
+      {openPlace && (
+        <PlaceDetailDrawer
+          place={openPlace}
+          reviews={reviewsByPlaceId[openPlace.id] ?? []}
+          comments={commentsByPlaceId[openPlace.id] ?? []}
+          commentAuthors={commentAuthors}
+          currentUserId={currentUserId}
+          category={categoryMap.get(openPlace.category_id) ?? null}
+          projectId={projectId}
+          voteSummary={voteSummaryMap[openPlace.id] ?? null}
+          userVote={userVoteMap[openPlace.id] ?? null}
+          allPlaces={places}
+          canEdit={canEdit}
+          onClose={() => setOpenPlaceId(null)}
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Tag } from 'lucide-react';
+import { Plus, Tag, Receipt, X } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, ProjectRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -10,7 +10,9 @@ import { PlaceGrid } from '@/components/places/place-grid';
 import { PlaceSearch } from '@/components/places/place-search';
 import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
 import { Dialog } from '@/components/ui/dialog';
+import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
+import type { MemberWithProfile } from '@/features/members/queries';
 
 interface PlacesSectionProps {
   projectId: string;
@@ -23,6 +25,7 @@ interface PlacesSectionProps {
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
+  members: MemberWithProfile[];
 }
 
 const canEdit = (role: ProjectRole) =>
@@ -48,6 +51,7 @@ export function PlacesSection({
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
+  members,
 }: PlacesSectionProps) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -56,6 +60,7 @@ export function PlacesSection({
   const [reviewsByPlaceId, setReviewsByPlaceId] = useState<Record<string, PlaceReview[]>>(initialReviewsByPlaceId);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedLocationTag, setSelectedLocationTag] = useState<string | null>(null);
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -159,16 +164,31 @@ export function PlacesSection({
             <>
               <button
                 onClick={() => setShowAddCategory(true)}
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px]"
+                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px] cursor-pointer"
                 style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
               >
                 <Tag className="w-4 h-4" />
                 <span className="hidden sm:inline">Add category</span>
               </button>
 
+              <AddExpenseDialog
+                projectId={projectId}
+                members={members}
+                currentUserId={currentUserId}
+                trigger={
+                  <button
+                    className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px] cursor-pointer"
+                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                  >
+                    <Receipt className="w-4 h-4" />
+                    <span className="hidden sm:inline">Add expense</span>
+                  </button>
+                }
+              />
+
               <button
                 onClick={() => setShowAddPlace(true)}
-                className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+                className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px] cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 Add place
@@ -216,12 +236,31 @@ export function PlacesSection({
             <CategoryList categories={categories} selectedId={selectedCategoryId} onSelect={setSelectedCategoryId} />
           )}
 
+          {/* Active location tag filter chip */}
+          {selectedLocationTag && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Filtering by location:</span>
+              <button
+                onClick={() => setSelectedLocationTag(null)}
+                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium transition-colors"
+                style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}
+              >
+                {selectedLocationTag}
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {/* Place grid */}
           <PlaceGrid
             places={sortedPlaces}
             categories={categories}
             projectId={projectId}
             selectedCategoryId={selectedCategoryId}
+            selectedLocationTag={selectedLocationTag}
+            onLocationTagClick={(tag) =>
+              setSelectedLocationTag((prev) => (prev === tag ? null : tag))
+            }
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
@@ -229,13 +268,14 @@ export function PlacesSection({
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}
+            canEdit={editor}
             onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
           />
         </div>
 
-        {/* Leaderboard sidebar */}
+        {/* Leaderboard sidebar — desktop only */}
         {places.length >= 2 && (
-          <div className="lg:w-72 flex-shrink-0">
+          <div className="hidden lg:block lg:w-72 flex-shrink-0">
             <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
           </div>
         )}
