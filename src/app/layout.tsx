@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
 // TODO: replace with your real production URL
@@ -8,7 +8,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://example.com';
 
 // TODO: replace APP_NAME with your brand name (e.g. "TripMate")
 const APP_NAME = 'Travel Planner';
-const inter = Inter({ subsets: ['latin'], display: 'swap' });
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -82,7 +86,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={plusJakarta.variable} suppressHydrationWarning>
         {children}
         <Analytics />
       </body>

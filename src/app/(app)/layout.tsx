@@ -55,50 +55,53 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ToastProvider>
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
-
-        {/* Top nav — glassmorphism */}
-        <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'rgba(229,231,235,0.6)' }}>
+      <div className="app-shell-bg min-h-screen">
+        <header className="sticky top-0 z-40 border-b glass" style={{ borderColor: 'rgba(255,255,255,0.65)' }}>
           <div
             className={cn(
-              'max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4',
+              'mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6',
               user && 'md:grid md:grid-cols-[1fr_auto_1fr]'
             )}
           >
-
-            {/* Logo */}
             <div className="flex items-center gap-6">
-              <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 shrink-0 group">
+              <Link href={user ? '/dashboard' : '/'} className="group flex shrink-0 items-center gap-3">
                 <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
-                  style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)' }}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl transition-transform group-hover:scale-105 hero-orb"
                 >
-                  <Compass className="w-4 h-4 text-white" />
+                  <Compass className="h-5 w-5 text-white" />
                 </div>
-                <span className="font-bold text-sm tracking-tight" style={{ color: 'var(--color-text)' }}>
-                  Travel Planner
-                </span>
+                <div className="min-w-0">
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Group travel
+                  </p>
+                  <span className="block font-semibold tracking-tight text-sm sm:text-base section-title" style={{ color: 'var(--color-text)' }}>
+                    Travel Planner
+                  </span>
+                </div>
               </Link>
 
-              {/* Desktop nav */}
               {user && (
-                <nav className="hidden md:flex items-center gap-0.5">
+                <nav className="hidden items-center gap-1 md:flex">
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-white/70 min-h-[36px]"
-                    style={{ color: 'var(--color-text-muted)' }}
+                    className="pill-tab pill-tab-active flex min-h-[40px] items-center gap-2 px-4 py-2 text-sm font-medium"
+                    style={{ color: 'var(--color-text)' }}
                   >
-                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <LayoutDashboard className="h-3.5 w-3.5" />
                     My Trips
                   </Link>
                 </nav>
               )}
             </div>
 
-            {/* Center clock */}
-            {user ? <NavClock /> : null}
+            {user ? (
+              <div className="hidden md:flex justify-center">
+                <div className="shell-panel rounded-full px-4 py-2">
+                  <NavClock />
+                </div>
+              </div>
+            ) : null}
 
-            {/* User menu */}
             <div className="flex justify-end">
               {user ? (
                 <UserMenu userId={user.id} />
@@ -106,12 +109,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <div className="flex items-center gap-2">
                   <Link
                     href="/"
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-white/70"
+                    className="hidden min-h-[40px] items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-white/70 sm:inline-flex"
                     style={{ color: 'var(--color-text-muted)' }}
                   >
                     Home
                   </Link>
-                  <Link href="/sign-in" className="btn-primary text-sm min-h-[40px]">
+                  <Link href="/sign-in" className="btn-primary min-h-[42px] text-sm">
                     Sign in
                   </Link>
                 </div>
@@ -120,8 +123,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:pt-8 md:pb-10">
           {children}
         </main>
       </div>
