@@ -2,7 +2,6 @@ import Link from 'next/link';
 import {
   Plus,
   Compass,
-  Calendar,
   Users,
   Globe,
   Lock,
@@ -231,9 +230,13 @@ export default async function DashboardPage() {
   if (!user) return <GuestLanding />;
 
   const trips = await getTrips();
+  const tripMembers = await Promise.all(trips.map(async (trip) => getMembers(trip.id)));
   const activeTrips = trips.filter((trip) => trip.status !== 'archived');
   const publicTrips = trips.filter((trip) => trip.visibility === 'public');
   const budgetedTrips = trips.filter((trip) => trip.budget != null);
+  const distinctMemberCount = new Set(
+    tripMembers.flatMap((members) => members.map((member) => member.user_id))
+  ).size;
   const nextTrip =
     [...trips]
       .filter((trip) => trip.start_date)
@@ -348,10 +351,10 @@ export default async function DashboardPage() {
           icon={<Wallet className="h-4 w-4" />}
         />
         <InsightCard
-          label="Timeline"
-          value={nextTrip?.start_date ? formatDateRange(nextTrip.start_date, nextTrip.end_date ?? nextTrip.start_date) : 'Open'}
-          hint={nextTrip ? `${nextTrip.title} is coming up` : 'Add dates to anchor the next plan'}
-          icon={<Calendar className="h-4 w-4" />}
+          label="Crew"
+          value={String(distinctMemberCount)}
+          hint={`${distinctMemberCount} distinct ${distinctMemberCount === 1 ? 'member' : 'members'} across your trips`}
+          icon={<Users className="h-4 w-4" />}
         />
       </div>
 
