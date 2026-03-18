@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Tag, Receipt, X, MapPinned, Clock3 } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
@@ -69,26 +69,8 @@ export function PlacesSection({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [searchResults, setSearchResults] = useState<Place[] | null>(null);
-  const [nextPlaceId, setNextPlaceId] = useState<string | null>(null);
 
   const editor = canEdit(role);
-
-  // Compute "next stop" based on GMT+7
-  useEffect(() => {
-    let closest: Place | null = null;
-    let closestDiff = Infinity;
-    for (const p of places) {
-      if (!p.visit_date || !p.visit_time_from) continue;
-      const [h, m] = p.visit_time_from.split(':').map(Number);
-      const dt = new Date(`${p.visit_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+07:00`).getTime();
-      const diff = dt - Date.now();
-      if (diff > 0 && diff < closestDiff) {
-        closestDiff = diff;
-        closest = p;
-      }
-    }
-    setNextPlaceId(closest?.id ?? null);
-  }, [places]);
 
   function handleCategoryCreated(cat: Category) {
     setCategories((prev) => [...prev, cat]);
@@ -105,8 +87,25 @@ export function PlacesSection({
   const voteSummaryMap = Object.fromEntries(voteSummaries.map((v) => [v.placeId, v]));
   const visibleCount = basePlaces.length;
   const scheduledCount = places.filter((place) => place.visit_date).length;
-  const topVotedCount = voteSummaries.filter((summary) => summary.upvotes + summary.downvotes > 0).length;
-  const nextPlace = nextPlaceId ? places.find((place) => place.id === nextPlaceId) ?? null : null;
+  const nextPlaceId = useMemo(() => {
+    let closest: Place | null = null;
+    let closestDiff = Infinity;
+
+    for (const place of places) {
+      if (!place.visit_date || !place.visit_time_from) continue;
+      const [hours, minutes] = place.visit_time_from.split(':').map(Number);
+      const timestamp = new Date(
+        `${place.visit_date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00+07:00`
+      ).getTime();
+      const diff = timestamp - Date.now();
+      if (diff > 0 && diff < closestDiff) {
+        closestDiff = diff;
+        closest = place;
+      }
+    }
+
+    return closest?.id ?? null;
+  }, [places]);
 
   const sortedPlaces = useMemo(() => {
     const list = [...basePlaces];
@@ -171,94 +170,6 @@ export function PlacesSection({
         </div>
       )}
 
-      <section className="hero-orb relative overflow-hidden rounded-[1.6rem] p-4 text-white md:rounded-[2rem] md:p-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%)]" />
-        <div className="relative flex flex-col gap-4">
-          {editor && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <button
-                onClick={() => setShowAddPlace(true)}
-                className="hidden min-h-[44px] items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
-              >
-                <Plus className="h-4 w-4" />
-                Add place
-              </button>
-
-              <button
-                onClick={() => setShowAddCategory(true)}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18"
-                aria-label="Add category"
-              >
-                <Tag className="h-4 w-4" />
-                <span className="hidden sm:inline">Category</span>
-              </button>
-
-              <AddExpenseDialog
-                tripId={tripId}
-                members={members}
-                currentUserId={currentUserId}
-                trigger={
-                  <button className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18" aria-label="Add expense">
-                    <Receipt className="h-4 w-4" />
-                    <span className="hidden sm:inline">Expense</span>
-                  </button>
-                }
-              />
-            </div>
-          )}
-
-          <div className="grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto pb-1 md:grid-flow-row md:auto-cols-auto md:grid-cols-4">
-            <div className="metric-tile min-w-0 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Saved places
-              </p>
-              <p className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                {places.length}
-              </p>
-              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                {visibleCount === places.length ? 'Everything in view' : `${visibleCount} matching filters`}
-              </p>
-            </div>
-
-            <div className="metric-tile min-w-0 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                On the plan
-              </p>
-              <p className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                {scheduledCount}
-              </p>
-              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                Places already scheduled
-              </p>
-            </div>
-
-            <div className="metric-tile min-w-0 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Vote heat
-              </p>
-              <p className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                {topVotedCount}
-              </p>
-              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                Places already have opinions
-              </p>
-            </div>
-
-            <div className="metric-tile min-w-0 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Next stop
-              </p>
-              <p className="mt-1 truncate text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                {nextPlace?.name ?? 'Not set yet'}
-              </p>
-              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                {nextPlace?.visit_time_from ? `Starts at ${nextPlace.visit_time_from}` : 'Add a time to spotlight the next stop'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {places.length >= 2 && (
         <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
       )}
@@ -271,15 +182,55 @@ export function PlacesSection({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2" style={{ color: 'var(--color-text-muted)' }}>
               <MapPinned className="h-4 w-4" />
               {visibleCount} visible
             </span>
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2">
+            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2" style={{ color: 'var(--color-text-muted)' }}>
               <Clock3 className="h-4 w-4" />
               {scheduledCount} scheduled
             </span>
+
+            {editor && (
+              <button
+                onClick={() => setShowAddPlace(true)}
+                className="hidden min-h-[40px] items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
+              >
+                <Plus className="h-4 w-4" />
+                Add place
+              </button>
+            )}
+
+            {editor && (
+              <button
+                onClick={() => setShowAddCategory(true)}
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                aria-label="Add category"
+              >
+                <Tag className="h-4 w-4" />
+                <span className="hidden sm:inline">Category</span>
+              </button>
+            )}
+
+            {editor && (
+              <AddExpenseDialog
+                tripId={tripId}
+                members={members}
+                currentUserId={currentUserId}
+                trigger={
+                  <button
+                    className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
+                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                    aria-label="Add expense"
+                  >
+                    <Receipt className="h-4 w-4" />
+                    <span className="hidden sm:inline">Expense</span>
+                  </button>
+                }
+              />
+            )}
           </div>
         </div>
 
