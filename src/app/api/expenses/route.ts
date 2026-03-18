@@ -108,7 +108,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Check trip is active
   const { data: projectData } = await admin
-    .from('projects')
+    .from('trips')
     .select('status')
     .eq('id', tripId)
     .single();

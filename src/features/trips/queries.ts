@@ -20,7 +20,7 @@ export async function getTrips(): Promise<TripWithRole[]> {
 
   // Fetch projects where the user is an accepted member
   const { data, error } = await supabase
-    .from('projects')
+    .from('trips')
     .select(
       `
       *,
@@ -52,7 +52,7 @@ export async function getTrip(id: string): Promise<Trip | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('projects')
+    .from('trips')
     .select('*')
     .eq('id', id)
     .single();

@@ -189,7 +189,7 @@ export type Database = {
         Update: R<Partial<Omit<Profile, 'id'>>>;
         Relationships: [];
       };
-      projects: {
+      trips: {
         Row: R<Trip>;
         Insert: R<Omit<Trip, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status' | 'budget' | 'budget_currency' | 'budget_payer_user_id'> & {
           id?: string;
