@@ -1,10 +1,11 @@
-import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, Map, MessageCircle, NotebookPen } from 'lucide-react';
+import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, MessageCircle, NotebookPen } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceComment } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { cn } from '@/lib/utils';
 import { extractLocationTag } from '@/lib/address';
+import { PlaceMapLinks } from './place-map-links';
 
 interface PlaceCardProps {
   place: Place;
@@ -51,20 +52,6 @@ function PriceDots({ level }: { level: number }) {
       ))}
     </div>
   );
-}
-
-function googleMapsUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) {
-    return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
-  }
-  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`;
-}
-
-function vietmapUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) {
-    return `https://maps.vietmap.vn/?q=${place.lat},${place.lng}`;
-  }
-  return `https://maps.vietmap.vn/?q=${encodeURIComponent(place.name)}`;
 }
 
 export function PlaceCard({
@@ -239,29 +226,7 @@ export function PlaceCard({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Map links */}
-          <div className="flex items-center gap-2">
-            <a
-              href={googleMapsUrl(place)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium"
-              title="Open in Google Maps"
-            >
-              <Map className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Google Maps</span>
-              <span className="sm:hidden">Maps</span>
-            </a>
-            <a
-              href={vietmapUrl(place)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors font-medium"
-              title="Open in Vietmap"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              Vietmap
-            </a>
-          </div>
+          <PlaceMapLinks place={place} />
 
           {/* Votes */}
           <VoteButtons
