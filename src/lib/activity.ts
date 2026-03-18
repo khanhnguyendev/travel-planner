@@ -5,6 +5,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ActivityAction =
+  | 'trip.create'
   | 'place.add'
   | 'place.delete'
   | 'comment.add'

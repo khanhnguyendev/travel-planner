@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
 import type { Trip } from '@/lib/types';
+import { logActivity } from '@/lib/activity';
 
 // -------------------------------------------------------
 // Schemas
@@ -107,6 +108,13 @@ export async function createTrip(
     console.error('trip_members insert error:', memberError);
     // Trip was created; still return success but log the issue.
   }
+
+  await logActivity({
+    tripId: trip.id,
+    userId: user.id,
+    action: 'trip.create',
+    meta: { title: parsed.data.title },
+  });
 
   revalidatePath('/dashboard');
 

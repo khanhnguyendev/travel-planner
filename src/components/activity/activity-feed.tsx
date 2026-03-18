@@ -1,4 +1,4 @@
-import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity } from 'lucide-react';
+import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import type { ActivityEntry } from '@/features/activity/queries';
 
@@ -16,6 +16,12 @@ const ACTION_CONFIG: Record<string, {
   bg: string;
   label: (meta: Record<string, unknown> | null) => string;
 }> = {
+  'trip.create': {
+    icon: Compass,
+    color: '#0D9488',
+    bg: '#F0FDFA',
+    label: (m) => `created trip${m?.title ? ` "${m.title}"` : ''}`,
+  },
   'place.add': {
     icon: MapPin,
     color: '#0D9488',
