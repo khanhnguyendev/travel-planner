@@ -4,7 +4,6 @@ import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { cn } from '@/lib/utils';
-import { extractLocationTag } from '@/lib/address';
 
 interface PlaceCardProps {
   place: Place;
@@ -53,8 +52,6 @@ function PriceDots({ level }: { level: number }) {
   );
 }
 
-export { extractLocationTag } from '@/lib/address';
-
 function googleMapsUrl(place: Place): string {
   if (place.lat != null && place.lng != null) {
     return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
@@ -82,7 +79,8 @@ export function PlaceCard({
   onLocationTagClick,
 }: PlaceCardProps) {
   const hasSchedule = place.visit_date || place.visit_time_from;
-  const locationTag = place.address ? extractLocationTag(place.address) : null;
+  const meta = place.metadata_json as { region?: string; district?: string } | null;
+  const locationTags = [meta?.district, meta?.region].filter(Boolean) as string[];
 
   return (
     <div
@@ -117,15 +115,16 @@ export function PlaceCard({
         )}
 
         {/* Category + location tags */}
-        {(category || locationTag) && (
+        {(category || locationTags.length > 0) && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {category && <CategoryBadge category={category} size="sm" />}
-            {locationTag && (
+            {locationTags.map((tag) => (
               <button
+                key={tag}
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onLocationTagClick?.(locationTag);
+                  onLocationTagClick?.(tag);
                 }}
                 className="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors"
                 style={{
@@ -133,11 +132,11 @@ export function PlaceCard({
                   color: '#2563EB',
                   cursor: onLocationTagClick ? 'pointer' : 'default',
                 }}
-                title={onLocationTagClick ? `Filter by ${locationTag}` : undefined}
+                title={onLocationTagClick ? `Filter by ${tag}` : undefined}
               >
-                {locationTag}
+                {tag}
               </button>
-            )}
+            ))}
           </div>
         )}
 

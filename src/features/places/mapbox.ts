@@ -16,6 +16,8 @@ export interface MapboxPlaceDetail {
   address: string | null;
   lat: number | null;
   lng: number | null;
+  region: string | null;
+  district: string | null;
 }
 
 // -------------------------------------------------------
@@ -109,6 +111,10 @@ export async function retrievePlace(
           longitude?: number;
           latitude?: number;
         };
+        context?: {
+          region?: { name?: string };
+          district?: { name?: string };
+        };
       };
     }>;
   };
@@ -127,5 +133,7 @@ export async function retrievePlace(
     address: props.full_address ?? null,
     lat: props.coordinates?.latitude ?? null,
     lng: props.coordinates?.longitude ?? null,
+    region: props.context?.region?.name ?? null,
+    district: props.context?.district?.name ?? null,
   };
 }

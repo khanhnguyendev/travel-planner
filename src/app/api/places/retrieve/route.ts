@@ -132,7 +132,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     rating: null,
     price_level: null,
     editorial_summary: null,
-    metadata_json: null,
+    metadata_json: {
+      ...(detail.region ? { region: detail.region } : {}),
+      ...(detail.district ? { district: detail.district } : {}),
+    },
     visit_date: visitDate ?? null,
     visit_time_from: visitTimeFrom ?? null,
     visit_time_to: visitTimeTo ?? null,
