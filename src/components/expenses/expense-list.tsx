@@ -6,6 +6,19 @@ import type { Expense } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
+const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
+  'Accommodation': '🛏️',
+  'Entertainment': '🎤',
+  'Groceries': '🛒',
+  'Healthcare': '🦷',
+  'Insurance': '🧯',
+  'Rent & Charges': '🏠',
+  'Restaurants & Bars': '🍔',
+  'Shopping': '🛍️',
+  'Transport': '🚕',
+  'Other': '🤚',
+};
+
 interface ExpenseListProps {
   expenses: Expense[];
   projectId: string;
@@ -96,7 +109,9 @@ export function ExpenseList({ expenses, projectId, canEdit }: ExpenseListProps) 
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: 'var(--color-primary-light)' }}
               >
-                <Receipt className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                {expense.category && EXPENSE_CATEGORY_EMOJIS[expense.category]
+                  ? <span className="text-xl leading-none">{EXPENSE_CATEGORY_EMOJIS[expense.category]}</span>
+                  : <Receipt className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />}
               </div>
             )}
 
@@ -110,13 +125,16 @@ export function ExpenseList({ expenses, projectId, canEdit }: ExpenseListProps) 
                 </span>
                 <CurrencyPill currency={expense.currency} />
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-stone-400">
+              <div className="flex items-center gap-2 text-xs text-stone-400">
                 <User className="w-3 h-3 flex-shrink-0" />
                 <span className="truncate">
                   {expense.expense_date
                     ? formatDate(expense.expense_date)
                     : formatDate(expense.created_at)}
                 </span>
+                {expense.category && (
+                  <span className="truncate text-stone-500">{expense.category}</span>
+                )}
               </div>
             </div>
           </div>

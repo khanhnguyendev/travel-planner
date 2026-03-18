@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, cloneElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';
 import { ExpenseForm } from '@/components/expenses/expense-form';
@@ -10,13 +10,16 @@ interface AddExpenseDialogProps {
   projectId: string;
   members: MemberWithProfile[];
   currentUserId: string;
+  /** Custom trigger element. If omitted, renders the default "Add expense" primary button. */
+  trigger?: React.ReactElement<{ onClick?: () => void }>;
 }
 
-export function AddExpenseDialog({ projectId, members, currentUserId }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ projectId, members, currentUserId, trigger }: AddExpenseDialogProps) {
   const [open, setOpen] = useState(false);
 
-  return (
-    <>
+  const triggerEl = trigger
+    ? cloneElement(trigger, { onClick: () => setOpen(true) })
+    : (
       <button
         onClick={() => setOpen(true)}
         className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
@@ -24,6 +27,11 @@ export function AddExpenseDialog({ projectId, members, currentUserId }: AddExpen
         <Plus className="w-4 h-4" />
         Add expense
       </button>
+    );
+
+  return (
+    <>
+      {triggerEl}
 
       {open && (
         <Dialog title="Add expense" onClose={() => setOpen(false)} maxWidth="max-w-xl">

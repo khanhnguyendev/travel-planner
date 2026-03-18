@@ -248,6 +248,14 @@ export function ExpenseDetail({
                 <Calendar className="w-4 h-4" />
                 {expenseDate}
               </span>
+              {expense.category && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-sm px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                >
+                  {expense.category}
+                </span>
+              )}
             </div>
           </div>
 

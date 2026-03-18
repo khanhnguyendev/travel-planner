@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireEditor } from '@/lib/membership';
 import type { ActionResult } from '@/features/auth/actions';
 
 // -------------------------------------------------------
@@ -21,6 +22,7 @@ export interface CreateExpenseInput {
   currency: string;
   expenseDate?: string | null;
   note?: string | null;
+  category?: string | null;
   paidByUserId: string;
   splits: SplitInput[];
   receiptPath?: string | null;
@@ -83,7 +85,11 @@ export async function createExpense(
     return { ok: false, error: 'Not authenticated' };
   }
 
-  const { projectId, title, amount, currency, expenseDate, note, paidByUserId, splits, receiptPath } = input;
+  const { projectId, title, amount, currency, expenseDate, note, category, paidByUserId, splits, receiptPath } = input;
+
+  // Caller must be editor or above
+  const callerRole = await requireEditor(projectId, user.id);
+  if (!callerRole) return { ok: false, error: 'Not a member of this project or insufficient permissions' };
 
   // Validate splits total
   const splitsTotal = splits.reduce((sum, s) => sum + s.amountOwed, 0);
@@ -122,6 +128,7 @@ export async function createExpense(
       currency,
       expense_date: expenseDate ?? new Date().toISOString(),
       note: note ?? null,
+      category: category ?? null,
       receipt_path: receiptPath ?? null,
     })
     .select('id')
@@ -189,7 +196,7 @@ export async function updateExpense(
 
   const admin = createAdminClient();
 
-  // Fetch existing expense to get project_id for path revalidation
+  // Fetch existing expense to get project_id for membership check + revalidation
   const { data: existingData } = await admin
     .from('expenses')
     .select('id, project_id')
@@ -201,6 +208,9 @@ export async function updateExpense(
   }
 
   const existing = existingData as unknown as { id: string; project_id: string };
+
+  const editorRole = await requireEditor(existing.project_id, user.id);
+  if (!editorRole) return { ok: false, error: 'Insufficient permissions' };
 
   const updatePayload: Record<string, unknown> = {};
   if (input.title !== undefined) updatePayload.title = input.title;
@@ -243,7 +253,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
 
   const admin = createAdminClient();
 
-  // Fetch project_id for revalidation
+  // Fetch project_id for membership check + revalidation
   const { data: expenseData } = await admin
     .from('expenses')
     .select('id, project_id')
@@ -251,6 +261,10 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
     .single();
 
   const expense = expenseData as unknown as { id: string; project_id: string } | null;
+  if (!expense) return { ok: false, error: 'Expense not found' };
+
+  const editorRole = await requireEditor(expense.project_id, user.id);
+  if (!editorRole) return { ok: false, error: 'Insufficient permissions' };
 
   // Delete splits first (FK constraint)
   await admin.from('expense_splits').delete().eq('expense_id', id);

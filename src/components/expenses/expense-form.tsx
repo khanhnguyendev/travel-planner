@@ -13,8 +13,21 @@ import { useLoadingToast } from '@/components/ui/toast';
 // Constants
 // -------------------------------------------------------
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'VND'] as const;
+const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'] as const;
 type Currency = (typeof CURRENCIES)[number];
+
+const EXPENSE_CATEGORIES = [
+  { emoji: '🛏️', label: 'Accommodation' },
+  { emoji: '🎤', label: 'Entertainment' },
+  { emoji: '🛒', label: 'Groceries' },
+  { emoji: '🦷', label: 'Healthcare' },
+  { emoji: '🧯', label: 'Insurance' },
+  { emoji: '🏠', label: 'Rent & Charges' },
+  { emoji: '🍔', label: 'Restaurants & Bars' },
+  { emoji: '🛍️', label: 'Shopping' },
+  { emoji: '🚕', label: 'Transport' },
+  { emoji: '🤚', label: 'Other' },
+] as const;
 
 // -------------------------------------------------------
 // Types
@@ -125,8 +138,9 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
 
   // Form fields
   const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<Currency>('VND');
   const [expenseDate, setExpenseDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -313,6 +327,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
     const input: CreateExpenseInput = {
       projectId,
       title: title.trim(),
+      category: category ?? null,
       amount: totalAmount,
       currency,
       expenseDate: expenseDate ? new Date(expenseDate).toISOString() : null,
@@ -370,8 +385,34 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
         />
       </div>
 
+      {/* Category */}
+      <div>
+        <Label>Category (optional)</Label>
+        <div className="flex flex-wrap gap-2">
+          {EXPENSE_CATEGORIES.map(({ emoji, label }) => {
+            const selected = category === label;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setCategory(selected ? null : label)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors"
+                style={{
+                  borderColor: selected ? 'var(--color-primary)' : 'var(--color-border)',
+                  backgroundColor: selected ? 'var(--color-primary-light)' : 'white',
+                  color: selected ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
+              >
+                <span>{emoji}</span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Amount + Currency */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="amount">Amount</Label>
           <InputField
@@ -518,7 +559,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className="w-28 rounded-lg border px-2 py-1.5 text-sm outline-none text-right"
+                  className="w-20 sm:w-28 rounded-lg border px-2 py-1.5 text-sm outline-none text-right flex-shrink-0"
                   style={{
                     borderColor: 'var(--color-border)',
                     backgroundColor: 'white',
@@ -586,7 +627,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
             <img
               src={receiptPreviewUrl}
               alt="Receipt preview"
-              className="w-40 h-40 object-cover rounded-2xl border"
+              className="w-full max-w-[160px] h-40 object-cover rounded-2xl border"
               style={{ borderColor: 'var(--color-border-muted)' }}
             />
             {isUploading && (
@@ -636,7 +677,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
       </div>
 
       {/* Submit */}
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
         <button
           type="submit"
           disabled={isSubmitting || isUploading}
