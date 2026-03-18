@@ -199,8 +199,13 @@ export function PlacesSection({
       </div>
 
       {/* Main content */}
-      <div className="flex flex-col lg:flex-row gap-5">
-        <div className="flex-1 min-w-0 space-y-4">
+      <div className="space-y-4">
+        {/* Top picks — inline strip above filters */}
+        {places.length >= 2 && (
+          <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
+        )}
+
+        <div className="space-y-4">
           {/* Search */}
           {places.length > 0 && (
             <PlaceSearch
@@ -272,13 +277,6 @@ export function PlacesSection({
             onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
           />
         </div>
-
-        {/* Leaderboard sidebar — desktop only */}
-        {places.length >= 2 && (
-          <div className="hidden lg:block lg:w-72 flex-shrink-0">
-            <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
-          </div>
-        )}
       </div>
     </div>
   );

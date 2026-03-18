@@ -34,6 +34,8 @@ import { MemberBalances } from '@/components/projects/member-balances';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
+import { ActivityFeed } from '@/components/activity/activity-feed';
+import { getProjectActivity } from '@/features/activity/queries';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -88,7 +90,7 @@ function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   );
 }
 
-type TabValue = 'places' | 'timeline' | 'map' | 'expenses';
+type TabValue = 'places' | 'timeline' | 'map' | 'expenses' | 'activity';
 
 function TabBar({
   activeTab,
@@ -102,6 +104,7 @@ function TabBar({
     { label: 'Timeline', value: 'timeline' },
     { label: 'Map', value: 'map' },
     { label: 'Expenses', value: 'expenses' },
+    { label: 'Activity', value: 'activity' },
   ];
 
   return (
@@ -145,7 +148,7 @@ export default async function ProjectDetailPage({
   const { tab: tabParam } = await searchParams;
   const user = await requireSession();
 
-  const validTabs: TabValue[] = ['places', 'timeline', 'map', 'expenses'];
+  const validTabs: TabValue[] = ['places', 'timeline', 'map', 'expenses', 'activity'];
   const activeTab: TabValue =
     tabParam && validTabs.includes(tabParam as TabValue)
       ? (tabParam as TabValue)
@@ -175,7 +178,7 @@ export default async function ProjectDetailPage({
   // Fetch places (needed for Places + Timeline + Map tabs)
   const places = await getPlaces(projectId);
 
-  const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits] =
+  const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries] =
     await Promise.all([
       getVoteSummary(projectId),
       Promise.all(places.map((p) => getUserVote(p.id, user.id))),
@@ -193,6 +196,7 @@ export default async function ProjectDetailPage({
       })(),
       getCommentsByProjectId(projectId),
       getExpensesWithSplits(projectId),
+      getProjectActivity(projectId),
     ]);
 
   const userVotes = userVotesRaw.filter(Boolean) as PlaceVote[];
@@ -557,6 +561,13 @@ export default async function ProjectDetailPage({
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Tab: Activity */}
+      {activeTab === 'activity' && (
+        <div className="mb-6">
+          <ActivityFeed activities={activityEntries} />
         </div>
       )}
     </div>
