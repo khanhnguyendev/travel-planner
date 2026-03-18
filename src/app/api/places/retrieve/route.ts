@@ -14,6 +14,9 @@ const retrieveSchema = z.object({
   sessionToken: z.string().min(1, 'sessionToken is required'),
   projectId: z.string().uuid('projectId must be a valid UUID'),
   categoryId: z.string().uuid('categoryId must be a valid UUID'),
+  visitDate: z.string().nullable().optional(),
+  visitTimeFrom: z.string().nullable().optional(),
+  visitTimeTo: z.string().nullable().optional(),
 });
 
 // -------------------------------------------------------
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { mapboxId, sessionToken, projectId, categoryId } = parsed.data;
+  const { mapboxId, sessionToken, projectId, categoryId, visitDate, visitTimeFrom, visitTimeTo } = parsed.data;
 
   // 3. Verify caller is editor/admin/owner of project
   const { data: membershipData } = await supabase
@@ -126,9 +129,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     price_level: null,
     editorial_summary: null,
     metadata_json: null,
-    visit_date: null,
-    visit_time_from: null,
-    visit_time_to: null,
+    visit_date: visitDate ?? null,
+    visit_time_from: visitTimeFrom ?? null,
+    visit_time_to: visitTimeTo ?? null,
     backup_place_id: null,
   };
 

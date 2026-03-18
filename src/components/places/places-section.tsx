@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Settings2, ChevronDown, ChevronUp, Tag } from 'lucide-react';
+import { Plus, Tag } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, ProjectRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -9,6 +9,7 @@ import { AddPlaceForm } from '@/components/places/add-place-form';
 import { PlaceGrid } from '@/components/places/place-grid';
 import { PlaceSearch } from '@/components/places/place-search';
 import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
+import { Dialog } from '@/components/ui/dialog';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
 interface PlacesSectionProps {
@@ -52,27 +53,25 @@ export function PlacesSection({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [voteSummaries] = useState<VoteSummaryEntry[]>(initialVoteSummaries);
   const [userVotes] = useState<PlaceVote[]>(initialUserVotes);
-  const [reviewsByPlaceId, setReviewsByPlaceId] = useState<
-    Record<string, PlaceReview[]>
-  >(initialReviewsByPlaceId);
+  const [reviewsByPlaceId, setReviewsByPlaceId] = useState<Record<string, PlaceReview[]>>(initialReviewsByPlaceId);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showAddPlace, setShowAddPlace] = useState(false);
-  const [showManageCategories, setShowManageCategories] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [searchResults, setSearchResults] = useState<Place[] | null>(null);
   const [nextPlaceId, setNextPlaceId] = useState<string | null>(null);
 
   const editor = canEdit(role);
 
+  // Compute "next stop" based on GMT+7
   useEffect(() => {
-    // GMT+7 = UTC+7
     let closest: Place | null = null;
     let closestDiff = Infinity;
     for (const p of places) {
       if (!p.visit_date || !p.visit_time_from) continue;
       const [h, m] = p.visit_time_from.split(':').map(Number);
-      const dt = new Date(`${p.visit_date}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00+07:00`).getTime();
+      const dt = new Date(`${p.visit_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+07:00`).getTime();
       const diff = dt - Date.now();
       if (diff > 0 && diff < closestDiff) {
         closestDiff = diff;
@@ -91,32 +90,22 @@ export function PlacesSection({
     if (reviews.length > 0) {
       setReviewsByPlaceId((prev) => ({ ...prev, [place.id]: reviews }));
     }
-    setShowAddPlace(false);
   }
 
-  // The base list is either search results or all places
   const basePlaces = searchResults ?? places;
-
-  // Build a vote summary map for sorting
   const voteSummaryMap = Object.fromEntries(voteSummaries.map((v) => [v.placeId, v]));
 
-  // Sort the base places
   const sortedPlaces = useMemo(() => {
     const list = [...basePlaces];
     switch (sortOption) {
       case 'newest':
-        return list.sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      case 'most_voted': {
+        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'most_voted':
         return list.sort((a, b) => {
-          const aVotes = voteSummaryMap[a.id];
-          const bVotes = voteSummaryMap[b.id];
-          const aNet = aVotes ? aVotes.upvotes - aVotes.downvotes : 0;
-          const bNet = bVotes ? bVotes.upvotes - bVotes.downvotes : 0;
+          const aNet = (voteSummaryMap[a.id]?.upvotes ?? 0) - (voteSummaryMap[a.id]?.downvotes ?? 0);
+          const bNet = (voteSummaryMap[b.id]?.upvotes ?? 0) - (voteSummaryMap[b.id]?.downvotes ?? 0);
           return bNet - aNet;
         });
-      }
       case 'visit_date':
         return list.sort((a, b) => {
           if (!a.visit_date && !b.visit_date) return 0;
@@ -134,14 +123,34 @@ export function PlacesSection({
 
   return (
     <div className="space-y-5">
+      {/* Dialogs */}
+      {showAddCategory && editor && (
+        <Dialog title="Add category" onClose={() => setShowAddCategory(false)} maxWidth="max-w-sm">
+          <AddCategoryForm
+            projectId={projectId}
+            onCreated={(cat) => { handleCategoryCreated(cat); setShowAddCategory(false); }}
+            onCancel={() => setShowAddCategory(false)}
+          />
+        </Dialog>
+      )}
+
+      {showAddPlace && editor && (
+        <Dialog title="Add a place" onClose={() => setShowAddPlace(false)} maxWidth="max-w-lg">
+          <AddPlaceForm
+            projectId={projectId}
+            categories={categories}
+            onAdded={(place, reviews) => { handlePlaceAdded(place, reviews); setShowAddPlace(false); }}
+            onCancel={() => setShowAddPlace(false)}
+          />
+        </Dialog>
+      )}
+
       {/* Section header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-lg font-semibold text-stone-800">
           Places
           {places.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-stone-400">
-              ({places.length})
-            </span>
+            <span className="ml-2 text-sm font-normal text-stone-400">({places.length})</span>
           )}
         </h2>
 
@@ -149,26 +158,16 @@ export function PlacesSection({
           {editor && (
             <>
               <button
-                onClick={() => setShowManageCategories((v) => !v)}
+                onClick={() => setShowAddCategory(true)}
                 className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px]"
-                style={{
-                  backgroundColor: showManageCategories
-                    ? 'var(--color-bg-muted)'
-                    : 'var(--color-bg-subtle)',
-                  color: 'var(--color-text-muted)',
-                }}
+                style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
               >
-                <Settings2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Categories</span>
-                {showManageCategories ? (
-                  <ChevronUp className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
+                <Tag className="w-4 h-4" />
+                <span className="hidden sm:inline">Add category</span>
               </button>
 
               <button
-                onClick={() => setShowAddPlace((v) => !v)}
+                onClick={() => setShowAddPlace(true)}
                 className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
               >
                 <Plus className="w-4 h-4" />
@@ -179,77 +178,8 @@ export function PlacesSection({
         </div>
       </div>
 
-      {/* Manage categories panel */}
-      {showManageCategories && editor && (
-        <div
-          className="card p-5"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
-          <h3 className="text-sm font-semibold mb-4 text-stone-800">
-            Manage categories
-          </h3>
-
-          {categories.length === 0 ? (
-            <div className="flex flex-col items-center py-6 text-center">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-                style={{ backgroundColor: 'var(--color-primary-light)' }}
-              >
-                <Tag className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-              </div>
-              <p className="text-sm font-medium text-stone-800 mb-1">
-                Create a category to organize places
-              </p>
-              <p className="text-xs text-stone-400 mb-4">
-                Categories help group places by type like restaurants, hotels, or attractions.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-                  style={{
-                    backgroundColor: cat.color ?? 'var(--color-bg-subtle)',
-                    color: '#1C1917',
-                  }}
-                >
-                  {cat.icon && <span>{cat.icon}</span>}
-                  <span>{cat.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <AddCategoryForm
-            projectId={projectId}
-            onCreated={handleCategoryCreated}
-          />
-        </div>
-      )}
-
-      {/* Add place form */}
-      {showAddPlace && editor && (
-        <div
-          className="card p-5"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
-          <h3 className="text-sm font-semibold mb-4 text-stone-800">
-            Add a place
-          </h3>
-          <AddPlaceForm
-            projectId={projectId}
-            categories={categories}
-            onAdded={handlePlaceAdded}
-            onCancel={() => setShowAddPlace(false)}
-          />
-        </div>
-      )}
-
-      {/* Main content: grid + leaderboard sidebar */}
+      {/* Main content */}
       <div className="flex flex-col lg:flex-row gap-5">
-        {/* Left: search + sort + category filter + grid */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Search */}
           {places.length > 0 && (
@@ -261,14 +191,10 @@ export function PlacesSection({
             />
           )}
 
-          {/* Sort dropdown */}
+          {/* Sort */}
           {places.length > 1 && (
             <div className="flex items-center gap-2">
-              <label
-                htmlFor="sort-places"
-                className="text-xs font-medium flex-shrink-0"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+              <label htmlFor="sort-places" className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
                 Sort by
               </label>
               <select
@@ -276,16 +202,10 @@ export function PlacesSection({
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value as SortOption)}
                 className="rounded-xl border px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500"
-                style={{
-                  borderColor: 'var(--color-border)',
-                  backgroundColor: 'white',
-                  color: 'var(--color-text)',
-                }}
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -293,11 +213,7 @@ export function PlacesSection({
 
           {/* Category filter */}
           {categories.length > 0 && (
-            <CategoryList
-              categories={categories}
-              selectedId={selectedCategoryId}
-              onSelect={setSelectedCategoryId}
-            />
+            <CategoryList categories={categories} selectedId={selectedCategoryId} onSelect={setSelectedCategoryId} />
           )}
 
           {/* Place grid */}
@@ -317,14 +233,10 @@ export function PlacesSection({
           />
         </div>
 
-        {/* Right: vote leaderboard sidebar */}
+        {/* Leaderboard sidebar */}
         {places.length >= 2 && (
           <div className="lg:w-72 flex-shrink-0">
-            <VoteLeaderboard
-              places={places}
-              voteSummaries={voteSummaries}
-              categories={categories}
-            />
+            <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
           </div>
         )}
       </div>

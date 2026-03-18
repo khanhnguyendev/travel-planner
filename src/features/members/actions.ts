@@ -101,6 +101,58 @@ export async function sendInvite(
 }
 
 // -------------------------------------------------------
+// generateInviteLink
+// -------------------------------------------------------
+
+export async function generateInviteLink(
+  projectId: string,
+  role: ProjectRole = 'editor'
+): Promise<ActionResult<{ inviteUrl: string }>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const { data: callerData } = await supabase
+    .from('project_members')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const callerRole = (callerData as { role: string } | null)?.role as ProjectRole | undefined;
+  if (!callerRole || !['owner', 'admin'].includes(callerRole)) {
+    return { ok: false, error: 'Only owner or admin can create invite links' };
+  }
+
+  const tokenBytes = crypto.getRandomValues(new Uint8Array(48));
+  const token = Array.from(tokenBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const admin = createAdminClient();
+  const { error } = await admin.from('project_invites').insert({
+    project_id: projectId,
+    email: `link-invite-${token.slice(0, 8)}@noemail.local`,
+    invited_by_user_id: user.id,
+    token,
+    role,
+    status: 'pending',
+    expires_at: expiresAt,
+  });
+
+  if (error) {
+    console.error('generateInviteLink error:', error);
+    return { ok: false, error: 'Failed to generate invite link' };
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const inviteUrl = `${siteUrl}/invite/accept?token=${token}`;
+
+  revalidatePath(`/projects/${projectId}/members`);
+  return { ok: true, data: { inviteUrl } };
+}
+
+// -------------------------------------------------------
 // acceptInvite
 // -------------------------------------------------------
 

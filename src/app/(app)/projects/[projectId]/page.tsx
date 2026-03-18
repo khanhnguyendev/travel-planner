@@ -26,6 +26,7 @@ import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/projects/cover-image-upload';
+import { InviteLinkButton } from '@/components/members/invite-link-button';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -306,14 +307,19 @@ export default async function ProjectDetailPage({
           <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
             Members
           </h2>
-          <Link
-            href={`/projects/${projectId}/members`}
-            className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
-            style={{ color: 'var(--color-text-subtle)' }}
-          >
-            <UserCog className="w-3.5 h-3.5" />
-            Manage
-          </Link>
+          <div className="flex items-center gap-2">
+            {canManage && (
+              <InviteLinkButton projectId={projectId} />
+            )}
+            <Link
+              href={`/projects/${projectId}/members`}
+              className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
+              style={{ color: 'var(--color-text-subtle)' }}
+            >
+              <UserCog className="w-3.5 h-3.5" />
+              Manage
+            </Link>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {members.map((m) => {
