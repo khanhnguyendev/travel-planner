@@ -36,7 +36,7 @@ export async function searchPlaces(
   );
   url.searchParams.set('q', query);
   url.searchParams.set('session_token', sessionToken);
-  url.searchParams.set('language', 'en');
+  url.searchParams.set('language', 'vi');
   url.searchParams.set('limit', '5');
   url.searchParams.set('access_token', token);
 
@@ -86,6 +86,7 @@ export async function retrievePlace(
     `https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(mapboxId)}`
   );
   url.searchParams.set('session_token', sessionToken);
+  url.searchParams.set('language', 'vi');
   url.searchParams.set('access_token', token);
 
   console.log('[mapbox] retrieve', { mapboxId, sessionToken });
