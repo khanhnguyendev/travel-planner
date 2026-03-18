@@ -4,6 +4,7 @@ import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { cn } from '@/lib/utils';
+import { extractLocationTag } from '@/lib/address';
 
 interface PlaceCardProps {
   place: Place;
@@ -80,7 +81,9 @@ export function PlaceCard({
 }: PlaceCardProps) {
   const hasSchedule = place.visit_date || place.visit_time_from;
   const meta = place.metadata_json as { region?: string; district?: string } | null;
-  const locationTags = [meta?.district, meta?.region].filter(Boolean) as string[];
+  const locationTags: string[] = meta?.district || meta?.region
+    ? [meta?.district, meta?.region].filter(Boolean) as string[]
+    : place.address ? [extractLocationTag(place.address)].filter(Boolean) as string[] : [];
 
   return (
     <div
