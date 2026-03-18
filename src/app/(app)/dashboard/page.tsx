@@ -1,16 +1,32 @@
 import Link from 'next/link';
-import { Plus, Compass, Calendar, Users } from 'lucide-react';
+import { Plus, Compass, Calendar, Users, Globe, Lock } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getProjects } from '@/features/projects/queries';
+import { getProjects, type ProjectWithRole } from '@/features/projects/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
 import { PageHeader } from '@/components/ui/page-header';
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/types'; // used by StatusBadge / VisibilityBadge props
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
 };
+
+function VisibilityBadge({ visibility }: { visibility: Project['visibility'] }) {
+  const isPublic = visibility === 'public';
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+      style={{
+        backgroundColor: isPublic ? '#EFF6FF' : 'var(--color-bg-subtle)',
+        color: isPublic ? '#3B82F6' : 'var(--color-text-muted)',
+      }}
+    >
+      {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+      {isPublic ? 'Public' : 'Private'}
+    </span>
+  );
+}
 
 function StatusBadge({ status }: { status: Project['status'] }) {
   const isArchived = status === 'archived';
@@ -27,7 +43,26 @@ function StatusBadge({ status }: { status: Project['status'] }) {
   );
 }
 
-async function ProjectCard({ project }: { project: Project }) {
+const ROLE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  owner:  { bg: '#FEF3C7', color: '#D97706', label: 'Owner' },
+  admin:  { bg: '#EDE9FE', color: '#7C3AED', label: 'Admin' },
+  editor: { bg: '#DCFCE7', color: '#16A34A', label: 'Editor' },
+  viewer: { bg: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)', label: 'Viewer' },
+};
+
+function RoleBadge({ role }: { role: string }) {
+  const s = ROLE_STYLES[role] ?? ROLE_STYLES.viewer;
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+      style={{ backgroundColor: s.bg, color: s.color }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+async function ProjectCard({ project }: { project: ProjectWithRole }) {
   const members = await getMembers(project.id);
   const hasCover = !!project.cover_image_url;
 
@@ -47,12 +82,17 @@ async function ProjectCard({ project }: { project: Project }) {
           />
           {/* Gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-          {/* Status badge on top of cover */}
-          <div className="absolute top-3 right-3">
+          {/* Badges on top of cover */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5">
+            <VisibilityBadge visibility={project.visibility} />
             <StatusBadge status={project.status} />
           </div>
+          {/* Role badge bottom-left */}
+          <div className="absolute bottom-3 left-3">
+            <RoleBadge role={project.myRole} />
+          </div>
           {/* Title on cover */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="absolute bottom-0 left-0 right-0 p-4 pt-7">
             <h3 className="font-semibold text-lg truncate text-white">
               {project.title}
             </h3>
@@ -73,7 +113,10 @@ async function ProjectCard({ project }: { project: Project }) {
                 </p>
               )}
             </div>
-            <StatusBadge status={project.status} />
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <VisibilityBadge visibility={project.visibility} />
+              <StatusBadge status={project.status} />
+            </div>
           </div>
         )}
 
@@ -94,6 +137,9 @@ async function ProjectCard({ project }: { project: Project }) {
             <Users className="w-3.5 h-3.5" />
             {members.length} {members.length === 1 ? 'member' : 'members'}
           </span>
+          {!hasCover && (
+            <RoleBadge role={project.myRole} />
+          )}
         </div>
       </div>
     </Link>
