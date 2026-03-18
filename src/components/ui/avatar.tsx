@@ -21,6 +21,7 @@ export function Avatar({ user, size = 'md' }: AvatarProps) {
         src={user.avatar_url}
         alt={user.display_name ?? 'User avatar'}
         className={`${cls} rounded-full object-cover flex-shrink-0`}
+        referrerPolicy="no-referrer"
       />
     );
   }
