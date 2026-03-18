@@ -935,6 +935,11 @@ export default async function TripDetailPage({
             initialUserVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
             placeExpensesByPlaceId={placeExpensesByPlaceId}
+            members={members}
+            budget={trip.budget}
+            budgetCurrency={trip.budget_currency}
+            budgetPayerUserId={trip.budget_payer_user_id}
+            canManageBudget={canManage}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}

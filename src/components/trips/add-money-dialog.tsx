@@ -20,6 +20,7 @@ interface AddMoneyDialogProps {
   budgetCurrency: string;
   budgetPayerUserId: string | null;
   canManageBudget: boolean;
+  initialTab?: MoneyTab;
   triggerLabel?: string;
   triggerClassName?: string;
 }
@@ -33,14 +34,16 @@ export function AddMoneyDialog({
   budgetCurrency,
   budgetPayerUserId,
   canManageBudget,
+  initialTab,
   triggerLabel = 'Add money',
   triggerClassName,
 }: AddMoneyDialogProps) {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<MoneyTab>(canManageBudget && budget == null ? 'income' : 'expense');
+  const defaultTab = initialTab ?? (canManageBudget && budget == null ? 'income' : 'expense');
+  const [activeTab, setActiveTab] = useState<MoneyTab>(defaultTab);
 
   function handleOpen() {
-    setActiveTab(canManageBudget && budget == null ? 'income' : 'expense');
+    setActiveTab(defaultTab);
     setOpen(true);
   }
 
