@@ -301,9 +301,6 @@ function StopSpotlightCard({
     <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-            Stop
-          </p>
           <div
             className="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold"
             style={{ backgroundColor: styles.chipBg, color: styles.chipText }}
@@ -742,9 +739,6 @@ export default async function TripDetailPage({
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Budget
               </p>
-              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                Shared budget, recent funding, and the latest spend.
-              </p>
             </div>
 
             <BudgetEditor
@@ -903,9 +897,6 @@ export default async function TripDetailPage({
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Trip stops
               </p>
-              <h2 className="mt-1 text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                Previous, current, and next
-              </h2>
             </div>
           </div>
 
