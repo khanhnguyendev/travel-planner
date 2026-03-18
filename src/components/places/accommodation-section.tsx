@@ -144,7 +144,7 @@ function AccommodationCard({
 }) {
   return (
     <div
-      className="card p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow"
+      className="section-shell flex cursor-pointer flex-col gap-3 p-4 transition-all hover:-translate-y-1 hover:shadow-xl"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -228,14 +228,17 @@ export function AccommodationSection({
 
   return (
     <>
-      <div className="card p-5 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FFF7ED' }}>
+      <div className="section-shell mb-6 p-5">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm" style={{ color: '#EA580C' }}>
             <BedDouble className="w-4 h-4 text-orange-600" />
           </div>
           <div>
-            <h2 className="font-semibold text-base text-stone-800">Accommodation</h2>
-            <p className="text-xs text-stone-400">{sorted.length} {sorted.length === 1 ? 'place' : 'places'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Stay
+            </p>
+            <h2 className="text-lg font-semibold section-title text-stone-800">Accommodation</h2>
+            <p className="text-xs text-stone-400">{sorted.length} {sorted.length === 1 ? 'place' : 'places'} pinned for the trip</p>
           </div>
         </div>
 

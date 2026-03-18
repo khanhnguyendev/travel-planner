@@ -80,22 +80,20 @@ export function PlaceGrid({
   if (filtered.length === 0) {
     return (
       <div
-        className="card flex flex-col items-center justify-center py-16 text-center"
-        style={{ borderStyle: 'dashed' }}
+        className="section-shell flex flex-col items-center justify-center py-16 text-center"
       >
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-          style={{ backgroundColor: 'var(--color-primary-light)' }}
+          className="mb-4 flex h-14 w-14 items-center justify-center rounded-[1.3rem] bg-white shadow-sm"
         >
           <MapPin className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
         </div>
-        <p className="font-semibold text-base text-stone-800 mb-1">
+        <p className="mb-1 text-base font-semibold section-title text-stone-800">
           {selectedCategoryId ? 'No places in this category yet' : 'Add your first destination'}
         </p>
         <p className="text-sm text-stone-400 max-w-xs mb-5">
           {selectedCategoryId
             ? 'Try selecting a different category or add a new place.'
-            : 'Paste a Google Maps link to add places for your group to vote on.'}
+            : 'Search with Mapbox and build a shortlist your group can vote on.'}
         </p>
         {!selectedCategoryId && onAddPlace && (
           <button
@@ -119,19 +117,19 @@ export function PlaceGrid({
             <div key={catId}>
               {/* Category header — only show when "All" is selected */}
               {!selectedCategoryId && cat && (
-                <div className="flex items-center gap-2 mb-4">
+                <div className="mb-4 flex items-center gap-2">
                   {cat.icon && (
                     <span className="text-lg leading-none">{cat.icon}</span>
                   )}
                   <h3
-                    className="font-semibold text-sm text-stone-800"
+                    className="text-sm font-semibold section-title text-stone-800"
                   >
                     {cat.name}
                   </h3>
                   <span
-                    className="text-xs px-2 py-0.5 rounded-full"
+                    className="rounded-full px-2 py-0.5 text-xs"
                     style={{
-                      backgroundColor: 'var(--color-bg-subtle)',
+                      backgroundColor: 'rgba(255,255,255,0.8)',
                       color: 'var(--color-text-muted)',
                     }}
                   >

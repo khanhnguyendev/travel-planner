@@ -93,8 +93,8 @@ export function PlaceCard({
   return (
     <div
       className={cn(
-        'card flex flex-col cursor-pointer',
-        'hover:scale-[1.02] hover:shadow-md transition-all',
+        'section-shell flex flex-col cursor-pointer overflow-hidden',
+        'hover:-translate-y-1 hover:shadow-xl transition-all',
         isNext && 'ring-2 ring-teal-500 ring-offset-2'
       )}
       onClick={onClick}
@@ -109,14 +109,14 @@ export function PlaceCard({
     >
       {/* Top accent bar */}
       <div
-        className="h-1.5 rounded-t-2xl"
+        className="h-1.5"
         style={{ backgroundColor: category?.color ?? 'var(--color-primary)' }}
       />
 
-      <div className="p-4 flex flex-col gap-3 flex-1">
+      <div className="flex flex-1 flex-col gap-3 p-4">
         {/* "Next stop" badge */}
         {isNext && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full w-fit animate-pulse">
+          <div className="flex w-fit items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 animate-pulse">
             <Navigation className="w-3 h-3" />
             Next stop
           </div>
@@ -134,7 +134,7 @@ export function PlaceCard({
                   e.stopPropagation();
                   onLocationTagClick?.(tag);
                 }}
-                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors"
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium transition-colors"
                 style={{
                   backgroundColor: '#EFF6FF',
                   color: '#2563EB',
@@ -151,7 +151,7 @@ export function PlaceCard({
 
         {/* Place name */}
         <div>
-          <h3 className="font-semibold text-base leading-snug line-clamp-2 text-stone-800">
+          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-stone-800 section-title">
             {place.name}
           </h3>
 
@@ -201,7 +201,7 @@ export function PlaceCard({
         {/* Schedule */}
         {hasSchedule && (
           <div
-            className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-xl border-l-2"
+            className="flex items-center gap-2 flex-wrap rounded-[1rem] border-l-2 px-3 py-2"
             style={{ backgroundColor: '#F0FDFA', borderLeftColor: '#0D9488' }}
           >
             {place.visit_date && (
@@ -234,7 +234,7 @@ export function PlaceCard({
 
         {/* Map buttons + Votes */}
         <div
-          className="pt-2 border-t space-y-2"
+          className="space-y-2 border-t pt-2"
           style={{ borderColor: 'var(--color-border-muted)' }}
           onClick={(e) => e.stopPropagation()}
         >

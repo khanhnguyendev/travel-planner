@@ -12,6 +12,12 @@ import {
   Pencil,
   Eye,
   Info,
+  MapPin,
+  Activity,
+  BedDouble,
+  Sparkles,
+  Coins,
+  Clock3,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
@@ -27,7 +33,6 @@ import { PlacesSection } from '@/components/places/places-section';
 import { TripTimeline } from '@/components/places/trip-timeline';
 import { MapTabClient } from '@/components/places/map-tab-client';
 import { DebtSummary } from '@/components/expenses/debt-summary';
-import { PageHeader } from '@/components/ui/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
@@ -37,12 +42,8 @@ import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
 import { ActivityFeed } from '@/components/activity/activity-feed';
 import { getTripActivity } from '@/features/activity/queries';
-import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment, Place } from '@/lib/types';
 import type { Metadata } from 'next';
-
-// -------------------------------------------------------
-// Metadata
-// -------------------------------------------------------
 
 export async function generateMetadata({
   params,
@@ -56,23 +57,20 @@ export async function generateMetadata({
   };
 }
 
-// -------------------------------------------------------
-// Sub-components
-// -------------------------------------------------------
-
 function RoleBadge({ role }: { role: TripRole }) {
-  const styles: Record<TripRole, { bg: string; text: string }> = {
-    owner: { bg: '#FEF3C7', text: '#92400E' },
-    admin: { bg: '#EDE9FE', text: '#5B21B6' },
-    editor: { bg: 'var(--color-primary-light)', text: 'var(--color-primary)' },
-    viewer: { bg: 'var(--color-bg-muted)', text: 'var(--color-text-muted)' },
+  const styles: Record<TripRole, { bg: string; text: string; icon: React.ReactNode }> = {
+    owner: { bg: '#FEF3C7', text: '#92400E', icon: <Crown className="h-3 w-3" /> },
+    admin: { bg: '#EDE9FE', text: '#5B21B6', icon: <ShieldCheck className="h-3 w-3" /> },
+    editor: { bg: '#CCFBF1', text: '#0F766E', icon: <Pencil className="h-3 w-3" /> },
+    viewer: { bg: '#F1F5F9', text: '#475569', icon: <Eye className="h-3 w-3" /> },
   };
   const s = styles[role];
   return (
     <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize"
       style={{ backgroundColor: s.bg, color: s.text }}
     >
+      {s.icon}
       {role}
     </span>
   );
@@ -82,12 +80,106 @@ function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const isPublic = visibility === 'public';
   return (
     <span
-      className="inline-flex items-center gap-1 text-xs"
-      style={{ color: 'var(--color-text-subtle)' }}
+      className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
     >
-      {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-      {isPublic ? 'Public' : 'Private'}
+      {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+      {isPublic ? 'Public trip' : 'Private trip'}
     </span>
+  );
+}
+
+function getTripPhase(trip: { start_date: string | null; end_date: string | null; status: string }) {
+  if (trip.status === 'archived') return 'Archived';
+  const today = new Date();
+  const start = trip.start_date ? new Date(`${trip.start_date}T00:00:00`) : null;
+  const end = trip.end_date ? new Date(`${trip.end_date}T23:59:59`) : null;
+
+  if (start && end && today >= start && today <= end) return 'Traveling';
+  if (start && today < start) return 'Planning';
+  if (end && today > end) return 'Wrapped';
+  return 'Planning';
+}
+
+function getTopPick(places: Place[], summaries: Array<{ placeId: string; upvotes: number; downvotes: number }>) {
+  const summaryMap = new Map(summaries.map((entry) => [entry.placeId, entry]));
+  return [...places]
+    .map((place) => {
+      const summary = summaryMap.get(place.id);
+      return {
+        place,
+        score: (summary?.upvotes ?? 0) - (summary?.downvotes ?? 0),
+        activity: (summary?.upvotes ?? 0) + (summary?.downvotes ?? 0),
+      };
+    })
+    .filter((entry) => entry.activity > 0)
+    .sort((a, b) => b.score - a.score)[0] ?? null;
+}
+
+function getNextStop(places: Place[]) {
+  return [...places]
+    .filter((place) => place.visit_date)
+    .sort((a, b) => {
+      const aValue = `${a.visit_date ?? ''}-${a.visit_time_from ?? '99:99'}`;
+      const bValue = `${b.visit_date ?? ''}-${b.visit_time_from ?? '99:99'}`;
+      return aValue.localeCompare(bValue);
+    })[0] ?? null;
+}
+
+function OverviewStat({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="metric-tile px-4 py-4">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+        {icon}
+      </div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+        {label}
+      </p>
+      <p className="mt-1 text-base font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+        {value}
+      </p>
+      <p className="mt-1 text-sm leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+        {hint}
+      </p>
+    </div>
+  );
+}
+
+function PulseCard({
+  icon,
+  label,
+  title,
+  body,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="section-shell p-4">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+        {icon}
+      </div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+        {label}
+      </p>
+      <p className="mt-1 text-base font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+        {title}
+      </p>
+      <p className="mt-1 text-sm leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+        {body}
+      </p>
+    </div>
   );
 }
 
@@ -102,45 +194,39 @@ function TabBar({
   tripId: string;
   tabs: TabValue[];
 }) {
-  const tabItems: { label: string; value: TabValue }[] = [
-    { label: 'Places', value: 'places' },
-    { label: 'Timeline', value: 'timeline' },
-    { label: 'Map', value: 'map' },
-    { label: 'Expenses', value: 'expenses' },
-    { label: 'Activity', value: 'activity' },
+  const tabItems: { label: string; value: TabValue; icon: React.ReactNode }[] = [
+    { label: 'Places', value: 'places', icon: <MapPin className="h-3.5 w-3.5" /> },
+    { label: 'Plan', value: 'timeline', icon: <Calendar className="h-3.5 w-3.5" /> },
+    { label: 'Map', value: 'map', icon: <Globe className="h-3.5 w-3.5" /> },
+    { label: 'Money', value: 'expenses', icon: <Coins className="h-3.5 w-3.5" /> },
+    { label: 'Activity', value: 'activity', icon: <Activity className="h-3.5 w-3.5" /> },
   ];
 
   return (
-    <div
-      className="flex items-center gap-1 p-1 rounded-2xl mb-6"
-      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-    >
-      {tabItems
-        .filter((tab) => tabs.includes(tab.value))
-        .map((tab) => {
-        const isActive = tab.value === activeTab;
-        return (
-          <Link
-            key={tab.value}
-            href={`/trips/${tripId}?tab=${tab.value}`}
-            className="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px] flex items-center justify-center"
-            style={{
-              backgroundColor: isActive ? 'white' : 'transparent',
-              color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
+    <div className="sticky-tabs mb-5">
+      <div className="section-shell overflow-x-auto p-2">
+        <div className="flex min-w-max items-center gap-2">
+          {tabItems
+            .filter((tab) => tabs.includes(tab.value))
+            .map((tab) => {
+              const isActive = tab.value === activeTab;
+              return (
+                <Link
+                  key={tab.value}
+                  href={`/trips/${tripId}?tab=${tab.value}`}
+                  className={`pill-tab flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${isActive ? 'pill-tab-active' : ''}`}
+                  style={{ color: isActive ? 'var(--color-text)' : 'var(--color-text-muted)' }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </Link>
+              );
+            })}
+        </div>
+      </div>
     </div>
   );
 }
-
-// -------------------------------------------------------
-// Page
-// -------------------------------------------------------
 
 export default async function TripDetailPage({
   params,
@@ -165,13 +251,12 @@ export default async function TripDetailPage({
     notFound();
   }
 
-  // Non-members can view public trips in viewer mode
   const effectiveRole: TripRole | null =
     role ?? (trip.visibility === 'public' ? 'viewer' : null);
   if (!effectiveRole) {
     notFound();
   }
-  // From here effectiveRole is guaranteed non-null
+
   const resolvedRole = effectiveRole as TripRole;
   const currentUserId = user?.id ?? '';
   const isMember = role != null;
@@ -188,13 +273,12 @@ export default async function TripDetailPage({
   const canVote = isMember && !isArchived;
   const canComment = isMember;
 
-  // Fetch places (needed for Places + Timeline + Map tabs)
   const places = await getPlaces(tripId);
 
   const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries] =
     await Promise.all([
       getVoteSummary(tripId),
-      user && isMember ? Promise.all(places.map((p) => getUserVote(p.id, user.id))) : [],
+      user && isMember ? Promise.all(places.map((place) => getUserVote(place.id, user.id))) : [],
       (async () => {
         if (places.length === 0) return [];
         const supabase = await createClient();
@@ -203,7 +287,7 @@ export default async function TripDetailPage({
           .select('*')
           .in(
             'place_id',
-            places.map((p) => p.id)
+            places.map((place) => place.id)
           );
         return data ?? [];
       })(),
@@ -231,219 +315,296 @@ export default async function TripDetailPage({
   }
 
   const commentAuthors: Record<string, string> = {};
-  for (const m of members) {
-    commentAuthors[m.user_id] = m.profile.display_name ?? 'Member';
+  for (const member of members) {
+    commentAuthors[member.user_id] = member.profile.display_name ?? 'Member';
   }
 
-  const memberProfiles = members.map((m) => ({
-    id: m.profile.id,
-    display_name: m.profile.display_name,
-    avatar_url: m.profile.avatar_url,
-    user_id: m.user_id,
+  const memberProfiles = members.map((member) => ({
+    id: member.profile.id,
+    display_name: member.profile.display_name,
+    avatar_url: member.profile.avatar_url,
+    user_id: member.user_id,
   }));
+
+  const tripPhase = getTripPhase(trip);
+  const topPick = getTopPick(places, voteSummaries);
+  const nextStop = getNextStop(places);
+  const accommodationCategoryIds = new Set(
+    categories.filter((category) => category.category_type === 'accommodation').map((category) => category.id)
+  );
+  const accommodationPlaces = places.filter((place) => accommodationCategoryIds.has(place.category_id));
+  const scheduledPlaces = places.filter((place) => place.visit_date);
+  const totalsByCurrency: Record<string, number> = {};
+  for (const expense of expenses) {
+    totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
+  }
+  const spendSummary = Object.entries(totalsByCurrency).length > 0
+    ? Object.entries(totalsByCurrency).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
+    : 'No expenses yet';
+  const totalVotes = voteSummaries.reduce((sum, entry) => sum + entry.upvotes + entry.downvotes, 0);
 
   return (
     <div className="animate-in fade-in duration-300">
-      {/* Cover image strip */}
-      {canManage ? (
-        <div className="mb-6 rounded-2xl overflow-hidden group">
-          <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
+      {canManage && (
+        <div className="section-shell mb-4 p-3">
+          <div className="mb-3 px-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Cover
+            </p>
+            <h2 className="mt-1 text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+              Trip media
+            </h2>
+          </div>
+          <div className="overflow-hidden rounded-[1.5rem]">
+            <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
+          </div>
         </div>
-      ) : trip.cover_image_url ? (
-        <div className="mb-6 rounded-2xl overflow-hidden h-32 sm:h-48 md:h-52">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      )}
+
+      <section className="relative overflow-hidden rounded-[2rem]">
+        {trip.cover_image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={trip.cover_image_url}
             alt={`${trip.title} cover`}
-            className="w-full h-full object-cover"
+            className="h-[340px] w-full object-cover"
           />
-        </div>
-      ) : null}
+        ) : (
+          <div className="hero-orb h-[340px] w-full" />
+        )}
 
-      <PageHeader
-        title={trip.title}
-        breadcrumbs={[
-          { label: user ? 'Dashboard' : 'Home', href: user ? '/dashboard' : '/' },
-          { label: trip.title },
-        ]}
-      />
+        <div className="trip-hero-overlay absolute inset-0" />
 
-      {/* Unified trip header card */}
-      <div className="card p-6 mb-6">
-        {/* Title row */}
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+        <div className="absolute inset-0 flex flex-col justify-between p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-black/22 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
+              <Sparkles className="h-3 w-3" />
+              {tripPhase}
+            </div>
+
+            <div className="hidden sm:flex">
+              <VisibilityBadge visibility={trip.visibility} />
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Link
+                href={user ? '/dashboard' : '/'}
+                className="inline-flex items-center rounded-full bg-white/12 px-3 py-1 text-xs font-medium text-white/78 backdrop-blur-sm transition-colors hover:bg-white/18"
+              >
+                {user ? 'Dashboard' : 'Home'}
+              </Link>
+              <RoleBadge role={resolvedRole} />
+              <div className="sm:hidden">
+                <VisibilityBadge visibility={trip.visibility} />
+              </div>
               {isArchived && (
-                <span
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: 'var(--color-bg-muted)',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
+                <span className="inline-flex items-center rounded-full bg-white/12 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
                   Archived
                 </span>
               )}
             </div>
+
+            <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-white section-title sm:text-4xl">
+              {trip.title}
+            </h1>
             {trip.description && (
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/78 sm:text-base">
                 {trip.description}
               </p>
             )}
+
+            {!isMember && (
+              <div className="mt-4 max-w-xl rounded-[1.4rem] border border-white/18 bg-white/10 px-4 py-3 text-sm leading-relaxed text-white/84 backdrop-blur-sm">
+                <div className="flex items-start gap-2">
+                  <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <p>
+                    This is a public trip preview. Places, the map, and the timeline are visible here, while invites, comments, votes, and spending stay available to members.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-          <RoleBadge role={resolvedRole} />
         </div>
+      </section>
 
-        {/* Meta pills */}
-        <div className="flex items-center gap-4 flex-wrap mb-4">
-          {trip.start_date && trip.end_date && (
-            <span
-              className="inline-flex items-center gap-1.5 text-sm"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              <Calendar className="w-4 h-4" />
-              {formatDateRange(trip.start_date, trip.end_date)}
-            </span>
-          )}
-          {isMember && (
-            <span
-              className="inline-flex items-center gap-1.5 text-sm"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              <Users className="w-4 h-4" />
-              {members.length} {members.length === 1 ? 'member' : 'members'}
-            </span>
-          )}
-          <VisibilityBadge visibility={trip.visibility} />
-        </div>
+      <div className="-mt-14 relative z-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <OverviewStat
+          label="Dates"
+          value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
+          hint={trip.start_date ? 'Trip dates are set' : 'Add start and end dates'}
+          icon={<Calendar className="h-4 w-4" />}
+        />
+        <OverviewStat
+          label="Crew"
+          value={`${members.length} ${members.length === 1 ? 'member' : 'members'}`}
+          hint={isMember ? 'Roles and invites stay close' : 'Public preview only'}
+          icon={<Users className="h-4 w-4" />}
+        />
+        <OverviewStat
+          label="Places"
+          value={`${places.length} saved`}
+          hint={`${scheduledPlaces.length} scheduled so far`}
+          icon={<MapPin className="h-4 w-4" />}
+        />
+        <OverviewStat
+          label="Money"
+          value={expenses.length > 0 ? spendSummary : 'No spending yet'}
+          hint={expenses.length > 0 ? `${expenses.length} shared expenses` : 'Track receipts and balances here'}
+          icon={<Receipt className="h-4 w-4" />}
+        />
+      </div>
 
-        {!isMember && (
-          <div
-            className="mb-4 flex items-start gap-2 rounded-xl border px-4 py-3"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'var(--color-bg-subtle)',
-              color: 'var(--color-text-muted)',
-            }}
-          >
-            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <div className="text-sm leading-relaxed">
-              This is a public trip preview. Places, map, and timeline are visible here, while
-              collaboration features stay available to invited members.
+      <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <div className="section-shell p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Trip cockpit
+                </p>
+                <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                  Quick actions and shared context
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {canManage && <InviteLinkButton tripId={tripId} />}
+                {canEdit && <AddExpenseDialog tripId={tripId} members={members} currentUserId={currentUserId} />}
+                {isMember && (
+                  <Link href={`/trips/${tripId}/members`} className="btn-secondary min-h-[40px] text-sm">
+                    <span className="inline-flex items-center gap-2">
+                      <UserCog className="h-4 w-4" />
+                      Members
+                    </span>
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Budget */}
-        {(() => {
-          const totals: Record<string, number> = {};
-          for (const exp of expenses) {
-            totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
-          }
-          const totalSpentInBudgetCurrency = totals[trip.budget_currency] ?? 0;
-          return (
             <BudgetEditor
               tripId={tripId}
               budget={trip.budget}
               budgetCurrency={trip.budget_currency}
               budgetPayerUserId={trip.budget_payer_user_id}
               canManage={canManage}
-              totalSpent={totalSpentInBudgetCurrency}
+              totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
               members={members}
             />
-          );
-        })()}
+          </div>
+        </div>
 
-        {isMember && (
-          <>
-            {/* Divider */}
-            <div
-              className="my-5 border-t"
-              style={{ borderColor: 'var(--color-border)' }}
-            />
-
-            {/* Members */}
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                Members
+        <div className="section-shell p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Crew
+              </p>
+              <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                Shared visibility
               </h2>
-              <div className="flex items-center gap-2">
-                {canManage && (
-                  <InviteLinkButton tripId={tripId} />
-                )}
-                <Link
-                  href={`/trips/${tripId}/members`}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
-                  style={{ color: 'var(--color-text-subtle)' }}
-                >
-                  <UserCog className="w-3.5 h-3.5" />
-                  Manage
-                </Link>
-              </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap mb-4">
-              {members.map((m) => {
-                const name = m.profile.display_name ?? 'Unknown';
-                const isCurrentUser = m.user_id === currentUserId;
-                const roleConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; border: string }> = {
-                  owner:  { icon: <Crown className="w-3 h-3" />,       bg: '#FEF9C3', text: '#854D0E', border: '#FDE047' },
-                  admin:  { icon: <ShieldCheck className="w-3 h-3" />, bg: '#EDE9FE', text: '#5B21B6', border: '#C4B5FD' },
-                  editor: { icon: <Pencil className="w-3 h-3" />,      bg: '#CCFBF1', text: '#0F766E', border: '#5EEAD4' },
-                  viewer: { icon: <Eye className="w-3 h-3" />,         bg: '#F1F5F9', text: '#64748B', border: '#CBD5E1' },
-                };
-                const rc = roleConfig[m.role] ?? roleConfig.viewer;
-                return (
-                  <div
-                    key={m.id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border"
-                    style={{ backgroundColor: rc.bg, color: rc.text, borderColor: rc.border }}
-                    title={`${name} — ${m.role}${isCurrentUser ? ' (you)' : ''}`}
-                  >
-                    <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="sm" />
-                    <span className="font-medium">{name}{isCurrentUser ? ' (you)' : ''}</span>
-                    <span className="flex items-center gap-0.5 opacity-75">{rc.icon}{m.role}</span>
-                  </div>
-                );
-              })}
-            </div>
+            {isMember && (
+              <Link
+                href={`/trips/${tripId}/members`}
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-stone-950/[0.04] px-3 py-2 text-sm font-medium"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                <UserCog className="h-4 w-4" />
+                Manage
+              </Link>
+            )}
+          </div>
 
-            {/* Member balances */}
-            <MemberBalances
-              expenses={expensesWithSplits}
-              members={members}
-              currentUserId={currentUserId}
-              budgetAmount={trip.budget}
-              budgetCurrency={trip.budget_currency}
-              budgetPayerUserId={trip.budget_payer_user_id}
-            />
-          </>
-        )}
+          {isMember ? (
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {members.map((member) => {
+                  const name = member.profile.display_name ?? 'Unknown';
+                  const isCurrentUser = member.user_id === currentUserId;
+                  return (
+                    <div
+                      key={member.id}
+                      className="mini-stat flex items-center gap-2 px-3 py-2"
+                    >
+                      <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                          {name}{isCurrentUser ? ' (you)' : ''}
+                        </p>
+                        <p className="text-xs capitalize" style={{ color: 'var(--color-text-subtle)' }}>
+                          {member.role}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <MemberBalances
+                expenses={expensesWithSplits}
+                members={members}
+                currentUserId={currentUserId}
+                budgetAmount={trip.budget}
+                budgetCurrency={trip.budget_currency}
+                budgetPayerUserId={trip.budget_payer_user_id}
+              />
+            </>
+          ) : (
+            <div className="rounded-[1.25rem] bg-stone-950/[0.03] px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              Join the trip to vote, comment, add places, manage members, and track expenses together.
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Accommodation — always visible above tabs */}
-      <AccommodationSection
-        places={places}
-        categories={categories}
-        tripId={tripId}
-        currentUserId={currentUserId}
-        canEdit={canEdit}
-        canVote={canVote}
-        canComment={canComment}
-        voteSummaries={voteSummaries}
-        userVotes={userVotes}
-        reviewsByPlaceId={reviewsByPlaceId}
-        commentsByPlaceId={commentsByPlaceId}
-        commentAuthors={commentAuthors}
-      />
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <PulseCard
+          label="Top pick"
+          icon={<Sparkles className="h-4 w-4" />}
+          title={topPick ? topPick.place.name : 'No votes yet'}
+          body={topPick ? `${topPick.score > 0 ? '+' : ''}${topPick.score} net votes so far` : 'Start voting to surface the group favorite.'}
+        />
+        <PulseCard
+          label="Next stop"
+          icon={<Clock3 className="h-4 w-4" />}
+          title={nextStop ? nextStop.name : 'Nothing scheduled'}
+          body={nextStop?.visit_date ? `Planned for ${new Date(`${nextStop.visit_date}T00:00:00`).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}` : 'Add a visit date to shape the itinerary.'}
+        />
+        <PulseCard
+          label="Stay"
+          icon={<BedDouble className="h-4 w-4" />}
+          title={accommodationPlaces[0]?.name ?? 'No accommodation yet'}
+          body={accommodationPlaces.length > 0 ? `${accommodationPlaces.length} saved stay option${accommodationPlaces.length === 1 ? '' : 's'}` : 'Pin accommodation so the plan has a base.'}
+        />
+        <PulseCard
+          label="Collaboration"
+          icon={<Activity className="h-4 w-4" />}
+          title={`${totalVotes} vote actions`}
+          body={Object.keys(commentsByPlaceId).length > 0 ? `${Object.keys(commentsByPlaceId).length} places already have discussion` : 'Comments and activity show up here as the trip evolves.'}
+        />
+      </div>
 
-      {/* Tab bar */}
+      <div className="mt-5">
+        <AccommodationSection
+          places={places}
+          categories={categories}
+          tripId={tripId}
+          currentUserId={currentUserId}
+          canEdit={canEdit}
+          canVote={canVote}
+          canComment={canComment}
+          voteSummaries={voteSummaries}
+          userVotes={userVotes}
+          reviewsByPlaceId={reviewsByPlaceId}
+          commentsByPlaceId={commentsByPlaceId}
+          commentAuthors={commentAuthors}
+        />
+      </div>
+
       <TabBar activeTab={activeTab} tripId={tripId} tabs={visibleTabs} />
 
-      {/* Tab: Places */}
       {activeTab === 'places' && (
         <div className="mb-6">
           <PlacesSection
@@ -464,9 +625,8 @@ export default async function TripDetailPage({
         </div>
       )}
 
-      {/* Tab: Timeline */}
       {activeTab === 'timeline' && (
-        <div className="card p-6 mb-6">
+        <div className="section-shell mb-6 p-5 sm:p-6">
           <TripTimeline
             places={places}
             categories={categories}
@@ -484,7 +644,6 @@ export default async function TripDetailPage({
         </div>
       )}
 
-      {/* Tab: Map */}
       {activeTab === 'map' && (
         <div className="mb-6">
           <MapTabClient
@@ -503,111 +662,83 @@ export default async function TripDetailPage({
         </div>
       )}
 
-      {/* Tab: Expenses */}
       {activeTab === 'expenses' && (
-        <div className="mb-6">
+        <div className="mb-6 space-y-4">
           {expensesWithSplits.length > 0 && (
-              <DebtSummary
-                expenses={expensesWithSplits}
-                members={memberProfiles}
-                currentUserId={currentUserId}
-              />
-            )}
+            <DebtSummary
+              expenses={expensesWithSplits}
+              members={memberProfiles}
+              currentUserId={currentUserId}
+            />
+          )}
 
-          {(() => {
-            const totals: Record<string, number> = {};
-            for (const exp of expenses) {
-              totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
-            }
-            const totalEntries = Object.entries(totals);
-
-            return (
-              <div className="card p-6">
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: 'var(--color-primary-light)' }}
-                    >
-                      <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-                    </div>
-                    <div>
-                      <h2 className="font-semibold text-base text-stone-800">
-                        Expenses
-                      </h2>
-                      {expenses.length > 0 && (
-                        <p className="text-xs text-stone-400">
-                          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
-                          {totalEntries.length > 0 && (
-                            <> &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}</>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {canEdit && (
-                      <AddExpenseDialog
-                        tripId={tripId}
-                        members={members}
-                        currentUserId={currentUserId}
-                      />
-                    )}
-                    <Link
-                      href={`/trips/${tripId}/expenses`}
-                      className="btn-secondary text-sm min-h-[44px]"
-                    >
-                      View all
-                    </Link>
-                  </div>
-                </div>
-
-                {expenses.length === 0 ? (
-                  <div className="flex flex-col items-center py-8 text-center">
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-                    >
-                      <Receipt className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
-                    </div>
-                    <p className="font-medium text-sm text-stone-800 mb-1">
-                      Track your first shared expense
-                    </p>
-                    <p className="text-xs text-stone-400 max-w-xs">
-                      Add expenses to keep everyone on the same page about shared costs.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {expenses.slice(0, 3).map((exp) => (
-                      <Link
-                        key={exp.id}
-                        href={`/trips/${tripId}/expenses/${exp.id}`}
-                        className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)] min-h-[44px]"
-                      >
-                        <span className="text-sm truncate text-stone-800">
-                          {exp.title}
-                        </span>
-                        <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-primary)' }}>
-                          {formatCurrency(exp.amount, exp.currency)}
-                        </span>
-                      </Link>
-                    ))}
-                    {expenses.length > 3 && (
-                      <p className="text-xs pt-1 pl-3 text-stone-400">
-                        +{expenses.length - 3} more
-                      </p>
-                    )}
-                  </div>
-                )}
+          <div className="section-shell p-5 sm:p-6">
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Money
+                </p>
+                <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                  Shared expenses
+                </h2>
+                <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  {expenses.length > 0 ? `${expenses.length} expense entries across ${Object.keys(totalsByCurrency).length} currencies` : 'No expenses added yet'}
+                </p>
               </div>
-            );
-          })()}
+
+              <div className="flex flex-wrap items-center gap-2">
+                {canEdit && (
+                  <AddExpenseDialog
+                    tripId={tripId}
+                    members={members}
+                    currentUserId={currentUserId}
+                  />
+                )}
+                <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] text-sm">
+                  View all
+                </Link>
+              </div>
+            </div>
+
+            {expenses.length === 0 ? (
+              <div className="rounded-[1.5rem] bg-stone-950/[0.03] px-4 py-8 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                  <Receipt className="h-6 w-6" style={{ color: 'var(--color-text-subtle)' }} />
+                </div>
+                <p className="text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                  Track your first shared expense
+                </p>
+                <p className="mx-auto mt-2 max-w-xs text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  Add transport, food, tickets, and receipts here so balances stay clear for everyone.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {expenses.slice(0, 4).map((expense) => (
+                  <Link
+                    key={expense.id}
+                    href={`/trips/${tripId}/expenses/${expense.id}`}
+                    className="mini-stat flex min-h-[56px] items-center justify-between gap-3 px-4 py-3 transition-transform hover:-translate-y-0.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                        {expense.title}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                        {expense.category ?? 'General'}{expense.expense_date ? ` · ${expense.expense_date}` : ''}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+                      {formatCurrency(expense.amount, expense.currency)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Tab: Activity */}
       {activeTab === 'activity' && (
         <div className="mb-6">
           <ActivityFeed activities={activityEntries} />

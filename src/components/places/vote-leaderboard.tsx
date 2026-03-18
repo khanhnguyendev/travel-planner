@@ -27,13 +27,19 @@ export function VoteLeaderboard({ places, voteSummaries, categories }: VoteLeade
   if (ranked.length < 2) return null;
 
   return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-subtle)' }}>
-        Top picks
-      </p>
+    <div className="section-shell p-4 sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Top picks
+          </p>
+          <h3 className="mt-1 text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+            The shortlist with the strongest group momentum
+          </h3>
+        </div>
+      </div>
 
-      {/* Horizontal scrollable strip */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-0.5 px-0.5">
         {ranked.map(({ place, net, upvotes, downvotes }, idx) => {
           const cat = categoryMap[place.category_id] ?? null;
           const emoji = RANK_EMOJI[idx] ?? `#${idx + 1}`;
@@ -41,23 +47,22 @@ export function VoteLeaderboard({ places, voteSummaries, categories }: VoteLeade
           return (
             <div
               key={place.id}
-              className="flex-shrink-0 flex items-start gap-2 px-3 py-2.5 rounded-2xl border min-w-[140px] max-w-[180px]"
+              className="metric-tile flex min-w-[220px] max-w-[260px] flex-shrink-0 items-start gap-3 px-4 py-4"
               style={{
-                backgroundColor: 'white',
-                borderColor: 'var(--color-border)',
+                backgroundColor: 'rgba(255,255,255,0.78)',
               }}
             >
-              {/* Rank */}
-              <span className="text-lg leading-none mt-0.5 flex-shrink-0">{emoji}</span>
+              <span className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-lg shadow-sm">
+                {emoji}
+              </span>
 
-              {/* Details */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--color-text)' }}>
+                <p className="text-sm font-semibold leading-snug truncate" style={{ color: 'var(--color-text)' }}>
                   {place.name}
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="mt-1 flex items-center gap-2">
                   <span
-                    className="text-xs font-bold"
+                    className="rounded-full px-2 py-0.5 text-xs font-bold"
                     style={{ color: net >= 0 ? '#0D9488' : '#EF4444' }}
                   >
                     {net > 0 ? `+${net}` : net}
@@ -67,7 +72,7 @@ export function VoteLeaderboard({ places, voteSummaries, categories }: VoteLeade
                   </span>
                 </div>
                 {cat && (
-                  <div className="mt-1">
+                  <div className="mt-2">
                     <CategoryBadge category={cat} size="sm" />
                   </div>
                 )}

@@ -54,10 +54,10 @@ export function PlaceSearch({ places, onResults }: PlaceSearchProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search places…"
-          className="w-full pl-9 pr-9 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-teal-500"
+          className="w-full rounded-[1.1rem] border pl-10 pr-10 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500"
           style={{
             borderColor: 'var(--color-border)',
-            backgroundColor: 'white',
+            backgroundColor: 'rgba(255,255,255,0.92)',
             color: 'var(--color-text)',
           }}
         />
@@ -65,7 +65,7 @@ export function PlaceSearch({ places, onResults }: PlaceSearchProps) {
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md transition-colors hover:bg-stone-100"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors hover:bg-stone-100"
             style={{ color: 'var(--color-text-subtle)' }}
             aria-label="Clear search"
           >
@@ -74,7 +74,7 @@ export function PlaceSearch({ places, onResults }: PlaceSearchProps) {
         )}
       </div>
       {query.trim() && (
-        <p className="text-xs px-1" style={{ color: 'var(--color-text-subtle)' }}>
+        <p className="px-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
           {places.filter(
             (p) =>
               p.name.toLowerCase().includes(query.toLowerCase()) ||

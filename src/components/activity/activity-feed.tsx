@@ -118,9 +118,8 @@ function dayLabel(dateStr: string): string {
 export function ActivityFeed({ activities }: ActivityFeedProps) {
   if (activities.length === 0) {
     return (
-      <div className="card p-10 flex flex-col items-center text-center">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-          style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+      <div className="section-shell flex flex-col items-center p-10 text-center">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
           <Activity className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
         </div>
         <p className="font-medium text-sm text-stone-700 mb-1">No activity yet</p>
@@ -145,10 +144,10 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
     <div className="space-y-6">
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--color-text-subtle)' }}>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
             {group.label}
           </p>
-          <div className="card divide-y" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="section-shell overflow-hidden">
             {group.entries.map((entry) => {
               const cfg = ACTION_CONFIG[entry.action] ?? null;
               const Icon = cfg?.icon ?? DEFAULT_CONFIG.icon;
@@ -160,18 +159,16 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
               const displayName = entry.profile?.display_name ?? 'A member';
 
               return (
-                <div key={entry.id} className="flex items-start gap-3 px-4 py-3">
-                  {/* Action icon */}
+                <div key={entry.id} className="flex items-start gap-3 border-b px-4 py-4 last:border-b-0" style={{ borderColor: 'rgba(193, 176, 152, 0.28)' }}>
                   <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl"
                     style={{ backgroundColor: bg }}
                   >
                     <Icon className="w-4 h-4" style={{ color }} />
                   </div>
 
-                  {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-stone-700 leading-snug">
+                    <p className="text-sm leading-snug text-stone-700">
                       <span className="font-semibold text-stone-800">{displayName}</span>
                       {' '}{labelText}
                     </p>
@@ -182,7 +179,6 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                     )}
                   </div>
 
-                  {/* Avatar + time */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-xs text-stone-400 whitespace-nowrap">{timeAgo(entry.created_at)}</span>
                     <Avatar
