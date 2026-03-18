@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/features/auth/session';
 import type { Trip, TripRole } from '@/lib/types';
 
 export interface TripWithRole extends Trip {
@@ -11,10 +12,7 @@ export interface TripWithRole extends Trip {
  */
 export async function getTrips(): Promise<TripWithRole[]> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSession();
 
   if (!user) return [];
 
@@ -72,10 +70,7 @@ export async function getUserRole(
   tripId: string
 ): Promise<TripRole | null> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSession();
 
   if (!user) return null;
 

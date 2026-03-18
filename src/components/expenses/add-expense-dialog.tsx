@@ -1,39 +1,45 @@
 'use client';
 
-import { useState, cloneElement } from 'react';
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface AddExpenseDialogProps {
   tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
   places?: Place[];
-  /** Custom trigger element. If omitted, renders the default "Add expense" primary button. */
-  trigger?: React.ReactElement<{ onClick?: () => void }>;
+  triggerLabel?: string;
+  triggerClassName?: string;
 }
 
-export function AddExpenseDialog({ tripId, members, currentUserId, places, trigger }: AddExpenseDialogProps) {
+export function AddExpenseDialog({
+  tripId,
+  members,
+  currentUserId,
+  places,
+  triggerLabel = 'Add expense',
+  triggerClassName,
+}: AddExpenseDialogProps) {
   const [open, setOpen] = useState(false);
-
-  const triggerEl = trigger
-    ? cloneElement(trigger, { onClick: () => setOpen(true) })
-    : (
-      <button
-        onClick={() => setOpen(true)}
-        className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
-      >
-        <Plus className="w-4 h-4" />
-        Add expense
-      </button>
-    );
 
   return (
     <>
-      {triggerEl}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={cn(
+          'btn-primary inline-flex min-h-[44px] items-center gap-1.5 text-sm',
+          triggerClassName
+        )}
+      >
+        <Plus className="w-4 h-4" />
+        {triggerLabel}
+      </button>
 
       {open && (
         <Dialog title="Add expense" onClose={() => setOpen(false)} maxWidth="max-w-xl">
