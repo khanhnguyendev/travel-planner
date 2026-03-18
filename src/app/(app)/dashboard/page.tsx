@@ -31,12 +31,18 @@ const ROLE_CONFIG: Record<string, { icon: React.ReactNode; label: string; color:
   viewer: { icon: <Eye className="h-3 w-3" />, label: 'Viewer', color: '#374151', bg: '#F3F4F6' },
 };
 
+const VISIBILITY_CONFIG = {
+  public: { icon: <Globe className="h-3 w-3" />, label: 'Public', color: '#1D4ED8', bg: '#DBEAFE' },
+  private: { icon: <Lock className="h-3 w-3" />, label: 'Private', color: '#475569', bg: '#E2E8F0' },
+} as const;
+
 async function TripCard({ trip }: { trip: TripWithRole }) {
   const members = await getMembers(trip.id);
   const hasCover = !!trip.cover_image_url;
   const role = ROLE_CONFIG[trip.myRole] ?? ROLE_CONFIG.viewer;
   const isArchived = trip.status === 'archived';
   const isPublic = trip.visibility === 'public';
+  const visibility = isPublic ? VISIBILITY_CONFIG.public : VISIBILITY_CONFIG.private;
   const updatedLabel = new Date(trip.updated_at).toLocaleDateString('en', {
     month: 'short',
     day: 'numeric',
@@ -69,13 +75,19 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
           </span>
 
           <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm"
+              style={{ backgroundColor: role.bg, color: role.color }}
+            >
               {role.icon}
               {role.label}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">
-              {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-              {isPublic ? 'Public' : 'Private'}
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm"
+              style={{ backgroundColor: visibility.bg, color: visibility.color }}
+            >
+              {visibility.icon}
+              {visibility.label}
             </span>
           </div>
         </div>
@@ -94,28 +106,24 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
               {trip.description}
             </p>
           )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/14 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+              <Users className="h-3.5 w-3.5" />
+              {members.length} {members.length === 1 ? 'member' : 'members'}
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="space-y-4 p-4">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="mini-stat px-3 py-3">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Schedule
-            </p>
-            <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>
-              {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Dates flexible'}
-            </p>
-          </div>
-          <div className="mini-stat px-3 py-3">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Crew
-            </p>
-            <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-              <Users className="h-4 w-4" />
-              {members.length} {members.length === 1 ? 'member' : 'members'}
-            </p>
-          </div>
+        <div className="mini-stat px-3 py-3">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Schedule
+          </p>
+          <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>
+            {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Dates flexible'}
+          </p>
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-stone-950/[0.03] px-3 py-3">
@@ -292,9 +300,6 @@ export default async function DashboardPage() {
             <h1 className="text-3xl font-semibold leading-tight section-title sm:text-4xl">
               Your trips, votes, spending, and crew in one calm mobile workspace.
             </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/78 sm:text-base">
-              Jump back into the next plan, check what needs attention, and keep every trip moving without digging through separate pages.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -354,9 +359,6 @@ export default async function DashboardPage() {
         <h2 className="text-2xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
           My trips
         </h2>
-        <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          Active plans first, with the details you need at a glance.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 stagger sm:grid-cols-2 xl:grid-cols-3">
