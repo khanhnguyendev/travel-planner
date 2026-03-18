@@ -459,15 +459,6 @@ export default async function ProjectDetailPage({
                     <p className="text-xs text-stone-400 max-w-xs">
                       Add expenses to keep everyone on the same page about shared costs.
                     </p>
-                    {canEdit && (
-                      <div className="mt-4">
-                        <AddExpenseDialog
-                          projectId={projectId}
-                          members={members}
-                          currentUserId={user.id}
-                        />
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="space-y-2">
