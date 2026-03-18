@@ -627,7 +627,6 @@ export default async function TripDetailPage({
             currentUserId={currentUserId}
             canVote={canVote}
             canComment={canComment}
-            members={members}
           />
 
           <div className="mt-4">

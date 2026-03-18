@@ -7,15 +7,17 @@ interface CategoryListProps {
   categories: Category[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  inline?: boolean;
 }
 
 export function CategoryList({
   categories,
   selectedId,
   onSelect,
+  inline = false,
 }: CategoryListProps) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+    <div className={inline ? 'flex items-center gap-2' : 'flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide'}>
       {/* "All" chip */}
       <button
         onClick={() => onSelect(null)}

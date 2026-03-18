@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Tag, Receipt, X, MapPinned, Clock3 } from 'lucide-react';
+import { Plus, Tag, X } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -10,9 +10,7 @@ import { PlaceGrid } from '@/components/places/place-grid';
 import { PlaceSearch } from '@/components/places/place-search';
 import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
 import { Dialog } from '@/components/ui/dialog';
-import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
-import type { MemberWithProfile } from '@/features/members/queries';
 
 interface PlacesSectionProps {
   tripId: string;
@@ -27,7 +25,8 @@ interface PlacesSectionProps {
   currentUserId: string;
   canVote: boolean;
   canComment: boolean;
-  members: MemberWithProfile[];
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
 }
 
 const canEdit = (role: TripRole) =>
@@ -55,7 +54,8 @@ export function PlacesSection({
   currentUserId,
   canVote,
   canComment,
-  members,
+  tripStartDate,
+  tripEndDate,
 }: PlacesSectionProps) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -85,8 +85,6 @@ export function PlacesSection({
 
   const basePlaces = searchResults ?? places;
   const voteSummaryMap = Object.fromEntries(voteSummaries.map((v) => [v.placeId, v]));
-  const visibleCount = basePlaces.length;
-  const scheduledCount = places.filter((place) => place.visit_date).length;
   const nextPlaceId = useMemo(() => {
     let closest: Place | null = null;
     let closestDiff = Infinity;
@@ -175,86 +173,41 @@ export function PlacesSection({
       )}
 
       <div className="section-shell p-4 sm:p-5">
-        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Filter and focus
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2" style={{ color: 'var(--color-text-muted)' }}>
-              <MapPinned className="h-4 w-4" />
-              {visibleCount} visible
-            </span>
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2" style={{ color: 'var(--color-text-muted)' }}>
-              <Clock3 className="h-4 w-4" />
-              {scheduledCount} scheduled
-            </span>
+        <div className="space-y-3">
+          <div className="flex items-start gap-2">
+            {places.length > 0 && (
+              <div className="min-w-0 flex-1">
+                <PlaceSearch
+                  places={places}
+                  onResults={(filtered) =>
+                    setSearchResults(filtered.length === places.length ? null : filtered)
+                  }
+                />
+              </div>
+            )}
 
             {editor && (
               <button
                 onClick={() => setShowAddPlace(true)}
-                className="hidden min-h-[40px] items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
+                className="hidden min-h-[48px] items-center gap-2 rounded-[1.1rem] bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
               >
                 <Plus className="h-4 w-4" />
                 Add place
               </button>
             )}
-
-            {editor && (
-              <button
-                onClick={() => setShowAddCategory(true)}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-                aria-label="Add category"
-              >
-                <Tag className="h-4 w-4" />
-                <span className="hidden sm:inline">Category</span>
-              </button>
-            )}
-
-            {editor && (
-              <AddExpenseDialog
-                tripId={tripId}
-                members={members}
-                currentUserId={currentUserId}
-                trigger={
-                  <button
-                    className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
-                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-                    aria-label="Add expense"
-                  >
-                    <Receipt className="h-4 w-4" />
-                    <span className="hidden sm:inline">Expense</span>
-                  </button>
-                }
-              />
-            )}
           </div>
-        </div>
 
-        <div className="space-y-3">
-          {places.length > 0 && (
-            <PlaceSearch
-              places={places}
-              onResults={(filtered) =>
-                setSearchResults(filtered.length === places.length ? null : filtered)
-              }
-            />
-          )}
-
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {places.length > 1 && (
-              <div className="flex items-center gap-2">
-                <label htmlFor="sort-places" className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
-                  Sort by
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <label htmlFor="sort-places" className="text-xs font-medium whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
+                  Sort
                 </label>
                 <select
                   id="sort-places"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
+                  className="rounded-full border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                   style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
                 >
                   {SORT_OPTIONS.map((opt) => (
@@ -264,9 +217,17 @@ export function PlacesSection({
               </div>
             )}
 
+            {categories.length > 0 && (
+              <CategoryList
+                categories={categories}
+                selectedId={selectedCategoryId}
+                onSelect={setSelectedCategoryId}
+                inline
+              />
+            )}
+
             {selectedLocationTag && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Location filter</span>
+              <div className="flex flex-shrink-0 items-center gap-2">
                 <button
                   onClick={() => setSelectedLocationTag(null)}
                   className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
@@ -277,11 +238,19 @@ export function PlacesSection({
                 </button>
               </div>
             )}
-          </div>
 
-          {categories.length > 0 && (
-            <CategoryList categories={categories} selectedId={selectedCategoryId} onSelect={setSelectedCategoryId} />
-          )}
+            {editor && (
+              <button
+                onClick={() => setShowAddCategory(true)}
+                className="inline-flex min-h-[40px] flex-shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                aria-label="Add category"
+              >
+                <Tag className="h-4 w-4" />
+                <span className="hidden sm:inline">Category</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -304,6 +273,8 @@ export function PlacesSection({
         canVote={canVote}
         canComment={canComment}
         canEdit={editor}
+        tripStartDate={tripStartDate}
+        tripEndDate={tripEndDate}
         onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
       />
     </div>
