@@ -589,43 +589,6 @@ export default async function TripDetailPage({
             ) : null}
           </div>
 
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Trip stops
-                </p>
-                <h2 className="mt-1 text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                  Previous, current, and next
-                </h2>
-              </div>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                Keep the crew aligned on what just happened, what is active now, and where the trip moves next.
-              </p>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-3">
-              <StopSpotlightCard
-                label="Previous stop"
-                place={stopPointers.previous}
-                emptyLabel="None yet"
-                tone="previous"
-              />
-              <StopSpotlightCard
-                label="Current"
-                place={stopPointers.current}
-                emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
-                tone="current"
-              />
-              <StopSpotlightCard
-                label="Next stop"
-                place={stopPointers.next}
-                emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
-                tone="next"
-              />
-            </div>
-          </div>
-
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
             <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -724,6 +687,45 @@ export default async function TripDetailPage({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-shell p-4 sm:p-5">
+        <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Trip stops
+              </p>
+              <h2 className="mt-1 text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                Previous, current, and next
+              </h2>
+            </div>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              Keep the crew aligned on what just happened, what is active now, and where the trip moves next.
+            </p>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            <StopSpotlightCard
+              label="Previous stop"
+              place={stopPointers.previous}
+              emptyLabel="None yet"
+              tone="previous"
+            />
+            <StopSpotlightCard
+              label="Current"
+              place={stopPointers.current}
+              emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
+              tone="current"
+            />
+            <StopSpotlightCard
+              label="Next stop"
+              place={stopPointers.next}
+              emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
+              tone="next"
+            />
           </div>
         </div>
       </section>
