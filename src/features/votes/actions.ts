@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createLogger } from '@/lib/logger';
+import { logActivity } from '@/lib/activity';
 import type { ActionResult } from '@/features/auth/actions';
 import type { PlaceVote } from '@/lib/types';
 
@@ -87,9 +89,12 @@ export async function upsertVote(
     .single();
 
   if (error) {
-    console.error('upsertVote error:', error);
+    createLogger({ action: 'upsertVote', userId: user.id }).error('vote.upsert.failed', { error: error.message, placeId, projectId });
     return { ok: false, error: 'Failed to save vote' };
   }
+
+  const activityAction = parsed.data.voteType === 'upvote' ? 'vote.upvote' : 'vote.downvote';
+  void logActivity({ projectId, userId: user.id, action: activityAction, entityType: 'place', entityId: placeId });
 
   return { ok: true, data: { vote: data as PlaceVote } };
 }

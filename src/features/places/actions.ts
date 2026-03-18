@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireEditor, requireMember } from '@/lib/membership';
+import { createLogger } from '@/lib/logger';
+import { logActivity } from '@/lib/activity';
 import type { ActionResult } from '@/features/auth/actions';
 import type { PlaceComment } from '@/lib/types';
 
@@ -100,32 +102,34 @@ export async function updatePlaceNote(
 // -------------------------------------------------------
 
 export async function deletePlace(id: string): Promise<ActionResult> {
+  const log = createLogger({ action: 'deletePlace' });
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Not authenticated' };
 
+  log.info('place.delete.start', { userId: user.id, placeId: id });
+
   const admin = createAdminClient();
 
-  // Resolve project_id via admin client (bypasses RLS)
   const { data: placeData } = await admin
     .from('places')
-    .select('project_id')
+    .select('project_id, name')
     .eq('id', id)
     .single();
-  const place = placeData as { project_id: string } | null;
+  const place = placeData as { project_id: string; name: string } | null;
   if (!place) return { ok: false, error: 'Place not found' };
 
-  // Must be editor or above
   const role = await requireEditor(place.project_id, user.id);
-  if (!role) return { ok: false, error: 'Insufficient permissions' };
+  if (!role) { log.warn('place.delete.forbidden', { userId: user.id }); return { ok: false, error: 'Insufficient permissions' }; }
 
   const { error } = await admin.from('places').delete().eq('id', id);
 
   if (error) {
-    console.error('deletePlace error:', error);
+    log.error('place.delete.failed', { error: error.message, placeId: id, projectId: place.project_id });
     return { ok: false, error: 'Failed to delete place' };
   }
 
+  log.info('place.delete.ok', { placeId: id, projectId: place.project_id });
   revalidatePath(`/projects/${place.project_id}`);
   return { ok: true, data: undefined };
 }
@@ -139,18 +143,23 @@ export async function addPlaceComment(
   projectId: string,
   body: string
 ): Promise<{ ok: true; data: PlaceComment } | { ok: false; error: string }> {
+  const log = createLogger({ action: 'addPlaceComment', projectId });
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Not authenticated' };
 
-  // Must be an accepted member (viewers can comment)
   const role = await requireMember(projectId, user.id);
-  if (!role) return { ok: false, error: 'Not a member of this project' };
+  if (!role) { log.warn('comment.add.forbidden', { userId: user.id }); return { ok: false, error: 'Not a member of this project' }; }
 
   const trimmed = body.trim();
   if (!trimmed || trimmed.length > 1000) return { ok: false, error: 'Invalid comment' };
 
   const admin = createAdminClient();
+
+  // Fetch place name for activity meta
+  const { data: placeData } = await admin.from('places').select('name').eq('id', placeId).single();
+  const placeName = (placeData as { name: string } | null)?.name ?? '';
+
   const { data, error } = await admin
     .from('place_comments')
     .insert({ place_id: placeId, project_id: projectId, user_id: user.id, body: trimmed })
@@ -158,9 +167,12 @@ export async function addPlaceComment(
     .single();
 
   if (error || !data) {
-    console.error('addPlaceComment error:', error);
+    log.error('comment.add.failed', { error: error?.message, placeId, projectId });
     return { ok: false, error: 'Failed to add comment' };
   }
+
+  log.info('comment.add.ok', { commentId: (data as PlaceComment).id, placeId, projectId });
+  void logActivity({ projectId, userId: user.id, action: 'comment.add', entityType: 'place', entityId: placeId, meta: { placeName, body: trimmed.slice(0, 100) } });
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, data: data as PlaceComment };

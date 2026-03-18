@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { retrievePlace } from '@/features/places/mapbox';
+import { createLogger } from '@/lib/logger';
+import { logActivity } from '@/lib/activity';
 import type { ProjectMember, Category } from '@/lib/types';
 
 // -------------------------------------------------------
@@ -39,6 +41,8 @@ function errorResponse(
 // -------------------------------------------------------
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const log = createLogger({ action: 'api/places/retrieve' });
+
   // 1. Auth
   const supabase = await createClient();
   const {
@@ -107,7 +111,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     detail = await retrievePlace(mapboxId, sessionToken);
   } catch (err) {
-    console.error('[api/places/retrieve] retrievePlace error:', err);
+    log.error('mapbox.retrieve.failed', { error: (err as Error).message, mapboxId });
     return errorResponse('server_error', 'Failed to retrieve place details', 500);
   }
 
@@ -148,7 +152,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { status: 409 }
       );
     }
-    console.error('[api/places/retrieve] insert error:', insertError);
+    log.error('place.insert.failed', { error: insertError.message, projectId, name: detail.name });
     return errorResponse('server_error', 'Failed to save place', 500);
   }
 
@@ -156,7 +160,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('server_error', 'Failed to save place', 500);
   }
 
-  // 7. No place_reviews inserted (Mapbox provides no reviews)
+  log.info('place.add.ok', { placeId: (inserted as { id: string }).id, name: detail.name, projectId });
+  void logActivity({
+    projectId,
+    userId: user.id,
+    action: 'place.add',
+    entityType: 'place',
+    entityId: (inserted as { id: string }).id,
+    meta: { placeName: detail.name, address: detail.address },
+  });
 
   return NextResponse.json(
     { ok: true, data: { place: inserted } },
