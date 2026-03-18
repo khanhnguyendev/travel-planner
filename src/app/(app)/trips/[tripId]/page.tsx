@@ -342,23 +342,46 @@ export default async function TripDetailPage({
     ? Object.entries(totalsByCurrency).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
     : 'No expenses yet';
   const totalVotes = voteSummaries.reduce((sum, entry) => sum + entry.upvotes + entry.downvotes, 0);
+  const memberPreview = members.slice(0, 4);
+  const remainingMembers = Math.max(0, members.length - memberPreview.length);
 
   return (
     <div className="animate-in fade-in duration-300">
       {canManage && (
-        <div className="section-shell mb-4 p-3">
-          <div className="mb-3 px-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Cover
-            </p>
-            <h2 className="mt-1 text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-              Trip media
-            </h2>
+        <>
+          <details className="section-shell mb-3 overflow-hidden sm:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Cover
+                </p>
+                <h2 className="mt-1 text-sm font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                  Manage trip media
+                </h2>
+              </div>
+              <span className="rounded-full bg-stone-950/[0.04] px-3 py-1 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                Edit
+              </span>
+            </summary>
+            <div className="border-t soft-divider">
+              <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
+            </div>
+          </details>
+
+          <div className="section-shell mb-4 hidden p-3 sm:block">
+            <div className="mb-3 px-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Cover
+              </p>
+              <h2 className="mt-1 text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                Trip media
+              </h2>
+            </div>
+            <div className="overflow-hidden rounded-[1.5rem]">
+              <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
+            </div>
           </div>
-          <div className="overflow-hidden rounded-[1.5rem]">
-            <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
-          </div>
-        </div>
+        </>
       )}
 
       <section className="relative overflow-hidden rounded-[2rem]">
@@ -367,15 +390,15 @@ export default async function TripDetailPage({
           <img
             src={trip.cover_image_url}
             alt={`${trip.title} cover`}
-            className="h-[340px] w-full object-cover"
+            className="h-[230px] w-full object-cover sm:h-[340px]"
           />
         ) : (
-          <div className="hero-orb h-[340px] w-full" />
+          <div className="hero-orb h-[230px] w-full sm:h-[340px]" />
         )}
 
         <div className="trip-hero-overlay absolute inset-0" />
 
-        <div className="absolute inset-0 flex flex-col justify-between p-5 sm:p-7">
+        <div className="absolute inset-0 flex flex-col justify-between p-4 sm:p-7">
           <div className="flex items-start justify-between gap-3">
             <div className="inline-flex items-center gap-2 rounded-full bg-black/22 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
               <Sparkles className="h-3 w-3" />
@@ -388,7 +411,7 @@ export default async function TripDetailPage({
           </div>
 
           <div>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
               <Link
                 href={user ? '/dashboard' : '/'}
                 className="inline-flex items-center rounded-full bg-white/12 px-3 py-1 text-xs font-medium text-white/78 backdrop-blur-sm transition-colors hover:bg-white/18"
@@ -406,11 +429,11 @@ export default async function TripDetailPage({
               )}
             </div>
 
-            <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-white section-title sm:text-4xl">
+            <h1 className="max-w-3xl text-[1.8rem] font-semibold leading-tight text-white section-title sm:text-4xl">
               {trip.title}
             </h1>
             {trip.description && (
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/78 sm:text-base">
+              <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-relaxed text-white/78 sm:mt-3 sm:text-base">
                 {trip.description}
               </p>
             )}
@@ -429,7 +452,7 @@ export default async function TripDetailPage({
         </div>
       </section>
 
-      <div className="-mt-14 relative z-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="-mt-8 relative z-10 grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto pb-1 sm:-mt-14 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-4">
         <OverviewStat
           label="Dates"
           value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
@@ -456,7 +479,7 @@ export default async function TripDetailPage({
         />
       </div>
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
         <div className="section-shell p-5">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -519,7 +542,7 @@ export default async function TripDetailPage({
 
           {isMember ? (
             <>
-              <div className="mb-4 flex flex-wrap items-center gap-2">
+              <div className="mb-4 hidden flex-wrap items-center gap-2 sm:flex">
                 {members.map((member) => {
                   const name = member.profile.display_name ?? 'Unknown';
                   const isCurrentUser = member.user_id === currentUserId;
@@ -542,6 +565,34 @@ export default async function TripDetailPage({
                 })}
               </div>
 
+              <div className="mb-4 sm:hidden">
+                <div className="flex items-center justify-between gap-3 rounded-[1.2rem] bg-stone-950/[0.03] px-3 py-3">
+                  <div className="flex items-center -space-x-2">
+                    {memberPreview.map((member) => {
+                      const name = member.profile.display_name ?? 'Unknown';
+                      return (
+                        <div key={member.id} className="rounded-full border-2 border-white">
+                          <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
+                        </div>
+                      );
+                    })}
+                    {remainingMembers > 0 && (
+                      <span className="ml-1 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-white px-2 text-xs font-semibold text-stone-600 shadow-sm">
+                        +{remainingMembers}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                      {members.length} members
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                      Roles and invites stay in Members
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <MemberBalances
                 expenses={expensesWithSplits}
                 members={members}
@@ -559,7 +610,7 @@ export default async function TripDetailPage({
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid grid-flow-col auto-cols-[84%] gap-3 overflow-x-auto pb-1 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 xl:grid-cols-4">
         <PulseCard
           label="Top pick"
           icon={<Sparkles className="h-4 w-4" />}
@@ -586,23 +637,6 @@ export default async function TripDetailPage({
         />
       </div>
 
-      <div className="mt-5">
-        <AccommodationSection
-          places={places}
-          categories={categories}
-          tripId={tripId}
-          currentUserId={currentUserId}
-          canEdit={canEdit}
-          canVote={canVote}
-          canComment={canComment}
-          voteSummaries={voteSummaries}
-          userVotes={userVotes}
-          reviewsByPlaceId={reviewsByPlaceId}
-          commentsByPlaceId={commentsByPlaceId}
-          commentAuthors={commentAuthors}
-        />
-      </div>
-
       <TabBar activeTab={activeTab} tripId={tripId} tabs={visibleTabs} />
 
       {activeTab === 'places' && (
@@ -622,6 +656,23 @@ export default async function TripDetailPage({
             canComment={canComment}
             members={members}
           />
+
+          <div className="mt-4">
+            <AccommodationSection
+              places={places}
+              categories={categories}
+              tripId={tripId}
+              currentUserId={currentUserId}
+              canEdit={canEdit}
+              canVote={canVote}
+              canComment={canComment}
+              voteSummaries={voteSummaries}
+              userVotes={userVotes}
+              reviewsByPlaceId={reviewsByPlaceId}
+              commentsByPlaceId={commentsByPlaceId}
+              commentAuthors={commentAuthors}
+            />
+          </div>
         </div>
       )}
 

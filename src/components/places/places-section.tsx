@@ -158,19 +158,32 @@ export function PlacesSection({
         </Dialog>
       )}
 
-      <section className="hero-orb relative overflow-hidden rounded-[2rem] p-5 text-white sm:p-6">
+      {editor && (
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+6.2rem)] right-4 z-30 md:hidden">
+          <button
+            type="button"
+            onClick={() => setShowAddPlace(true)}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-stone-950 px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(10,12,17,0.24)]"
+          >
+            <Plus className="h-4 w-4" />
+            Add place
+          </button>
+        </div>
+      )}
+
+      <section className="hero-orb relative overflow-hidden rounded-[1.6rem] p-4 text-white md:rounded-[2rem] md:p-6">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%)]" />
-        <div className="relative flex flex-col gap-5">
+        <div className="relative flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-xl">
               <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
                 Collaborative picks
               </p>
-              <h2 className="text-2xl font-semibold leading-tight text-white section-title">
+              <h2 className="text-xl font-semibold leading-tight text-white section-title md:text-2xl">
                 Places, votes, and notes all stay in one planning lane.
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-white/78 sm:text-base">
+              <p className="mt-2 hidden text-sm leading-relaxed text-white/78 md:block md:text-base">
                 Search fast, sort the shortlist, and keep the group moving from ideas to a shared itinerary.
               </p>
             </div>
@@ -179,7 +192,7 @@ export function PlacesSection({
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setShowAddPlace(true)}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5"
+                  className="hidden min-h-[44px] items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
                 >
                   <Plus className="h-4 w-4" />
                   Add place
@@ -187,10 +200,11 @@ export function PlacesSection({
 
                 <button
                   onClick={() => setShowAddCategory(true)}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-white/14 px-4 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18"
+                  className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18"
+                  aria-label="Add category"
                 >
                   <Tag className="h-4 w-4" />
-                  Category
+                  <span className="hidden sm:inline">Category</span>
                 </button>
 
                 <AddExpenseDialog
@@ -198,9 +212,9 @@ export function PlacesSection({
                   members={members}
                   currentUserId={currentUserId}
                   trigger={
-                    <button className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-white/14 px-4 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18">
+                    <button className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl bg-white/14 px-3 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/18" aria-label="Add expense">
                       <Receipt className="h-4 w-4" />
-                      Expense
+                      <span className="hidden sm:inline">Expense</span>
                     </button>
                   }
                 />
@@ -208,8 +222,8 @@ export function PlacesSection({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <div className="metric-tile px-4 py-3">
+          <div className="grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto pb-1 md:grid-flow-row md:auto-cols-auto md:grid-cols-4">
+            <div className="metric-tile min-w-0 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Saved places
               </p>
@@ -221,7 +235,7 @@ export function PlacesSection({
               </p>
             </div>
 
-            <div className="metric-tile px-4 py-3">
+            <div className="metric-tile min-w-0 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 On the plan
               </p>
@@ -233,7 +247,7 @@ export function PlacesSection({
               </p>
             </div>
 
-            <div className="metric-tile px-4 py-3">
+            <div className="metric-tile min-w-0 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Vote heat
               </p>
@@ -245,7 +259,7 @@ export function PlacesSection({
               </p>
             </div>
 
-            <div className="metric-tile px-4 py-3">
+            <div className="metric-tile min-w-0 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Next stop
               </p>
@@ -265,12 +279,12 @@ export function PlacesSection({
       )}
 
       <div className="section-shell p-4 sm:p-5">
-        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
               Filter and focus
             </p>
-            <h3 className="mt-1 text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+            <h3 className="mt-1 text-base font-semibold section-title sm:text-lg" style={{ color: 'var(--color-text)' }}>
               Search, sort, and narrow the shortlist
             </h3>
           </div>
@@ -287,7 +301,7 @@ export function PlacesSection({
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {places.length > 0 && (
             <PlaceSearch
               places={places}
