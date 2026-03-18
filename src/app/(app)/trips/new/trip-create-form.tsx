@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, Loader2, X } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import { createTrip, updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 

@@ -28,9 +28,12 @@ export function NavClock() {
 
   // Hydration-safe clock
   useEffect(() => {
-    setNow(new Date());
+    const frame = window.requestAnimationFrame(() => setNow(new Date()));
     const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      clearInterval(id);
+    };
   }, []);
 
   // Close on outside click

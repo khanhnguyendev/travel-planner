@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 
 // TODO: replace with your real production URL
@@ -7,6 +8,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://example.com';
 
 // TODO: replace APP_NAME with your brand name (e.g. "TripMate")
 const APP_NAME = 'Travel Planner';
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -80,19 +82,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         {children}
         <Analytics />
       </body>

@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
-import type { Trip } from '@/lib/types';
 import { logActivity } from '@/lib/activity';
 
 function slog(service: string, msg: string, data?: Record<string, unknown>) {

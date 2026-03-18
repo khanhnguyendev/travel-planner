@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Link2, Copy, Check, Loader2, UserPlus, ChevronDown } from 'lucide-react';
+import { Link2, Copy, Check, Loader2, UserPlus } from 'lucide-react';
 import { generateInviteLink } from '@/features/members/actions';
 import type { TripRole } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';

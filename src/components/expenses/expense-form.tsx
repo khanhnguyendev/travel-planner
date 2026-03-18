@@ -151,7 +151,6 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
   const [splits, setSplits] = useState<SplitRow[]>(buildDefaultSplits(members));
 
   // Receipt upload state
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
   const [uploadedReceiptPath, setUploadedReceiptPath] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -222,13 +221,10 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
   const handleFileChange = useCallback(
     async (file: File | null) => {
       if (!file) {
-        setReceiptFile(null);
         setReceiptPreviewUrl(null);
         setUploadedReceiptPath(null);
         return;
       }
-
-      setReceiptFile(file);
 
       // Local preview
       const objectUrl = URL.createObjectURL(file);
@@ -272,7 +268,6 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
         setUploadedReceiptPath(receiptPath);
       } catch (err) {
         setError((err as Error).message ?? 'Receipt upload failed');
-        setReceiptFile(null);
         setReceiptPreviewUrl(null);
       } finally {
         setIsUploading(false);
@@ -282,7 +277,6 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
   );
 
   function clearReceipt() {
-    setReceiptFile(null);
     setReceiptPreviewUrl(null);
     setUploadedReceiptPath(null);
     if (fileInputRef.current) fileInputRef.current.value = '';

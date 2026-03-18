@@ -38,7 +38,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { tripId, expenseId, filename, contentType } = parsed.data;
+  const { tripId, expenseId, filename } = parsed.data;
 
   // Validate caller role (owner/admin/editor)
   const { data: callerMemberData } = await supabase

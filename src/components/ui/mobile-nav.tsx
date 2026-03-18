@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, LayoutDashboard, MapPin } from 'lucide-react';
+import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MobileNavProps {
