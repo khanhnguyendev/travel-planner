@@ -1,9 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, UploadCloud } from 'lucide-react';
 import { updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 
 interface CoverImageUploadProps {
   tripId: string;
@@ -21,7 +22,7 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
     if (!file) return;
 
     setUploading(true);
-    const resolve = loadingToast('Uploading cover image…');
+    const resolve = loadingToast('Uploading cover masterpiece...');
 
     try {
       // 1. Get signed URL
@@ -82,11 +83,13 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
   }
 
   return (
-    <div className="relative">
+    <div className="relative group overflow-hidden rounded-[2rem] border border-slate-200/50 shadow-premium">
       {/* Cover strip */}
       <div
-        className="w-full flex items-center justify-center cursor-pointer group"
-        style={{ height: 200, backgroundColor: previewUrl ? undefined : 'var(--color-bg-subtle)' }}
+        className={cn(
+          "w-full flex items-center justify-center cursor-pointer transition-all duration-700",
+          previewUrl ? "h-48 sm:h-64" : "h-32 sm:h-40 bg-slate-50"
+        )}
         onClick={() => !uploading && inputRef.current?.click()}
         role="button"
         tabIndex={0}
@@ -103,36 +106,38 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
           <img
             src={previewUrl}
             alt="Cover"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
-        ) : null}
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+             <UploadCloud className="w-8 h-8 text-primary/30" />
+             <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50">No Cover Image</span>
+          </div>
+        )}
 
         {/* Overlay */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center transition-opacity"
-          style={{
-            backgroundColor: previewUrl
-              ? 'rgba(0,0,0,0.35)'
-              : 'transparent',
-            opacity: uploading ? 1 : undefined,
-          }}
+          className={cn(
+            "absolute inset-0 flex flex-col items-center justify-center transition-all duration-300 backdrop-blur-[2px]",
+            previewUrl ? "bg-slate-900/40 opacity-0 group-hover:opacity-100" : "opacity-0 group-hover:opacity-100 bg-white/60",
+            uploading && "opacity-100"
+          )}
         >
           {uploading ? (
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-primary">Uploading...</span>
+            </div>
           ) : (
-            <div
-              className="flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ opacity: previewUrl ? undefined : 1 }}
-            >
-              <Camera
-                className="w-8 h-8"
-                style={{ color: previewUrl ? 'white' : 'var(--color-text-subtle)' }}
-              />
-              <span
-                className="text-sm font-medium"
-                style={{ color: previewUrl ? 'white' : 'var(--color-text-muted)' }}
-              >
-                {previewUrl ? 'Change cover' : 'Add cover image'}
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl glass-nav flex items-center justify-center text-white shadow-premium transition-transform duration-300 group-hover:scale-110 border border-white/20">
+                <Camera className="w-6 h-6" />
+              </div>
+              <span className={cn(
+                "text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-white/20 shadow-premium",
+                previewUrl ? "text-white" : "text-slate-600 bg-white/80"
+              )}>
+                {previewUrl ? 'Change Masterpiece' : 'Set Cover'}
               </span>
             </div>
           )}

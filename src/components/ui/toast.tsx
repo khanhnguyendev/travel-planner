@@ -61,7 +61,7 @@ function ToastItem({
   useEffect(() => {
     timerRef.current = setTimeout(() => {
       onDismiss(toast.id);
-    }, 3000);
+    }, 5000); // Slightly longer duration
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
@@ -70,42 +70,31 @@ function ToastItem({
   const variant = toast.variant ?? 'success';
 
   const iconMap = {
-    success: <CheckCircle className="w-4 h-4 flex-shrink-0 text-teal-600" />,
-    error: <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500" />,
-    info: <Info className="w-4 h-4 flex-shrink-0 text-blue-500" />,
-  };
-
-  const bgMap = {
-    success: 'bg-white border-teal-200',
-    error: 'bg-white border-red-200',
-    info: 'bg-white border-blue-200',
+    success: <CheckCircle className="w-5 h-5 flex-shrink-0 text-primary" />,
+    error: <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />,
+    info: <Info className="w-5 h-5 flex-shrink-0 text-secondary" />,
   };
 
   return (
     <div
       className={cn(
-        'flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border',
-        'animate-in fade-in slide-in-from-bottom-2 duration-300',
-        'min-w-[260px] max-w-sm',
-        bgMap[variant]
+        'flex items-center gap-3 px-5 py-4 glass-card shadow-premium border-white/20',
+        'animate-in fade-in slide-in-from-top-4 duration-500',
+        'min-w-[300px] max-w-sm rounded-2xl'
       )}
       role="alert"
       aria-live="polite"
     >
       {iconMap[variant]}
-      <span
-        className="flex-1 text-sm font-medium"
-        style={{ color: 'var(--color-text)' }}
-      >
+      <span className="flex-1 text-sm font-bold text-foreground">
         {toast.message}
       </span>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="p-0.5 rounded-md transition-colors hover:bg-stone-100 flex-shrink-0"
-        style={{ color: 'var(--color-text-subtle)' }}
+        className="p-1.5 rounded-xl transition-all hover:bg-slate-100/50 text-muted-foreground hover:text-foreground flex-shrink-0"
         aria-label="Dismiss notification"
       >
-        <X className="w-3.5 h-3.5" />
+        <X className="w-4 h-4" />
       </button>
     </div>
   );
@@ -131,14 +120,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast, dismissToast: dismiss }}>
       {children}
-      {/* Fixed toast container */}
+      {/* Fixed toast container — Top right for mobile reachability and avoiding bottom nav */}
       <div
-        className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 items-end"
+        className="fixed top-6 right-4 left-4 sm:left-auto sm:right-6 z-[100] flex flex-col gap-3 items-center sm:items-end pointer-events-none"
         aria-label="Notifications"
       >
-        {toasts.map((toast) => (
-          <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
-        ))}
+        <div className="flex flex-col gap-3 pointer-events-auto">
+          {toasts.map((toast) => (
+            <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
+          ))}
+        </div>
       </div>
     </ToastContext.Provider>
   );

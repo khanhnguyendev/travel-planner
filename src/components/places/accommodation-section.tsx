@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BedDouble, CalendarDays, Map, Navigation, Pencil, Check, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import { updatePlaceSchedule } from '@/features/places/actions';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
@@ -64,27 +65,24 @@ function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <span
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: '#F0FDF4', color: '#15803D' }}
+          className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-lg font-bold uppercase tracking-widest border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm transition-all hover:scale-105"
         >
           <CalendarDays className="w-3.5 h-3.5" />
-          Check-in: {place.visit_date ? formatDate(place.visit_date) : <span className="opacity-60">Not set</span>}
+          In: {place.visit_date ? formatDate(place.visit_date) : <span className="opacity-60 italic lowercase font-normal">not set</span>}
         </span>
         <span
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: '#FFF7ED', color: '#C2410C' }}
+          className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-lg font-bold uppercase tracking-widest border border-orange-100 bg-orange-50 text-orange-600 shadow-sm transition-all hover:scale-105"
         >
           <CalendarDays className="w-3.5 h-3.5" />
-          Check-out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60">Not set</span>}
+          Out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60 italic lowercase font-normal">not set</span>}
         </span>
         {canEdit && (
           <button
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer"
-            style={{ color: 'var(--color-text-subtle)', backgroundColor: 'var(--color-bg-subtle)' }}
+            className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 text-slate-400 hover:text-primary hover:bg-white border border-slate-100 transition-all shadow-sm active:scale-90"
+            title="Edit dates"
           >
             <Pencil className="w-3 h-3" />
-            Edit
           </button>
         )}
       </div>
@@ -92,41 +90,43 @@ function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
   }
 
   return (
-    <div className="flex items-end gap-2 flex-wrap">
-      <div>
-        <label className="block text-xs font-medium text-stone-500 mb-1">Check-in</label>
+    <div className="flex items-end gap-2 flex-wrap bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+      <div className="flex-1 min-w-[100px]">
+        <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 ml-1">Check-in</label>
         <input
           type="date"
           value={checkIn}
           onChange={(e) => setCheckIn(e.target.value)}
-          className="text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
         />
       </div>
-      <div>
-        <label className="block text-xs font-medium text-stone-500 mb-1">Check-out</label>
+      <div className="flex-1 min-w-[100px]">
+        <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 ml-1">Check-out</label>
         <input
           type="date"
           value={checkOut}
           onChange={(e) => setCheckOut(e.target.value)}
-          className="text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
         />
       </div>
-      <button
-        onClick={handleSave}
-        disabled={pending}
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
-      >
-        <Check className="w-3.5 h-3.5" />
-        Save
-      </button>
-      <button
-        onClick={() => { setEditing(false); setCheckIn(place.visit_date ?? ''); setCheckOut(place.checkout_date ?? ''); }}
-        disabled={pending}
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
-      >
-        <X className="w-3 h-3" />
-        Cancel
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={handleSave}
+          disabled={pending}
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50 transition-all shadow-premium active:scale-95"
+          title="Save dates"
+        >
+          <Check className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => { setEditing(false); setCheckIn(place.visit_date ?? ''); setCheckOut(place.checkout_date ?? ''); }}
+          disabled={pending}
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-400 transition-all shadow-sm active:scale-95"
+          title="Cancel"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -142,44 +142,46 @@ function AccommodationCard({
 }) {
   return (
     <div
-      className="card p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow"
+      className="card-premium p-5 flex flex-col gap-4 cursor-pointer group hover:shadow-soft transition-all duration-300 relative overflow-hidden active:scale-[0.98]"
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
     >
+      {/* Background Accent */}
+      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
+
       {/* Name */}
-      <div>
-        <h3 className="font-semibold text-base leading-snug text-stone-800">{place.name}</h3>
+      <div className="relative">
+        <h3 className="font-display font-bold text-lg leading-tight text-foreground group-hover:text-primary transition-colors">{place.name}</h3>
         {place.address && (
-          <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{place.address}</p>
+          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1 italic">{place.address}</p>
         )}
       </div>
 
       {/* Check-in / Check-out dates */}
-      <div onClick={(e) => e.stopPropagation()}>
+      <div onClick={(e) => e.stopPropagation()} className="relative">
         <DatesEditor place={place} canEdit={canEdit} />
       </div>
 
       {/* Direction buttons */}
-      <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }} onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-2 pt-4 border-t border-slate-100 relative" onClick={(e) => e.stopPropagation()}>
         <a
           href={googleMapsUrl(place)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium"
+          className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm"
         >
-          <Map className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Google Maps</span>
-          <span className="sm:hidden">Maps</span>
+          <Map className="w-4 h-4" />
+          <span>Maps</span>
         </a>
         <a
           href={vietmapUrl(place)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors font-medium"
+          className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all duration-300 shadow-sm"
         >
-          <Navigation className="w-3.5 h-3.5" />
+          <Navigation className="w-4 h-4" />
           Vietmap
         </a>
       </div>
@@ -224,18 +226,25 @@ export function AccommodationSection({
 
   return (
     <>
-      <div className="card p-5 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FFF7ED' }}>
-            <BedDouble className="w-4 h-4 text-orange-600" />
+      <div className="card-premium p-6 mb-8 bg-white/80 backdrop-blur-xl border-white shadow-premium">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-orange-50 text-orange-500 shadow-sm rotate-3 group-hover:rotate-0 transition-transform">
+              <BedDouble className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-xl text-foreground tracking-tight">Accommodation</h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">{sorted.length} {sorted.length === 1 ? 'Stay' : 'Stays'} Planned</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-base text-stone-800">Accommodation</h2>
-            <p className="text-xs text-stone-400">{sorted.length} {sorted.length === 1 ? 'place' : 'places'}</p>
+          <div className="hidden sm:block">
+             <div className="px-4 py-2 rounded-2xl bg-slate-50 border border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+               Trip Summary
+             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sorted.map((place) => (
             <AccommodationCard
               key={place.id}

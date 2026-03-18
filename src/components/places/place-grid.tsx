@@ -75,31 +75,25 @@ export function PlaceGrid({
 
   if (filtered.length === 0) {
     return (
-      <div
-        className="card flex flex-col items-center justify-center py-16 text-center"
-        style={{ borderStyle: 'dashed' }}
-      >
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-          style={{ backgroundColor: 'var(--color-primary-light)' }}
-        >
-          <MapPin className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
+      <div className="card-premium flex flex-col items-center justify-center py-20 text-center border-dashed border-2 bg-slate-50/50">
+        <div className="w-16 h-16 rounded-[2rem] bg-primary/10 flex items-center justify-center mb-6 shadow-soft">
+          <MapPin className="w-8 h-8 text-primary shadow-premium" />
         </div>
-        <p className="font-semibold text-base text-stone-800 mb-1">
-          {selectedCategoryId ? 'No places in this category yet' : 'Add your first destination'}
-        </p>
-        <p className="text-sm text-stone-400 max-w-xs mb-5">
+        <h3 className="font-display font-bold text-xl text-foreground mb-2">
+          {selectedCategoryId ? 'No destinations in this category' : 'Start your adventure'}
+        </h3>
+        <p className="text-sm text-muted-foreground max-w-sm mb-8 leading-relaxed">
           {selectedCategoryId
-            ? 'Try selecting a different category or add a new place.'
-            : 'Paste a Google Maps link to add places for your group to vote on.'}
+            ? 'Try selecting a different filter or clear your current selection to see all places.'
+            : 'Add places you want to visit! Paste a Google Maps link or search for a destination to get started.'}
         </p>
         {!selectedCategoryId && onAddPlace && (
           <button
             onClick={onAddPlace}
-            className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
+            className="btn-premium flex items-center gap-2 h-[48px] px-8"
           >
-            <Plus className="w-4 h-4" />
-            Add place
+            <Plus className="w-5 h-5" />
+            Add First Destination
           </button>
         )}
       </div>
@@ -108,29 +102,21 @@ export function PlaceGrid({
 
   return (
     <>
-      <div className="space-y-8">
+      <div className="space-y-12">
         {Array.from(grouped.entries()).map(([catId, catPlaces]) => {
           const cat = categoryMap[catId] ?? null;
           return (
-            <div key={catId}>
+            <div key={catId} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Category header — only show when "All" is selected */}
               {!selectedCategoryId && cat && (
-                <div className="flex items-center gap-2 mb-4">
-                  {cat.icon && (
-                    <span className="text-lg leading-none">{cat.icon}</span>
-                  )}
-                  <h3
-                    className="font-semibold text-sm text-stone-800"
-                  >
+                <div className="flex items-center gap-3 mb-6 ml-1">
+                  <div className="w-8 h-8 rounded-lg bg-white shadow-soft border border-slate-100 flex items-center justify-center text-lg leading-none">
+                    {cat.icon || <MapPin className="w-4 h-4 text-primary" />}
+                  </div>
+                  <h3 className="font-display font-bold text-lg text-foreground tracking-tight">
                     {cat.name}
                   </h3>
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: 'var(--color-bg-subtle)',
-                      color: 'var(--color-text-muted)',
-                    }}
-                  >
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-md">
                     {catPlaces.length}
                   </span>
                 </div>

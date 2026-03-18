@@ -92,8 +92,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning>
-        {children}
+      <body suppressHydrationWarning className="bg-premium antialiased">
+        <main className="min-h-screen relative overflow-x-hidden">
+          {children}
+        </main>
         <Analytics />
       </body>
     </html>

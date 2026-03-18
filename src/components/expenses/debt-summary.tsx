@@ -16,16 +16,8 @@ interface DebtSummaryProps {
   currentUserId: string;
 }
 
-function Avatar({ name }: { name: string }) {
-  return (
-    <div
-      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
-      style={{ backgroundColor: 'var(--color-primary)' }}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
+import { Avatar } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 export function DebtSummary({ expenses, members, currentUserId }: DebtSummaryProps) {
   const debts = calculateDebts(expenses);
@@ -57,16 +49,19 @@ export function DebtSummary({ expenses, members, currentUserId }: DebtSummaryPro
   }
 
   return (
-    <div className="card p-6 mb-6">
+    <div className="card-premium p-8 mb-8 relative overflow-hidden">
+      {/* Decorative background element */}
+      <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full -mr-24 -mt-24 blur-3xl pointer-events-none" />
+      
       {/* Card header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: 'var(--color-primary-light)' }}
-        >
-          <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+      <div className="flex items-center gap-3 mb-6 relative z-10">
+        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shadow-soft">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
         </div>
-        <h2 className="font-semibold text-base text-stone-800">Settlement summary</h2>
+        <div>
+          <h2 className="font-display font-bold text-lg text-foreground">Settlement Summary</h2>
+          <p className="text-xs text-muted-foreground">Automatic calculations of who owes what.</p>
+        </div>
       </div>
 
       {debts.length === 0 ? (
@@ -78,45 +73,40 @@ export function DebtSummary({ expenses, members, currentUserId }: DebtSummaryPro
         <>
           <div className="space-y-2">
             {debts.map((debt, idx) => {
-              const fromName = nameMap.get(debt.from) ?? 'Unknown';
-              const toName = nameMap.get(debt.to) ?? 'Unknown';
-              const isInvolved =
-                debt.from === currentUserId || debt.to === currentUserId;
+              const fromMember = members.find(m => m.user_id === debt.from);
+              const toMember = members.find(m => m.user_id === debt.to);
+              const fromName = fromMember?.display_name ?? 'Unknown';
+              const toName = toMember?.display_name ?? 'Unknown';
+              const isInvolved = debt.from === currentUserId || debt.to === currentUserId;
 
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-3 rounded-xl"
-                  style={{
-                    backgroundColor: isInvolved
-                      ? 'var(--color-primary-light)'
-                      : 'var(--color-bg-subtle)',
-                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-4 rounded-2xl border transition-all hover:shadow-soft relative z-10",
+                    isInvolved 
+                      ? "bg-primary/5 border-primary/20 shadow-soft" 
+                      : "bg-white border-slate-100"
+                  )}
                 >
-                  <Avatar name={fromName} />
-                  <span
-                    className="text-sm flex-1 min-w-0"
-                    style={{
-                      color: isInvolved
-                        ? 'var(--color-primary)'
-                        : 'var(--color-text)',
-                    }}
-                  >
-                    <strong>{fromName}</strong>
-                    {' owes '}
-                    <strong>{toName}</strong>
-                  </span>
-                  <Avatar name={toName} />
-                  <span
-                    className="text-sm font-semibold flex-shrink-0 ml-2"
-                    style={{
-                      color: isInvolved
-                        ? 'var(--color-primary)'
-                        : 'var(--color-text)',
-                    }}
-                  >
-                    {formatCurrency(debt.amount, debt.currency)}
-                  </span>
+                  <Avatar user={{ display_name: fromName, avatar_url: fromMember?.avatar_url ?? null }} size="sm" className="ring-2 ring-white" />
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-[11px] font-bold uppercase tracking-wider",
+                      isInvolved ? "text-primary" : "text-slate-600"
+                    )}>
+                      {fromName} <span className="text-slate-400 font-medium">owes</span> {toName}
+                    </p>
+                  </div>
+                  <Avatar user={{ display_name: toName, avatar_url: toMember?.avatar_url ?? null }} size="sm" className="ring-2 ring-white" />
+                  <div className="text-right ml-2">
+                    <p className={cn(
+                      "font-display font-bold text-base",
+                      isInvolved ? "text-primary" : "text-slate-900"
+                    )}>
+                      {formatCurrency(debt.amount, debt.currency)}
+                    </p>
+                  </div>
                 </div>
               );
             })}

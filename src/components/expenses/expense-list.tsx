@@ -46,13 +46,7 @@ function ReceiptThumbnail({ receiptPath }: { receiptPath: string }) {
 
 function CurrencyPill({ currency }: { currency: string }) {
   return (
-    <span
-      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
-      style={{
-        backgroundColor: 'var(--color-bg-subtle)',
-        color: 'var(--color-text-muted)',
-      }}
-    >
+    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-widest bg-slate-100 text-muted-foreground border border-slate-200">
       {currency}
     </span>
   );
@@ -61,26 +55,21 @@ function CurrencyPill({ currency }: { currency: string }) {
 export function ExpenseList({ expenses, tripId, canEdit }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
-      <div className="card p-12 flex flex-col items-center justify-center text-center">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-          style={{ backgroundColor: 'var(--color-primary-light)' }}
-        >
-          <Receipt className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
+      <div className="card-premium flex flex-col items-center justify-center py-20 text-center border-dashed border-2 bg-slate-50/50">
+        <div className="w-16 h-16 rounded-[2rem] bg-amber-100 flex items-center justify-center mb-6 shadow-soft">
+          <Receipt className="w-8 h-8 text-amber-600 shadow-premium" />
         </div>
-        <h3 className="font-semibold text-base mb-1 text-stone-800">
-          Track your first shared expense
-        </h3>
-        <p className="text-sm max-w-xs mb-5 text-stone-600">
-          Add expenses to keep everyone on the same page about shared costs for this trip.
+        <h3 className="font-display font-bold text-xl text-foreground mb-2">No Shared Expenses</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mb-8 leading-relaxed">
+          Log your restaurants, transport, and more to keep everyone updated on the budget.
         </p>
         {canEdit && (
           <Link
             href={`/trips/${tripId}/expenses/new`}
-            className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
+            className="btn-premium flex items-center gap-2 h-[48px] px-8"
           >
-            <Plus className="w-4 h-4" />
-            Add expense
+            <Plus className="w-5 h-5" />
+            Add First Expense
           </Link>
         )}
       </div>
@@ -88,65 +77,59 @@ export function ExpenseList({ expenses, tripId, canEdit }: ExpenseListProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="grid grid-cols-1 gap-3">
       {expenses.map((expense) => (
         <Link
           key={expense.id}
           href={`/trips/${tripId}/expenses/${expense.id}`}
           className={cn(
-            'card card-hover flex items-center gap-4 p-4 group transition-all',
-            'hover:scale-[1.01] hover:shadow-md',
-            // Mobile: stack on small screens, row on sm+
-            'flex-col sm:flex-row min-h-[72px]'
+            'card-premium group flex items-center gap-5 p-5 transition-all duration-300',
+            'flex-row min-h-[80px]'
           )}
         >
           {/* Receipt thumbnail or icon */}
-          <div className="flex items-center gap-4 w-full sm:w-auto sm:flex-1 min-w-0">
+          <div className="flex-shrink-0 relative">
             {expense.receipt_path ? (
               <ReceiptThumbnail receiptPath={expense.receipt_path} />
             ) : (
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: 'var(--color-primary-light)' }}
-              >
+              <div className="w-12 h-12 rounded-[1.25rem] bg-primary/5 border border-primary/10 flex items-center justify-center transition-transform group-hover:scale-110 shadow-soft">
                 {expense.category && EXPENSE_CATEGORY_EMOJIS[expense.category]
-                  ? <span className="text-xl leading-none">{EXPENSE_CATEGORY_EMOJIS[expense.category]}</span>
-                  : <Receipt className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />}
+                  ? <span className="text-2xl leading-none">{EXPENSE_CATEGORY_EMOJIS[expense.category]}</span>
+                  : <Receipt className="w-6 h-6 text-primary" />}
               </div>
             )}
+          </div>
 
-            {/* Main info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span
-                  className="font-semibold text-sm truncate text-stone-800"
-                >
-                  {expense.title}
-                </span>
-                <CurrencyPill currency={expense.currency} />
-              </div>
-              <div className="flex items-center gap-2 text-xs text-stone-400">
-                <User className="w-3 h-3 flex-shrink-0" />
+          {/* Main info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+              <h4 className="font-display font-bold text-base text-foreground group-hover:text-primary transition-colors truncate">
+                {expense.title}
+              </h4>
+              <CurrencyPill currency={expense.currency} />
+            </div>
+            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+              <div className="flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5" />
                 <span className="truncate">
                   {expense.expense_date
                     ? formatDate(expense.expense_date)
                     : formatDate(expense.created_at)}
                 </span>
-                {expense.category && (
-                  <span className="truncate text-stone-500">{expense.category}</span>
-                )}
               </div>
+              {expense.category && (
+                <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-slate-50 border border-slate-100 italic lowercase tracking-normal">
+                  {expense.category}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Amount — prominent on mobile */}
-          <div className="w-full sm:w-auto text-left sm:text-right flex-shrink-0">
-            <span
-              className="font-bold text-lg sm:text-base"
-              style={{ color: 'var(--color-primary)' }}
-            >
+          {/* Amount — prominent */}
+          <div className="text-right flex-shrink-0 ml-2">
+            <p className="font-display font-bold text-lg text-primary">
               {formatCurrency(expense.amount, expense.currency)}
-            </span>
+            </p>
           </div>
         </Link>
       ))}

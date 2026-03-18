@@ -22,10 +22,10 @@ export function AddExpenseDialog({ tripId, members, currentUserId, trigger }: Ad
     : (
       <button
         onClick={() => setOpen(true)}
-        className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+        className="btn-premium inline-flex items-center gap-2 text-[11px] h-11 px-6 rounded-2xl font-display font-bold uppercase tracking-widest shadow-premium active:scale-95 w-full sm:w-auto"
       >
         <Plus className="w-4 h-4" />
-        Add expense
+        Add Expense
       </button>
     );
 

@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CopyButtonProps {
   text: string;
   label?: string;
+  className?: string;
 }
 
-export function CopyButton({ text, label = 'Copy link' }: CopyButtonProps) {
+export function CopyButton({ text, label = 'Copy link', className }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -26,20 +28,22 @@ export function CopyButton({ text, label = 'Copy link' }: CopyButtonProps) {
       type="button"
       onClick={handleCopy}
       title={label}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[32px] flex-shrink-0"
-      style={{
-        backgroundColor: copied ? 'var(--color-primary-light)' : 'var(--color-bg-subtle)',
-        color: copied ? 'var(--color-primary)' : 'var(--color-text-muted)',
-      }}
+      className={cn(
+        "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 min-h-[40px] shadow-sm",
+        copied 
+          ? "bg-primary text-white scale-105" 
+          : "bg-white text-muted-foreground hover:text-foreground hover:bg-slate-50 border border-slate-100",
+        className
+      )}
     >
       {copied ? (
         <>
-          <Check className="w-3.5 h-3.5" />
+          <Check className="w-4 h-4" />
           Copied!
         </>
       ) : (
         <>
-          <Copy className="w-3.5 h-3.5" />
+          <Copy className="w-4 h-4" />
           {label}
         </>
       )}

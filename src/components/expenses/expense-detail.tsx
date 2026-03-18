@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
 import type { TripRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
@@ -21,16 +21,17 @@ interface ExpenseDetailProps {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const isPending = status === 'pending';
+  const isSettled = status === 'settled';
   return (
     <span
-      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
-      style={{
-        backgroundColor: isPending ? 'var(--color-secondary-light)' : 'var(--color-primary-light)',
-        color: isPending ? 'var(--color-secondary)' : 'var(--color-primary)',
-      }}
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all",
+        isSettled 
+          ? "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm" 
+          : "bg-amber-50 text-amber-600 border-amber-100 shadow-sm"
+      )}
     >
-      {!isPending && <CheckCircle2 className="w-3 h-3" />}
+      {isSettled ? <CheckCircle2 className="w-3.5 h-3.5" /> : <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
       {status}
     </span>
   );
@@ -59,8 +60,12 @@ function SplitRow({
 
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-xl"
-      style={{ backgroundColor: isSettled ? '#F0FDF4' : 'var(--color-bg-subtle)' }}
+      className={cn(
+        "flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300",
+        isSettled 
+          ? "bg-emerald-50/30 border-emerald-100 opacity-80" 
+          : "bg-white border-slate-100 hover:border-primary/20 hover:shadow-soft"
+      )}
     >
       {/* Avatar */}
       <Avatar
@@ -70,12 +75,10 @@ function SplitRow({
 
       {/* Name + status */}
       <div className="flex-1 min-w-0">
-        <div
-          className={cn(
-            'font-medium text-sm truncate',
-            isSettled && 'line-through opacity-60'
+        <div className={cn(
+            'font-display font-bold text-sm text-foreground mb-1',
+            isSettled && 'line-through opacity-50'
           )}
-          style={{ color: 'var(--color-text)' }}
         >
           {name}
         </div>
@@ -84,17 +87,15 @@ function SplitRow({
 
       {/* Amounts */}
       <div className="text-right flex-shrink-0">
-        <div
-          className={cn(
-            'font-semibold text-sm',
-            isSettled && 'line-through opacity-60'
+        <div className={cn(
+            'font-display font-bold text-base text-foreground',
+            isSettled && 'line-through opacity-50'
           )}
-          style={{ color: 'var(--color-text)' }}
         >
           {formatCurrency(split.amount_owed, currency)}
         </div>
-        <div className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-          {pct}%
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+          {pct}% share
         </div>
       </div>
 
@@ -104,14 +105,13 @@ function SplitRow({
           onClick={() => onMarkSettled(split.id)}
           disabled={isSettling}
           className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[32px] flex-shrink-0',
-            'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200',
+            'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all min-h-[36px] flex-shrink-0 ml-2',
+            'bg-emerald-500 text-white hover:bg-emerald-600 shadow-button active:scale-95',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
-          title="Mark as settled"
         >
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          {isSettling ? 'Saving…' : 'Settle'}
+          {isSettling ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+          {isSettling ? '...' : 'Settle'}
         </button>
       )}
 
@@ -217,59 +217,48 @@ export function ExpenseDetail({
       />
 
       {/* Header card */}
-      <div className="card p-6">
-        {/* Teal accent bar */}
-        <div
-          className="h-1.5 rounded-t-2xl -mx-6 -mt-6 mb-5"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        />
+      <div className="card-premium p-8 relative overflow-hidden">
+        {/* Accent bar shifted to background */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-primary shadow-sm" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            {/* Meta */}
-            <div className="flex items-center gap-4 flex-wrap mt-1">
-              <span
-                className="inline-flex items-center gap-1.5 text-sm"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+            <div className="flex items-center gap-4 flex-wrap mt-2">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-2xl shadow-sm">
                 <Avatar
                   user={{
                     display_name: paidByName,
                     avatar_url: expense.paid_by_profile.avatar_url ?? null,
                   }}
                   size="sm"
+                  className="ring-2 ring-white"
                 />
-                Paid by <strong className="ml-0.5" style={{ color: 'var(--color-text)' }}>{paidByName}</strong>
-              </span>
-              <span
-                className="inline-flex items-center gap-1.5 text-sm"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                <Calendar className="w-4 h-4" />
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Paid by <span className="text-foreground">{paidByName}</span>
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                <Calendar className="w-4 h-4 text-primary opacity-60" />
                 {expenseDate}
-              </span>
+              </div>
+
               {expense.category && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-sm px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                >
-                  {expense.category}
-                </span>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest bg-primary/5 text-primary border border-primary/10 px-3 py-1.5 rounded-2xl">
+                   {expense.category}
+                </div>
               )}
             </div>
           </div>
 
           {/* Amount */}
-          <div className="text-right flex-shrink-0">
-            <div
-              className="text-3xl font-bold"
-              style={{ color: 'var(--color-primary)' }}
-            >
+          <div className="text-right flex-shrink-0 bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/50 shadow-soft">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Total</p>
+            <div className="text-3xl font-display font-bold text-primary">
               {formatCurrency(expense.amount, expense.currency)}
             </div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-              {expense.currency}
-            </div>
+            <p className="text-[11px] font-bold text-muted-foreground opacity-60 mt-0.5">{expense.currency}</p>
           </div>
         </div>
 

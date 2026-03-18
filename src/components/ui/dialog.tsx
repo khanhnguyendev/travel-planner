@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DialogProps {
   title: string;
@@ -26,29 +27,38 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 sm:pt-16">
+      <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div
-          className={`relative w-full ${maxWidth} rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[95dvh] sm:max-h-[92dvh]`}
-          style={{ backgroundColor: 'var(--color-bg)' }}
+          className={cn(
+            `relative w-full ${maxWidth} glass-card overflow-hidden max-h-[95dvh] sm:max-h-[90dvh]`,
+            'rounded-t-[2.5rem] sm:rounded-[2rem] border-white/20 shadow-premium',
+            'animate-in slide-in-from-bottom-10 fade-in duration-500'
+          )}
           role="dialog"
           aria-modal="true"
           aria-label={title}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Mobile drag handle */}
-          <div className="flex justify-center pt-3 pb-1 sm:hidden">
-            <div className="w-10 h-1 rounded-full bg-stone-200" />
+          <div className="flex justify-center pt-4 pb-2 sm:hidden">
+            <div className="w-12 h-1.5 rounded-full bg-slate-200/50" />
           </div>
+          
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-            <h2 className="font-semibold text-base text-stone-800">{title}</h2>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-stone-100 transition-colors" aria-label="Close">
-              <X className="w-4 h-4 text-stone-400" />
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100/50">
+            <h2 className="font-display font-bold text-xl text-foreground">{title}</h2>
+            <button 
+              onClick={onClose} 
+              className="p-2 rounded-xl hover:bg-slate-100 transition-all text-muted-foreground hover:text-foreground" 
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
+          
           {/* Scrollable body */}
-          <div className="overflow-y-auto p-5">
+          <div className="overflow-y-auto p-6">
             {children}
           </div>
         </div>

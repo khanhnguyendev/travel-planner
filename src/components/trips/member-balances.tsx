@@ -3,6 +3,8 @@
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { formatCurrency } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import { Avatar } from '@/components/ui/avatar';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { MemberWithProfile } from '@/features/members/queries';
 
@@ -39,7 +41,7 @@ export function MemberBalances({
 
   if (primaryBalances.length === 0) return null;
 
-  const nameMap = new Map(members.map((m) => [m.user_id, m.profile.display_name ?? 'Member']));
+  const memberMap = new Map(members.map((m) => [m.user_id, m]));
 
   // Sort: current user first, then by net desc
   const sorted = [...primaryBalances].sort((a, b) => {
@@ -49,59 +51,74 @@ export function MemberBalances({
   });
 
   return (
-    <div>
-      <p className="text-xs font-semibold mb-2" style={{ color: 'var(--color-text-muted)' }}>
+    <div className="space-y-4">
+      <h3 className="text-[10px] font-bold font-display uppercase tracking-widest text-muted-foreground ml-1">
         Balances ({primaryCurrency})
-      </p>
-      <div className="space-y-1.5">
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {sorted.map((b) => {
           const isYou = b.userId === currentUserId;
           const isOwed = b.net > 0.005;
           const isOwing = b.net < -0.005;
-          const name = nameMap.get(b.userId) ?? 'Unknown';
+          const member = memberMap.get(b.userId);
+          const name = member?.profile.display_name ?? 'Member';
 
           return (
             <div
               key={b.userId + b.currency}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{
-                backgroundColor: isYou ? 'var(--color-primary-light)' : 'var(--color-bg-subtle)',
-              }}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all hover:shadow-soft",
+                isYou 
+                  ? "bg-primary/5 border-primary/20" 
+                  : "bg-white border-slate-100"
+              )}
             >
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
-                style={{ backgroundColor: isYou ? 'var(--color-primary)' : '#94A3B8' }}
-              >
-                {name.charAt(0).toUpperCase()}
+              <Avatar 
+                user={{ 
+                  display_name: name, 
+                  avatar_url: member?.profile.avatar_url ?? null 
+                }} 
+                size="sm" 
+                className="ring-2 ring-white" 
+              />
+              <div className="flex-1 min-w-0">
+                <p className={cn(
+                  "text-[11px] font-bold truncate",
+                  isYou ? "text-primary" : "text-foreground"
+                )}>
+                  {name}{isYou ? ' (you)' : ''}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {isOwed ? (
+                    <TrendingUp className="w-3 h-3 text-emerald-500" />
+                  ) : isOwing ? (
+                    <TrendingDown className="w-3 h-3 text-red-500" />
+                  ) : (
+                    <Minus className="w-3 h-3 text-muted-foreground/40" />
+                  )}
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider",
+                      isOwed ? "text-emerald-600" : isOwing ? "text-red-500" : "text-muted-foreground"
+                    )}
+                  >
+                    {isOwed ? 'Owed' : isOwing ? 'Owes' : 'Settled'}
+                  </span>
+                </div>
               </div>
-              <span
-                className="flex-1 text-xs font-medium truncate"
-                style={{ color: 'var(--color-text)' }}
-              >
-                {name}{isYou ? ' (you)' : ''}
-              </span>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {isOwed ? (
-                  <TrendingUp className="w-3 h-3 text-teal-600" />
-                ) : isOwing ? (
-                  <TrendingDown className="w-3 h-3 text-red-500" />
-                ) : (
-                  <Minus className="w-3 h-3 text-stone-400" />
-                )}
-                <span
-                  className="text-xs font-semibold"
-                  style={{
-                    color: isOwed ? '#0F766E' : isOwing ? '#EF4444' : 'var(--color-text-muted)',
-                  }}
-                >
+              <div className="text-right">
+                <p className={cn(
+                  "font-display font-bold text-sm",
+                  isOwed ? "text-emerald-600" : isOwing ? "text-red-500" : "text-muted-foreground"
+                )}>
                   {isOwed ? '+' : ''}{formatCurrency(b.net, b.currency)}
-                </span>
+                </p>
               </div>
             </div>
           );
         })}
       </div>
-      <p className="mt-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+      <p className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 text-center">
         Positive = owed back · Negative = owes others
       </p>
     </div>

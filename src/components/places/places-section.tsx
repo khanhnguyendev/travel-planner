@@ -151,24 +151,28 @@ export function PlacesSection({
       )}
 
       {/* Section header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-semibold text-stone-800">
-          Places
-          {places.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-stone-400">({places.length})</span>
-          )}
-        </h2>
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
+        <div>
+          <h2 className="text-xl font-bold font-display text-foreground flex items-center gap-3">
+            Destinations
+            {places.length > 0 && (
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground bg-slate-100 px-2 py-1 rounded-lg">
+                {places.length}
+              </span>
+            )}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">Explore and vote on your trip stops.</p>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {editor && (
             <>
               <button
                 onClick={() => setShowAddCategory(true)}
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px] cursor-pointer"
-                style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-primary hover:text-primary transition-all shadow-soft"
               >
                 <Tag className="w-4 h-4" />
-                <span className="hidden sm:inline">Add category</span>
+                <span className="hidden sm:inline">Categories</span>
               </button>
 
               <AddExpenseDialog
@@ -177,21 +181,20 @@ export function PlacesSection({
                 currentUserId={currentUserId}
                 trigger={
                   <button
-                    className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-colors min-h-[44px] cursor-pointer"
-                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                    className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-500 hover:text-indigo-500 transition-all shadow-soft"
                   >
                     <Receipt className="w-4 h-4" />
-                    <span className="hidden sm:inline">Add expense</span>
+                    <span className="hidden sm:inline">Log Expense</span>
                   </button>
                 }
               />
 
               <button
                 onClick={() => setShowAddPlace(true)}
-                className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px] cursor-pointer"
+                className="btn-premium flex items-center gap-2 text-[11px] font-bold uppercase h-[44px]"
               >
                 <Plus className="w-4 h-4" />
-                Add place
+                Add Place
               </button>
             </>
           )}
@@ -218,21 +221,23 @@ export function PlacesSection({
 
           {/* Sort */}
           {places.length > 1 && (
-            <div className="flex items-center gap-2">
-              <label htmlFor="sort-places" className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
-                Sort by
+            <div className="flex items-center gap-3">
+              <label htmlFor="sort-places" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Ordered by
               </label>
-              <select
-                id="sort-places"
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value as SortOption)}
-                className="rounded-xl border px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="sort-places"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as SortOption)}
+                  className="appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-10 py-2 text-[11px] font-bold uppercase tracking-wider outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-soft"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <Tag className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none opacity-50" />
+              </div>
             </div>
           )}
 

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2 } from 'lucide-react';
+import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import { formatCurrency } from '@/lib/format';
@@ -76,8 +76,7 @@ function Label({ children, htmlFor }: { children: React.ReactNode; htmlFor?: str
   return (
     <label
       htmlFor={htmlFor}
-      className="block text-sm font-medium mb-1.5"
-      style={{ color: 'var(--color-text)' }}
+      className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2 ml-1"
     >
       {children}
     </label>
@@ -116,15 +115,10 @@ function InputField({
       min={min}
       step={step}
       className={cn(
-        'w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors',
-        'focus:ring-2 focus:ring-offset-0',
+        'w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all shadow-soft',
+        'focus:ring-4 focus:ring-primary/5 focus:border-primary bg-white text-foreground placeholder:text-slate-400',
         className
       )}
-      style={{
-        borderColor: 'var(--color-border)',
-        backgroundColor: 'white',
-        color: 'var(--color-text)',
-      }}
     />
   );
 }
@@ -362,13 +356,8 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Error banner */}
       {error && (
-        <div
-          className="rounded-xl px-4 py-3 text-sm"
-          style={{
-            backgroundColor: '#FEE2E2',
-            color: 'var(--color-error)',
-          }}
-        >
+        <div className="rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="w-4 h-4" />
           {error}
         </div>
       )}
@@ -387,7 +376,7 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
 
       {/* Category */}
       <div>
-        <Label>Category (optional)</Label>
+        <Label>Category</Label>
         <div className="flex flex-wrap gap-2">
           {EXPENSE_CATEGORIES.map(({ emoji, label }) => {
             const selected = category === label;
@@ -396,12 +385,12 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
                 key={label}
                 type="button"
                 onClick={() => setCategory(selected ? null : label)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors"
-                style={{
-                  borderColor: selected ? 'var(--color-primary)' : 'var(--color-border)',
-                  backgroundColor: selected ? 'var(--color-primary-light)' : 'white',
-                  color: selected ? 'var(--color-primary)' : 'var(--color-text)',
-                }}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all",
+                  selected 
+                    ? "bg-primary text-white border-primary shadow-premium" 
+                    : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"
+                )}
               >
                 <span>{emoji}</span>
                 <span>{label}</span>
@@ -428,23 +417,23 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
         </div>
         <div>
           <Label htmlFor="currency">Currency</Label>
-          <select
-            id="currency"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as Currency)}
-            className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'white',
-              color: 'var(--color-text)',
-            }}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id="currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className="w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary shadow-soft text-foreground"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+               <SplitSquareVertical className="w-4 h-4 rotate-90" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -462,24 +451,24 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
       {/* Paid by */}
       <div>
         <Label htmlFor="paidBy">Paid by</Label>
-        <select
-          id="paidBy"
-          value={paidByUserId}
-          onChange={(e) => setPaidByUserId(e.target.value)}
-          className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
-          style={{
-            borderColor: 'var(--color-border)',
-            backgroundColor: 'white',
-            color: 'var(--color-text)',
-          }}
-        >
-          {members.map((m) => (
-            <option key={m.user_id} value={m.user_id}>
-              {m.profile.display_name ?? m.user_id}
-              {m.user_id === currentUserId ? ' (you)' : ''}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="paidBy"
+            value={paidByUserId}
+            onChange={(e) => setPaidByUserId(e.target.value)}
+            className="w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary shadow-soft text-foreground"
+          >
+            {members.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.profile.display_name ?? m.user_id}
+                {m.user_id === currentUserId ? ' (you)' : ''}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+             <Upload className="w-4 h-4 rotate-180" />
+          </div>
+        </div>
       </div>
 
       {/* Note */}
@@ -489,29 +478,20 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
           id="note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Any details about this expense…"
+          placeholder="Add some details..."
           rows={2}
-          className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none resize-none"
-          style={{
-            borderColor: 'var(--color-border)',
-            backgroundColor: 'white',
-            color: 'var(--color-text)',
-          }}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none resize-none focus:ring-4 focus:ring-primary/5 focus:border-primary shadow-soft text-foreground placeholder:text-slate-400"
         />
       </div>
 
       {/* Splits */}
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <Label>Splits</Label>
           <button
             type="button"
             onClick={splitEqually}
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'var(--color-primary-light)',
-              color: 'var(--color-primary)',
-            }}
+            className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95"
           >
             <SplitSquareVertical className="w-3.5 h-3.5" />
             Split equally
@@ -528,44 +508,36 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
             return (
               <div
                 key={i}
-                className="flex items-center gap-2 p-3 rounded-xl"
-                style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100/50 shadow-inner"
               >
                 {/* Member select */}
                 <select
                   value={row.userId}
                   onChange={(e) => updateSplitUser(i, e.target.value)}
-                  className="flex-1 rounded-lg border px-2 py-1.5 text-sm outline-none"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'white',
-                    color: 'var(--color-text)',
-                    minWidth: 0,
-                  }}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold outline-none shadow-sm h-[40px]"
                 >
                   {memberOptions.map((m) => (
                     <option key={m.user_id} value={m.user_id}>
                       {m.profile.display_name ?? m.user_id}
-                      {m.user_id === currentUserId ? ' (you)' : ''}
                     </option>
                   ))}
                 </select>
 
                 {/* Amount */}
-                <input
-                  type="number"
-                  value={row.amountOwed}
-                  onChange={(e) => updateSplitAmount(i, e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  className="w-20 sm:w-28 rounded-lg border px-2 py-1.5 text-sm outline-none text-right flex-shrink-0"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'white',
-                    color: 'var(--color-text)',
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={row.amountOwed}
+                    onChange={(e) => updateSplitAmount(i, e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="w-24 sm:w-32 rounded-xl border border-slate-200 px-3 py-2 text-sm font-display font-bold outline-none text-right shadow-sm bg-white h-[40px]"
+                  />
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300 pointer-events-none">
+                     {currency}
+                  </div>
+                </div>
 
                 {/* Remove */}
                 {splits.length > 1 && (
@@ -589,31 +561,26 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
           <button
             type="button"
             onClick={addSplitRow}
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'var(--color-bg-subtle)',
-              color: 'var(--color-text-muted)',
-            }}
+            className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-white text-muted-foreground border border-slate-200 hover:border-primary hover:text-primary transition-all shadow-sm active:scale-95"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             Add member
           </button>
         )}
 
         {/* Splits validation hint */}
         {totalAmount > 0 && (
-          <div
-            className={cn(
-              'mt-2 text-xs font-medium px-3 py-2 rounded-lg',
+          <div className={cn(
+              "mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl border text-[11px] font-bold uppercase tracking-wider transition-all",
+              splitsValid 
+                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                : "bg-amber-50 text-amber-600 border-amber-100"
             )}
-            style={{
-              backgroundColor: splitsValid ? 'var(--color-primary-light)' : 'var(--color-secondary-light)',
-              color: splitsValid ? 'var(--color-primary)' : 'var(--color-secondary)',
-            }}
           >
+            {splitsValid ? <ShieldCheck className="w-4 h-4" /> : <Loader2 className="w-4 h-4 animate-spin" />}
             {splitsValid
-              ? `Splits balance ✓  (${formatCurrency(splitsTotal, currency)})`
-              : `Splits total ${formatCurrency(splitsTotal, currency)} — need ${formatCurrency(totalAmount, currency)}`}
+              ? `Ready to go — balance: ${formatCurrency(splitsTotal, currency)}`
+              : `Current total: ${formatCurrency(splitsTotal, currency)} — missing: ${formatCurrency(totalAmount - splitsTotal, currency)}`}
           </div>
         )}
       </div>
@@ -677,21 +644,23 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
       </div>
 
       {/* Submit */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-8">
         <button
           type="submit"
           disabled={isSubmitting || isUploading}
-          className="btn-primary inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-premium flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 h-[52px] px-8 disabled:opacity-50 disabled:grayscale"
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isSubmitting ? 'Saving…' : 'Save expense'}
+          {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+          <span className="font-display font-bold uppercase tracking-widest text-[13px]">
+            {isSubmitting ? 'Recording...' : 'Save shared cost'}
+          </span>
         </button>
         <button
           type="button"
           onClick={() => onCancel ? onCancel() : router.back()}
-          className="btn-secondary text-sm"
+          className="btn-secondary h-[52px] px-8 text-sm font-bold uppercase tracking-widest"
         >
-          Cancel
+          Never mind
         </button>
       </div>
     </form>

@@ -1,4 +1,5 @@
 import type { Category } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface CategoryBadgeProps {
   category: Pick<Category, 'name' | 'color' | 'icon'>;
@@ -7,27 +8,30 @@ interface CategoryBadgeProps {
 
 export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
   const bg = category.color ?? '#E8E4DA';
-  // Determine a readable text color: use dark text on light backgrounds.
-  // We do a simple luminance estimate by checking the hex value.
   const isDark = isColorDark(bg);
-  const textColor = isDark ? '#ffffff' : '#1C1917';
+  
+  // Use a softer text color for light backgrounds
+  const textColor = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.8)';
 
   const sizeClasses =
     size === 'sm'
-      ? 'px-2 py-0.5 text-xs gap-1'
-      : 'px-2.5 py-1 text-sm gap-1.5';
+      ? 'px-2 py-0.5 text-[10px] gap-1 rounded-lg'
+      : 'px-3 py-1.5 text-xs gap-1.5 rounded-xl';
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium ${sizeClasses}`}
+      className={cn(
+        "inline-flex items-center font-bold uppercase tracking-widest transition-all shadow-sm border border-black/5 hover:scale-105",
+        sizeClasses
+      )}
       style={{ backgroundColor: bg, color: textColor }}
     >
       {category.icon && (
-        <span className="leading-none" aria-hidden="true">
+        <span className="text-sm leading-none filter drop-shadow-sm" aria-hidden="true">
           {category.icon}
         </span>
       )}
-      {category.name}
+      <span className="font-display">{category.name}</span>
     </span>
   );
 }

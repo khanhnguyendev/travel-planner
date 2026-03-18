@@ -61,17 +61,17 @@ export default async function ExpensesPage({
   const addExpenseButton = canEdit ? (
     <Link
       href={`/trips/${tripId}/expenses/new`}
-      className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
+      className="btn-premium inline-flex items-center gap-2 text-[11px] h-11 px-6 rounded-2xl font-display font-bold uppercase tracking-widest shadow-premium active:scale-95"
     >
       <Plus className="w-4 h-4" />
-      Add expense
+      Add Expense
     </Link>
   ) : null;
 
   return (
-    <div className="animate-in fade-in duration-300">
+    <div className="animate-in fade-in duration-500">
       <PageHeader
-        title="Expenses"
+        title="Trip Ledger"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: trip.title, href: `/trips/${tripId}` },
@@ -82,12 +82,19 @@ export default async function ExpensesPage({
 
       {/* Summary row */}
       {totalEntries.length > 0 && (
-        <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--color-text-muted)' }}>
-          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
-          {totalEntries
-            .map(([cur, amt]) => formatCurrency(amt, cur))
-            .join(' + ')}
-        </p>
+        <div className="flex items-center gap-3 mb-8 -mt-4 animate-in slide-in-from-left-4 duration-700">
+          <div className="px-4 py-2 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+             <span className="text-[10px] font-black uppercase tracking-widest">
+               {expenses.length} {expenses.length === 1 ? 'Record' : 'Records'} Detected
+             </span>
+          </div>
+          <div className="px-4 py-2 rounded-2xl bg-slate-50 text-slate-500 border border-slate-100 shadow-sm">
+             <span className="text-[10px] font-black uppercase tracking-widest">
+               Total: {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}
+             </span>
+          </div>
+        </div>
       )}
 
       {/* Debt summary */}

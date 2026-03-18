@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   Pencil,
   Eye,
+  MapPin,
+  MessageCircle,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
@@ -22,6 +24,7 @@ import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries'
 import { createClient } from '@/lib/supabase/server';
 import { formatDateRange } from '@/lib/date';
 import { formatCurrency } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { PlacesSection } from '@/components/places/places-section';
 import { TripTimeline } from '@/components/places/trip-timeline';
 import { MapTabClient } from '@/components/places/map-tab-client';
@@ -60,18 +63,19 @@ export async function generateMetadata({
 // -------------------------------------------------------
 
 function RoleBadge({ role }: { role: TripRole }) {
-  const styles: Record<TripRole, { bg: string; text: string }> = {
-    owner: { bg: '#FEF3C7', text: '#92400E' },
-    admin: { bg: '#EDE9FE', text: '#5B21B6' },
-    editor: { bg: 'var(--color-primary-light)', text: 'var(--color-primary)' },
-    viewer: { bg: 'var(--color-bg-muted)', text: 'var(--color-text-muted)' },
+  const styles: Record<TripRole, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
+    owner:  { bg: 'bg-amber-500/10', text: 'text-amber-700', border: 'border-amber-200/30', icon: <Crown className="w-3 h-3" /> },
+    admin:  { bg: 'bg-indigo-500/10', text: 'text-indigo-700', border: 'border-indigo-200/30', icon: <ShieldCheck className="w-3 h-3" /> },
+    editor: { bg: 'bg-emerald-500/10', text: 'text-emerald-700', border: 'border-emerald-200/30', icon: <Pencil className="w-3 h-3" /> },
+    viewer: { bg: 'bg-slate-500/10', text: 'text-slate-600', border: 'border-slate-200/30', icon: <Eye className="w-3 h-3" /> },
   };
   const s = styles[role];
   return (
-    <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
-      style={{ backgroundColor: s.bg, color: s.text }}
-    >
+    <span className={cn(
+      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border animate-in fade-in zoom-in-95 duration-500 shadow-sm",
+      s.bg, s.text, s.border
+    )}>
+      {s.icon}
       {role}
     </span>
   );
@@ -80,12 +84,12 @@ function RoleBadge({ role }: { role: TripRole }) {
 function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const isPublic = visibility === 'public';
   return (
-    <span
-      className="inline-flex items-center gap-1 text-xs"
-      style={{ color: 'var(--color-text-subtle)' }}
-    >
+    <span className={cn(
+      "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest backdrop-blur-md transition-all border animate-in fade-in zoom-in-95 duration-500 delay-75 shadow-sm",
+      isPublic ? "bg-blue-500/10 text-blue-600 border-blue-200/30" : "bg-slate-500/10 text-slate-500 border-slate-200/30"
+    )}>
       {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-      {isPublic ? 'Public' : 'Private'}
+      {isPublic ? 'Public' : 'Private Access'}
     </span>
   );
 }
@@ -99,33 +103,35 @@ function TabBar({
   activeTab: TabValue;
   tripId: string;
 }) {
-  const tabs: { label: string; value: TabValue }[] = [
-    { label: 'Places', value: 'places' },
-    { label: 'Timeline', value: 'timeline' },
-    { label: 'Map', value: 'map' },
-    { label: 'Expenses', value: 'expenses' },
-    { label: 'Activity', value: 'activity' },
-  ];
+  const tabs = [
+    { label: 'Places', value: 'places', icon: <MapPin className="w-4 h-4" /> },
+    { label: 'Timeline', value: 'timeline', icon: <Calendar className="w-4 h-4" /> },
+    { label: 'Map', value: 'map', icon: <Globe className="w-4 h-4" /> },
+    { label: 'Expenses', value: 'expenses', icon: <Receipt className="w-4 h-4" /> },
+    { label: 'Activity', value: 'activity', icon: <MessageCircle className="w-4 h-4" /> },
+  ] as const;
 
   return (
-    <div
-      className="flex items-center gap-1 p-1 rounded-2xl mb-6"
-      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-    >
+    <div className="flex items-center gap-1.5 p-1.5 rounded-[2rem] mb-10 glass-nav border-white/40 shadow-premium sticky top-[80px] z-30 animate-in fade-in slide-in-from-top-4 duration-700">
       {tabs.map((tab) => {
         const isActive = tab.value === activeTab;
         return (
           <Link
             key={tab.value}
             href={`/trips/${tripId}?tab=${tab.value}`}
-            className="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px] flex items-center justify-center"
-            style={{
-              backgroundColor: isActive ? 'white' : 'transparent',
-              color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}
+            className={cn(
+              "flex-1 text-center px-2 py-3 rounded-[1.5rem] transition-all duration-300 min-h-[48px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 group",
+              isActive 
+                ? "bg-primary text-white shadow-premium scale-[1.02]" 
+                : "text-muted-foreground hover:text-foreground hover:bg-white/60"
+            )}
           >
-            {tab.label}
+            <span className={cn("transition-transform duration-300", isActive ? "scale-110" : "group-hover:scale-115")}>
+              {tab.icon}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest hidden xs:block">
+              {tab.label}
+            </span>
           </Link>
         );
       })}
@@ -257,53 +263,45 @@ export default async function ProjectDetailPage({
       />
 
       {/* Unified trip header card */}
-      <div className="card p-6 mb-6">
-        {/* Title row */}
-        <div className="flex items-start justify-between gap-4 mb-3">
+      <div className="card-premium p-8 mb-8 relative overflow-hidden">
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+        
+        {/* Title and Role row */}
+        <div className="flex items-start justify-between gap-6 mb-6 relative z-10">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <RoleBadge role={resolvedRole} />
               {isArchived && (
-                <span
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: 'var(--color-bg-muted)',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-500 border border-slate-200/20 backdrop-blur-md">
                   Archived
                 </span>
               )}
             </div>
             {trip.description && (
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+              <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
                 {trip.description}
               </p>
             )}
           </div>
-          <RoleBadge role={resolvedRole} />
         </div>
 
         {/* Meta pills */}
-        <div className="flex items-center gap-4 flex-wrap mb-4">
+        <div className="flex items-center gap-6 flex-wrap mb-8 relative z-10">
           {trip.start_date && trip.end_date && (
-            <span
-              className="inline-flex items-center gap-1.5 text-sm"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              <Calendar className="w-4 h-4" />
-              {formatDateRange(trip.start_date, trip.end_date)}
-            </span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 border border-slate-100 shadow-sm transition-all hover:shadow-md">
+              <Calendar className="w-4 h-4 text-primary" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {formatDateRange(trip.start_date, trip.end_date)}
+              </span>
+            </div>
           )}
-          <span
-            className="inline-flex items-center gap-1.5 text-sm"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            <Users className="w-4 h-4" />
-            {members.length} {members.length === 1 ? 'member' : 'members'}
-          </span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 border border-slate-100 shadow-sm transition-all hover:shadow-md">
+            <Users className="w-4 h-4 text-secondary" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              {members.length} {members.length === 1 ? 'member' : 'members'}
+            </span>
+          </div>
           <VisibilityBadge visibility={trip.visibility} />
         </div>
 
@@ -333,46 +331,47 @@ export default async function ProjectDetailPage({
           style={{ borderColor: 'var(--color-border)' }}
         />
 
-        {/* Members */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-            Members
+        {/* Members Section */}
+        <div className="flex items-center justify-between gap-4 mb-5 relative z-10">
+          <h2 className="text-[10px] font-black font-display uppercase tracking-[0.2em] text-muted-foreground/60">
+            Travel Companions
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {canManage && (
               <InviteLinkButton tripId={tripId} />
             )}
             <Link
               href={`/trips/${tripId}/members`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
-              style={{ color: 'var(--color-text-subtle)' }}
+              className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors py-2 px-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100"
             >
-              <UserCog className="w-3.5 h-3.5" />
+              <UserCog className="w-4 h-4" />
               Manage
             </Link>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap mb-4">
+        <div className="flex items-center gap-3 flex-wrap mb-6 relative z-10">
           {members.map((m) => {
             const name = m.profile.display_name ?? 'Unknown';
             const isCurrentUser = m.user_id === user.id;
             const roleConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; border: string }> = {
-              owner:  { icon: <Crown className="w-3 h-3" />,       bg: '#FEF9C3', text: '#854D0E', border: '#FDE047' },
-              admin:  { icon: <ShieldCheck className="w-3 h-3" />, bg: '#EDE9FE', text: '#5B21B6', border: '#C4B5FD' },
-              editor: { icon: <Pencil className="w-3 h-3" />,      bg: '#CCFBF1', text: '#0F766E', border: '#5EEAD4' },
-              viewer: { icon: <Eye className="w-3 h-3" />,         bg: '#F1F5F9', text: '#64748B', border: '#CBD5E1' },
+              owner:  { icon: <Crown className="w-3 h-3" />,       bg: 'bg-amber-500/10', text: 'text-amber-700', border: 'border-amber-200/30' },
+              admin:  { icon: <ShieldCheck className="w-3 h-3" />, bg: 'bg-indigo-500/10', text: 'text-indigo-700', border: 'border-indigo-200/30' },
+              editor: { icon: <Pencil className="w-3 h-3" />,      bg: 'bg-emerald-500/10', text: 'text-emerald-700', border: 'border-emerald-200/30' },
+              viewer: { icon: <Eye className="w-3 h-3" />,         bg: 'bg-slate-500/10', text: 'text-slate-600', border: 'border-slate-200/30' },
             };
             const rc = roleConfig[m.role] ?? roleConfig.viewer;
             return (
               <div
                 key={m.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border"
-                style={{ backgroundColor: rc.bg, color: rc.text, borderColor: rc.border }}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all hover:shadow-soft",
+                  rc.bg, rc.text, rc.border
+                )}
                 title={`${name} — ${m.role}${isCurrentUser ? ' (you)' : ''}`}
               >
-                <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="sm" />
-                <span className="font-medium">{name}{isCurrentUser ? ' (you)' : ''}</span>
-                <span className="flex items-center gap-0.5 opacity-75">{rc.icon}{m.role}</span>
+                <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="sm" className="ring-2 ring-white" />
+                <span className="tracking-wide">{name}{isCurrentUser ? ' (you)' : ''}</span>
+                <span className="flex items-center gap-1 opacity-60 bg-white/40 px-1.5 py-0.5 rounded-full">{rc.icon}{m.role}</span>
               </div>
             );
           })}
@@ -427,7 +426,8 @@ export default async function ProjectDetailPage({
 
       {/* Tab: Timeline */}
       {activeTab === 'timeline' && (
-        <div className="card p-6 mb-6">
+        <div className="card-premium p-6 mb-8 group overflow-hidden">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full -ml-16 -mt-16 blur-2xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
           <TripTimeline
             places={places}
             categories={categories}
@@ -479,82 +479,84 @@ export default async function ProjectDetailPage({
             const totalEntries = Object.entries(totals);
 
             return (
-              <div className="card p-6">
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: 'var(--color-primary-light)' }}
-                    >
-                      <Receipt className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+              <div className="card-premium p-8 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-secondary/5 rounded-full -mr-24 -mt-24 blur-3xl group-hover:bg-secondary/10 transition-colors pointer-events-none" />
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 shadow-sm flex items-center justify-center transition-transform group-hover:rotate-3">
+                      <Receipt className="w-6 h-6" />
                     </div>
                     <div>
-                      <h2 className="font-semibold text-base text-stone-800">
-                        Expenses
+                      <h2 className="font-display font-bold text-xl text-foreground tracking-tight">
+                        Trip Expenses
                       </h2>
                       {expenses.length > 0 && (
-                        <p className="text-xs text-stone-400">
-                          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
-                          {totalEntries.length > 0 && (
-                            <> &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}</>
-                          )}
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mt-1">
+                          {expenses.length} {expenses.length === 1 ? 'Entry' : 'Entries'} &middot; {totalEntries.map(([cur, amt]) => formatCurrency(amt, cur)).join(' + ')}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     {canEdit && (
-                      <AddExpenseDialog
-                        tripId={tripId}
-                        members={members}
-                        currentUserId={user.id}
-                      />
+                      <div className="flex-1 sm:flex-none">
+                        <AddExpenseDialog
+                          tripId={tripId}
+                          members={members}
+                          currentUserId={user.id}
+                        />
+                      </div>
                     )}
                     <Link
                       href={`/trips/${tripId}/expenses`}
-                      className="btn-secondary text-sm min-h-[44px]"
+                      className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-2xl border border-slate-200 bg-white text-slate-500 font-display font-bold uppercase tracking-widest text-[11px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                     >
-                      View all
+                      View All
                     </Link>
                   </div>
                 </div>
 
                 {expenses.length === 0 ? (
-                  <div className="flex flex-col items-center py-8 text-center">
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-                    >
-                      <Receipt className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
+                  <div className="flex flex-col items-center py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 relative z-10">
+                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4 text-slate-300">
+                      <Receipt className="w-8 h-8" />
                     </div>
-                    <p className="font-medium text-sm text-stone-800 mb-1">
-                      Track your first shared expense
+                    <p className="font-display font-bold text-lg text-slate-800 mb-1">
+                      Track Shared Expenses
                     </p>
-                    <p className="text-xs text-stone-400 max-w-xs">
-                      Add expenses to keep everyone on the same page about shared costs.
+                    <p className="text-xs text-slate-400 max-w-[240px] leading-relaxed">
+                      Keep everyone on the same page by logging receipts and splitting costs fairly.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3 relative z-10">
                     {expenses.slice(0, 3).map((exp) => (
                       <Link
                         key={exp.id}
                         href={`/trips/${tripId}/expenses/${exp.id}`}
-                        className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)] min-h-[44px]"
+                        className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-slate-100 transition-all hover:border-primary/20 hover:shadow-soft group/item"
                       >
-                        <span className="text-sm truncate text-stone-800">
-                          {exp.title}
-                        </span>
-                        <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-primary)' }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover/item:bg-primary/10 group-hover/item:text-primary transition-colors">
+                            <Receipt className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-bold text-slate-700 truncate group-hover/item:text-slate-900">
+                            {exp.title}
+                          </span>
+                        </div>
+                        <span className="text-sm font-display font-bold text-primary">
                           {formatCurrency(exp.amount, exp.currency)}
                         </span>
                       </Link>
                     ))}
                     {expenses.length > 3 && (
-                      <p className="text-xs pt-1 pl-3 text-stone-400">
-                        +{expenses.length - 3} more
-                      </p>
+                      <div className="pt-2 pl-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                          +{expenses.length - 3} additional {expenses.length - 3 === 1 ? 'record' : 'records'}
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { PlaceVote, VoteType } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 
 interface VoteButtonsProps {
   tripId: string;
@@ -85,43 +86,33 @@ export function VoteButtons({
   const activeDownvote = userVote?.vote_type === 'downvote';
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <button
         onClick={() => handleVote('upvote')}
         disabled={isPending}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-        style={{
-          backgroundColor: activeUpvote
-            ? 'var(--color-primary)'
-            : 'var(--color-bg-subtle)',
-          color: activeUpvote
-            ? 'var(--color-primary-foreground)'
-            : 'var(--color-text-muted)',
-        }}
-        aria-label="Upvote"
-        aria-pressed={activeUpvote}
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-300 shadow-soft active:scale-95 group",
+          activeUpvote 
+            ? "bg-primary text-white shadow-premium" 
+            : "bg-slate-50 text-slate-500 hover:bg-primary/10 hover:text-primary border border-slate-100"
+        )}
       >
-        <ThumbsUp className="w-3.5 h-3.5" />
-        <span>{upvotes}</span>
+        <ThumbsUp className={cn("w-4 h-4 transition-transform", activeUpvote && "scale-110")} />
+        <span className="font-display">{upvotes}</span>
       </button>
 
       <button
         onClick={() => handleVote('downvote')}
         disabled={isPending}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-        style={{
-          backgroundColor: activeDownvote
-            ? 'var(--color-secondary)'
-            : 'var(--color-bg-subtle)',
-          color: activeDownvote
-            ? 'var(--color-secondary-foreground)'
-            : 'var(--color-text-muted)',
-        }}
-        aria-label="Downvote"
-        aria-pressed={activeDownvote}
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-300 shadow-soft active:scale-95 group",
+          activeDownvote 
+            ? "bg-rose-500 text-white shadow-premium" 
+            : "bg-slate-50 text-slate-500 hover:bg-rose-50 hover:text-rose-500 border border-slate-100"
+        )}
       >
-        <ThumbsDown className="w-3.5 h-3.5" />
-        <span>{downvotes}</span>
+        <ThumbsDown className={cn("w-4 h-4 transition-transform", activeDownvote && "scale-110")} />
+        <span className="font-display">{downvotes}</span>
       </button>
     </div>
   );
