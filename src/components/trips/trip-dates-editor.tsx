@@ -10,12 +10,12 @@ interface TripDatesEditorProps {
   startDate: string | null;
   endDate: string | null;
   canManage: boolean;
+  field: 'start' | 'end';
 }
 
-export function TripDatesEditor({ tripId, startDate, endDate, canManage }: TripDatesEditorProps) {
+export function TripDatesEditor({ tripId, startDate, endDate, canManage, field }: TripDatesEditorProps) {
   const [editing, setEditing] = useState(false);
-  const [start, setStart] = useState(startDate ?? '');
-  const [end, setEnd] = useState(endDate ?? '');
+  const [value, setValue] = useState(field === 'start' ? (startDate ?? '') : (endDate ?? ''));
   const [pending, setPending] = useState(false);
   const loadingToast = useLoadingToast();
   const { showToast } = useToast();
@@ -23,13 +23,16 @@ export function TripDatesEditor({ tripId, startDate, endDate, canManage }: TripD
   if (!canManage) return null;
 
   async function handleSave() {
-    if (end && start && end < start) {
+    const nextStart = field === 'start' ? value : (startDate ?? '');
+    const nextEnd = field === 'end' ? value : (endDate ?? '');
+
+    if (nextEnd && nextStart && nextEnd < nextStart) {
       showToast('End date must be after start date', 'error');
       return;
     }
     setPending(true);
     const resolve = loadingToast('Saving dates…');
-    const result = await updateTripDates(tripId, start || null, end || null);
+    const result = await updateTripDates(tripId, nextStart || null, nextEnd || null);
     setPending(false);
     if (result.ok) {
       resolve('Dates updated!', 'success');
@@ -43,37 +46,31 @@ export function TripDatesEditor({ tripId, startDate, endDate, canManage }: TripD
     <div className="relative inline-flex flex-shrink-0">
       <button
         type="button"
-        onClick={() => { setStart(startDate ?? ''); setEnd(endDate ?? ''); setEditing(true); }}
+        onClick={() => {
+          setValue(field === 'start' ? (startDate ?? '') : (endDate ?? ''));
+          setEditing(true);
+        }}
         className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
-        title="Edit dates"
-        aria-label="Edit dates"
+        title={field === 'start' ? 'Edit start date' : 'Edit end date'}
+        aria-label={field === 'start' ? 'Edit start date' : 'Edit end date'}
       >
         <Pencil className="w-3 h-3" style={{ color: 'var(--color-text-subtle)' }} />
       </button>
 
       {editing && (
         <div className="absolute right-0 top-full z-20 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-stone-200 bg-stone-50 p-3 shadow-lg">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500">Start date</label>
-              <input
-                type="date"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                max={end || undefined}
-                className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500">End date</label>
-              <input
-                type="date"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-                min={start || undefined}
-                className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-stone-500">
+              {field === 'start' ? 'From date' : 'To date'}
+            </label>
+            <input
+              type="date"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              max={field === 'start' ? (endDate || undefined) : undefined}
+              min={field === 'end' ? (startDate || undefined) : undefined}
+              className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
           </div>
 
           <div className="mt-3 flex items-center gap-2">

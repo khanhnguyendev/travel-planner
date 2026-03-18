@@ -15,17 +15,17 @@ import {
   Activity,
   Sparkles,
   Coins,
+  Users,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
-import { getMembers, hasRequestedJoin } from '@/features/members/queries';
+import { getJoinRequests, getMembers, hasRequestedJoin } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
-import { formatDateRange } from '@/lib/date';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
 import { TripTimeline } from '@/components/places/trip-timeline';
@@ -202,6 +202,15 @@ function SnapshotPill({
       </div>
     </div>
   );
+}
+
+function formatSnapshotDate(value: string | null) {
+  if (!value) return 'Not set';
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function getBalancePresentation(net: number, currency: string) {
@@ -422,6 +431,7 @@ export default async function TripDetailPage({
   const canManage = isMember && ['owner', 'admin'].includes(resolvedRole);
   const canVote = isMember && !isArchived;
   const canComment = isMember;
+  const joinRequests = canManage ? await getJoinRequests(tripId) : [];
 
   const places = await getPlaces(tripId);
 
@@ -527,6 +537,9 @@ export default async function TripDetailPage({
     if (roleDiff !== 0) return roleDiff;
     return (a.joined_at ?? '').localeCompare(b.joined_at ?? '');
   });
+  const crewIdentityLabel = joinRequests.length > 0
+    ? `${members.length} joined · ${joinRequests.length} requested`
+    : `${members.length} crew joined`;
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -554,12 +567,8 @@ export default async function TripDetailPage({
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-                <Calendar className="h-3.5 w-3.5" />
-                {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible dates'}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-                <MapPin className="h-3.5 w-3.5" />
-                {places.length} place{places.length === 1 ? '' : 's'} saved
+                <Users className="h-3.5 w-3.5" />
+                {crewIdentityLabel}
               </span>
             </div>
           </div>
@@ -603,24 +612,55 @@ export default async function TripDetailPage({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="mini-stat flex min-w-[172px] items-center gap-3 px-3 py-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                    <Calendar className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                      Planning dates
-                    </p>
-                    <div className="mt-1 flex items-start gap-2">
-                      <p className="min-w-0 flex-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
-                        {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
-                      </p>
-                      <TripDatesEditor
-                        tripId={tripId}
-                        startDate={trip.start_date}
-                        endDate={trip.end_date}
-                        canManage={canManage}
-                      />
+                <div className="rounded-[1.2rem] bg-white/70 px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Planning dates
+                  </p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="mini-stat flex min-w-0 items-center gap-3 px-3 py-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+                        <Calendar className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                          From date
+                        </p>
+                        <div className="mt-1 flex items-start gap-2">
+                          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+                            {formatSnapshotDate(trip.start_date)}
+                          </p>
+                          <TripDatesEditor
+                            tripId={tripId}
+                            startDate={trip.start_date}
+                            endDate={trip.end_date}
+                            canManage={canManage}
+                            field="start"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mini-stat flex min-w-0 items-center gap-3 px-3 py-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+                        <Calendar className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                          To date
+                        </p>
+                        <div className="mt-1 flex items-start gap-2">
+                          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+                            {formatSnapshotDate(trip.end_date)}
+                          </p>
+                          <TripDatesEditor
+                            tripId={tripId}
+                            startDate={trip.start_date}
+                            endDate={trip.end_date}
+                            canManage={canManage}
+                            field="end"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
