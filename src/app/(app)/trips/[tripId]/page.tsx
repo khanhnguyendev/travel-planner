@@ -469,9 +469,8 @@ export default async function TripDetailPage({
   return (
     <div className="animate-in fade-in duration-300">
       <section className="section-shell p-4 sm:p-5">
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_280px] lg:items-stretch">
-            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] lg:items-start">
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5 lg:col-start-1 lg:row-start-1">
               <div className="flex h-full flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
@@ -559,8 +558,8 @@ export default async function TripDetailPage({
               </div>
             </div>
 
-            {showCoverMedia ? (
-              <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3">
+          {showCoverMedia ? (
+              <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3 lg:col-start-2 lg:row-start-1">
                 <div className="mb-3 flex items-center justify-between gap-3 px-1">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -587,10 +586,8 @@ export default async function TripDetailPage({
                 </div>
               </div>
             ) : null}
-          </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
-            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-1 lg:row-start-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Budget
               </p>
@@ -622,7 +619,7 @@ export default async function TripDetailPage({
               />
             </div>
 
-            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-2 lg:row-start-2">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -686,12 +683,11 @@ export default async function TripDetailPage({
                   Join the trip to vote, comment, add places, manage crew, and track shared spending.
                 </div>
               )}
-            </div>
           </div>
         </div>
       </section>
 
-      <section className="section-shell p-4 sm:p-5">
+      <section className="section-shell p-4 mt-4 sm:p-5">
         <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -702,9 +698,6 @@ export default async function TripDetailPage({
                 Previous, current, and next
               </h2>
             </div>
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              Keep the crew aligned on what just happened, what is active now, and where the trip moves next.
-            </p>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
