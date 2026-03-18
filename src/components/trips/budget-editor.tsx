@@ -145,14 +145,14 @@ export function BudgetEditor({
               </p>
             ) : (
               <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
-                Add income to create the trip budget, then log outgoing shared costs with Add expense.
+                Use Add money to create the trip budget, then switch to the expense tab for outgoing shared costs.
               </p>
             )}
           </div>
 
           {(canManage || actionSlot) && (
             <div className="flex flex-wrap items-center gap-2">
-              {canManage && (
+              {canManage && !actionSlot && (
                 <button
                   type="button"
                   onClick={() => openEditor(hasBudget ? 'income' : 'set')}

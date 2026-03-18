@@ -34,6 +34,7 @@ import { DebtSummary } from '@/components/expenses/debt-summary';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
+import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
 import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
@@ -736,12 +737,16 @@ export default async function TripDetailPage({
               totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
               members={members}
               actionSlot={canEdit ? (
-                <AddExpenseDialog
+                <AddMoneyDialog
                   tripId={tripId}
                   members={members}
                   currentUserId={currentUserId}
                   places={places}
-                  triggerLabel="Add expense"
+                  budget={trip.budget}
+                  budgetCurrency={trip.budget_currency}
+                  budgetPayerUserId={trip.budget_payer_user_id}
+                  canManageBudget={canManage}
+                  triggerLabel="Add money"
                   triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
                 />
               ) : null}
