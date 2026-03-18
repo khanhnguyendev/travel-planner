@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2 } from 'lucide-react';
 import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
+import type { Place } from '@/lib/types';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -42,6 +43,7 @@ interface ExpenseFormProps {
   tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
+  places?: Place[];
   /** Called on successful save (dialog mode). Uses router if not provided. */
   onSuccess?: () => void;
   /** Called on cancel (dialog mode). Uses router.back() if not provided. */
@@ -133,12 +135,13 @@ function InputField({
 // Main component
 // -------------------------------------------------------
 
-export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuccess, onCancel }: ExpenseFormProps) {
   const router = useRouter();
 
   // Form fields
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<string | null>(null);
+  const [placeId, setPlaceId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('VND');
   const [expenseDate, setExpenseDate] = useState(
@@ -329,6 +332,7 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
       paidByUserId,
       splits: splitInputs,
       receiptPath: uploadedReceiptPath ?? null,
+      placeId: placeId ?? null,
     };
 
     setIsSubmitting(true);
@@ -452,6 +456,32 @@ export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCance
           onChange={setExpenseDate}
         />
       </div>
+
+      {/* Linked place (optional) */}
+      {places.length > 0 && (
+        <div>
+          <Label htmlFor="placeId">Linked place (optional)</Label>
+          <select
+            id="placeId"
+            value={placeId ?? ''}
+            onChange={(e) => setPlaceId(e.target.value || null)}
+            className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'white',
+              color: 'var(--color-text)',
+            }}
+          >
+            <option value="">— No place —</option>
+            {places.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+                {p.visit_date ? ` · ${new Date(p.visit_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Paid by */}
       <div>

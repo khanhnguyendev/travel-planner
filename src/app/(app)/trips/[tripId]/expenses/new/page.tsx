@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
+import { getPlaces } from '@/features/places/queries';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import { PageHeader } from '@/components/ui/page-header';
 import type { Metadata } from 'next';
@@ -16,10 +17,11 @@ export default async function NewExpensePage({
   const { tripId } = await params;
   const user = await requireSession();
 
-  const [trip, role, members] = await Promise.all([
+  const [trip, role, members, places] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getMembers(tripId),
+    getPlaces(tripId),
   ]);
 
   if (!trip || !role) {
@@ -48,6 +50,7 @@ export default async function NewExpensePage({
           tripId={tripId}
           members={members}
           currentUserId={user.id}
+          places={places}
         />
       </div>
     </div>

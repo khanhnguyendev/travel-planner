@@ -27,6 +27,7 @@ export interface CreateExpenseInput {
   paidByUserId: string;
   splits: SplitInput[];
   receiptPath?: string | null;
+  placeId?: string | null;
 }
 
 export interface UpdateExpenseInput {
@@ -37,6 +38,7 @@ export interface UpdateExpenseInput {
   note?: string | null;
   paidByUserId?: string;
   receiptPath?: string | null;
+  placeId?: string | null;
 }
 
 // -------------------------------------------------------
@@ -86,7 +88,7 @@ export async function createExpense(
     return { ok: false, error: 'Not authenticated' };
   }
 
-  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, splits, receiptPath } = input;
+  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, splits, receiptPath, placeId } = input;
 
   // Caller must be editor or above
   const callerRole = await requireEditor(tripId, user.id);
@@ -131,6 +133,7 @@ export async function createExpense(
       note: note ?? null,
       category: category ?? null,
       receipt_path: receiptPath ?? null,
+      place_id: placeId ?? null,
     })
     .select('id')
     .single();
@@ -221,6 +224,7 @@ export async function updateExpense(
   if (input.note !== undefined) updatePayload.note = input.note;
   if (input.paidByUserId !== undefined) updatePayload.paid_by_user_id = input.paidByUserId;
   if (input.receiptPath !== undefined) updatePayload.receipt_path = input.receiptPath;
+  if (input.placeId !== undefined) updatePayload.place_id = input.placeId;
 
   const { error } = await admin
     .from('expenses')

@@ -143,6 +143,7 @@ export interface Expense {
   note: string | null;
   category: string | null;
   receipt_path: string | null;
+  place_id: string | null;       // optional link to a place in the same trip
   created_at: string;
   updated_at: string;
 }

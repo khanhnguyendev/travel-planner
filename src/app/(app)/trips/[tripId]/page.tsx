@@ -512,6 +512,17 @@ export default async function TripDetailPage({
 
   return (
     <div className="animate-in fade-in duration-300">
+      <div className="section-shell px-4 pb-1 pt-2 text-center sm:px-5">
+        <h1 className="text-3xl font-semibold leading-tight section-title sm:text-[2.5rem]" style={{ color: 'var(--color-text)' }}>
+          {trip.title}
+        </h1>
+        {trip.description && (
+          <p className="mx-auto mt-2 max-w-3xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
+            {trip.description}
+          </p>
+        )}
+      </div>
+
       <section className="section-shell p-4 sm:p-5">
         <div className="grid gap-3 xl:grid-cols-[minmax(0,0.96fr)_minmax(360px,1.12fr)_minmax(300px,0.82fr)] xl:items-start">
           <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">

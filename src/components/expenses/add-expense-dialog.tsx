@@ -5,16 +5,18 @@ import { Plus } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import type { MemberWithProfile } from '@/features/members/queries';
+import type { Place } from '@/lib/types';
 
 interface AddExpenseDialogProps {
   tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
+  places?: Place[];
   /** Custom trigger element. If omitted, renders the default "Add expense" primary button. */
   trigger?: React.ReactElement<{ onClick?: () => void }>;
 }
 
-export function AddExpenseDialog({ tripId, members, currentUserId, trigger }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ tripId, members, currentUserId, places, trigger }: AddExpenseDialogProps) {
   const [open, setOpen] = useState(false);
 
   const triggerEl = trigger
@@ -39,6 +41,7 @@ export function AddExpenseDialog({ tripId, members, currentUserId, trigger }: Ad
             tripId={tripId}
             members={members}
             currentUserId={currentUserId}
+            places={places}
             onSuccess={() => setOpen(false)}
             onCancel={() => setOpen(false)}
           />
