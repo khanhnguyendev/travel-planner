@@ -181,11 +181,13 @@ function SnapshotPill({
   label,
   value,
   className,
+  action,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   className?: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className={`mini-stat flex min-w-[172px] items-center gap-3 px-3 py-3 ${className ?? ''}`}>
@@ -196,9 +198,12 @@ function SnapshotPill({
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
           {label}
         </p>
-        <p className="mt-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
-          {value}
-        </p>
+        <div className="mt-1 flex items-start gap-2">
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+            {value}
+          </p>
+          {action ? <div className="flex-shrink-0">{action}</div> : null}
+        </div>
       </div>
     </div>
   );
@@ -508,7 +513,7 @@ export default async function TripDetailPage({
   return (
     <div className="animate-in fade-in duration-300">
       <section className="section-shell p-4 sm:p-5">
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.92fr)_minmax(320px,0.92fr)] xl:items-start">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,0.96fr)_minmax(360px,1.12fr)_minmax(300px,0.82fr)] xl:items-start">
           <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
             <div className="flex h-full flex-col gap-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -576,12 +581,14 @@ export default async function TripDetailPage({
                       value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
                       icon={<Calendar className="h-4 w-4" />}
                       className="min-w-0"
-                    />
-                    <TripDatesEditor
-                      tripId={tripId}
-                      startDate={trip.start_date}
-                      endDate={trip.end_date}
-                      canManage={canManage}
+                      action={(
+                        <TripDatesEditor
+                          tripId={tripId}
+                          startDate={trip.start_date}
+                          endDate={trip.end_date}
+                          canManage={canManage}
+                        />
+                      )}
                     />
                   </div>
                   <SnapshotPill

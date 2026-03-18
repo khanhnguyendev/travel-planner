@@ -59,9 +59,11 @@ export function JoinRequestsList({ tripId, initialRequests }: JoinRequestsListPr
           <li key={req.user_id} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <Avatar
-                src={req.profile.avatar_url}
-                displayName={req.profile.display_name ?? 'User'}
-                size={36}
+                user={{
+                  display_name: req.profile.display_name ?? 'User',
+                  avatar_url: req.profile.avatar_url,
+                }}
+                size="md"
               />
               <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
                 {req.profile.display_name ?? 'Unknown user'}

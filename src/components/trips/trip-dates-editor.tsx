@@ -22,19 +22,6 @@ export function TripDatesEditor({ tripId, startDate, endDate, canManage }: TripD
 
   if (!canManage) return null;
 
-  if (!editing) {
-    return (
-      <button
-        onClick={() => { setStart(startDate ?? ''); setEnd(endDate ?? ''); setEditing(true); }}
-        className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors mt-2 cursor-pointer"
-        style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-      >
-        <Pencil className="w-3 h-3" />
-        Edit dates
-      </button>
-    );
-  }
-
   async function handleSave() {
     if (end && start && end < start) {
       showToast('End date must be after start date', 'error');
@@ -53,47 +40,64 @@ export function TripDatesEditor({ tripId, startDate, endDate, canManage }: TripD
   }
 
   return (
-    <div className="mt-2 flex flex-col gap-2 p-3 rounded-xl border border-stone-200 bg-stone-50">
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs font-medium text-stone-500 mb-1">Start date</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            max={end || undefined}
-            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          />
+    <div className="relative inline-flex flex-shrink-0">
+      <button
+        type="button"
+        onClick={() => { setStart(startDate ?? ''); setEnd(endDate ?? ''); setEditing(true); }}
+        className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
+        title="Edit dates"
+        aria-label="Edit dates"
+      >
+        <Pencil className="w-3 h-3" style={{ color: 'var(--color-text-subtle)' }} />
+      </button>
+
+      {editing && (
+        <div className="absolute right-0 top-full z-20 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-stone-200 bg-stone-50 p-3 shadow-lg">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-500">Start date</label>
+              <input
+                type="date"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                max={end || undefined}
+                className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-500">End date</label>
+              <input
+                type="date"
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                min={start || undefined}
+                className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-teal-700 disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={pending}
+              className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-600 transition-colors hover:bg-stone-100"
+            >
+              <X className="mr-1 inline h-3.5 w-3.5" />
+              Cancel
+            </button>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-stone-500 mb-1">End date</label>
-          <input
-            type="date"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            min={start || undefined}
-            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleSave}
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
-        >
-          <Check className="w-3.5 h-3.5" />
-          Save
-        </button>
-        <button
-          onClick={() => setEditing(false)}
-          disabled={pending}
-          className="text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
-        >
-          <X className="w-3.5 h-3.5 inline mr-1" />
-          Cancel
-        </button>
-      </div>
+      )}
     </div>
   );
 }

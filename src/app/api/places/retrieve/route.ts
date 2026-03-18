@@ -145,6 +145,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     visit_date: visitDate ?? null,
     visit_time_from: visitTimeFrom ?? null,
     visit_time_to: visitTimeTo ?? null,
+    actual_checkin_at: null,
+    actual_checkout_at: null,
     backup_place_id: null,
   };
 

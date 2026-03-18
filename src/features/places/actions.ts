@@ -115,11 +115,6 @@ function addMinutesToTime(timeStr: string, minutes: number): string {
   return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
 }
 
-function timeToMinutes(timeStr: string): number {
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-}
-
 // -------------------------------------------------------
 // checkInPlace
 // -------------------------------------------------------

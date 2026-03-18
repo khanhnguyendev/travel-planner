@@ -356,23 +356,25 @@ export async function requestToJoin(
   if (!user) return { ok: false, error: 'Not authenticated' };
 
   // Verify trip is public
-  const { data: trip } = await supabase
+  const { data: tripData } = await supabase
     .from('trips')
     .select('visibility')
     .eq('id', tripId)
     .single();
+  const trip = tripData as { visibility: 'public' | 'private' } | null;
 
   if (!trip || trip.visibility !== 'public') {
     return { ok: false, error: 'Trip is not public' };
   }
 
   // Check if already a member or has a pending request
-  const { data: existing } = await supabase
+  const { data: existingData } = await supabase
     .from('trip_members')
     .select('id, invite_status')
     .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .maybeSingle();
+  const existing = existingData as { id: string; invite_status: 'accepted' | 'requested' | 'pending' | 'revoked' | 'expired' } | null;
 
   if (existing) {
     if (existing.invite_status === 'accepted') {

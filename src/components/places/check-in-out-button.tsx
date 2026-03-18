@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { LogIn, LogOut, Clock, X, RotateCcw } from 'lucide-react';
 import { checkInPlace, checkOutPlace, cascadePlaceDelay, clearPlaceCheckin } from '@/features/places/actions';
-import { useLoadingToast, useToast } from '@/components/ui/toast';
+import { useLoadingToast } from '@/components/ui/toast';
 import type { Place } from '@/lib/types';
 
 interface CheckInOutButtonProps {
@@ -26,11 +26,9 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
   const [step, setStep] = useState<Step>('idle');
   const [datetimeValue, setDatetimeValue] = useState(() => toLocalDatetimeValue(new Date()));
   const [pendingDelay, setPendingDelay] = useState(0);
-  const [pendingTs, setPendingTs] = useState('');
   const [loading, setLoading] = useState(false);
 
   const loadingToast = useLoadingToast();
-  const { showToast } = useToast();
 
   function openCheckin() {
     setDatetimeValue(toLocalDatetimeValue(new Date()));
@@ -59,7 +57,6 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
 
     if (delayMinutes > 0 && downstreamCount > 0) {
       setPendingDelay(delayMinutes);
-      setPendingTs(isoTs);
       setStep('cascade-prompt');
     } else {
       setStep('idle');
