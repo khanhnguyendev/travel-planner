@@ -113,13 +113,13 @@ export function BudgetEditor({
 
     return (
       <div
-        className="mt-4 rounded-xl px-4 py-4"
+        className="mt-4 overflow-hidden rounded-xl px-4 py-4"
         style={{ backgroundColor: 'var(--color-bg-subtle)' }}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+              <span className="break-words text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                 {hasBudget ? `Budget: ${formatCurrency(budgetAmount, budgetCurrency)}` : 'No budget set yet'}
               </span>
               {canManage && hasBudget && (
@@ -151,12 +151,12 @@ export function BudgetEditor({
           </div>
 
           {(canManage || actionSlot) && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               {canManage && !actionSlot && (
                 <button
                   type="button"
                   onClick={() => openEditor(hasBudget ? 'income' : 'set')}
-                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold shadow-sm transition-transform hover:-translate-y-0.5 cursor-pointer"
+                  className="inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold shadow-sm transition-transform hover:-translate-y-0.5 cursor-pointer sm:w-auto"
                   style={{ color: 'var(--color-primary)' }}
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -177,15 +177,15 @@ export function BudgetEditor({
               />
             </div>
 
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+            <div className="mt-2 grid grid-cols-1 gap-1 sm:flex sm:items-center sm:justify-between sm:gap-3">
+              <span className="break-words text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                 {Math.round(pct)}% used
               </span>
-              <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+              <span className="break-words text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
                 {formatCurrency(spent, budgetCurrency)} spent
               </span>
               <span
-                className="text-xs font-medium"
+                className="break-words text-xs font-medium"
                 style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
               >
                 {overBudget

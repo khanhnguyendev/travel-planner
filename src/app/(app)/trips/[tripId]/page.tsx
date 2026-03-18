@@ -69,7 +69,7 @@ function RoleBadge({ role }: { role: TripRole }) {
   const s = styles[role];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize"
+      className="inline-flex max-w-full flex-shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize sm:px-3 sm:text-xs"
       style={{ backgroundColor: s.bg, color: s.text }}
     >
       {s.icon}
@@ -82,7 +82,7 @@ function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const isPublic = visibility === 'public';
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+      className="inline-flex max-w-full flex-shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:text-xs"
       style={{
         backgroundColor: isPublic ? '#DBEAFE' : '#E2E8F0',
         color: isPublic ? '#1D4ED8' : '#475569',
@@ -189,15 +189,15 @@ function SnapshotPill({
   className?: string;
 }) {
   return (
-    <div className={`mini-stat flex min-w-[172px] items-center gap-3 px-3 py-3 ${className ?? ''}`}>
+    <div className={`mini-stat flex min-w-0 items-center gap-3 px-3 py-3 ${className ?? ''}`}>
       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
         {icon}
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
           {label}
         </p>
-        <p className="mt-1 min-w-0 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+        <p className="mt-1 min-w-0 break-words text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
           {value}
         </p>
       </div>
@@ -543,7 +543,7 @@ export default async function TripDetailPage({
     : `${members.length} crew joined`;
 
   return (
-    <div className="animate-in fade-in duration-300">
+    <div className="animate-in fade-in overflow-x-hidden duration-300">
       <div className="px-4 pb-2 pt-2 sm:px-6">
         <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[1.9rem] border px-5 py-5 text-center shadow-[0_18px_42px_rgba(87,67,40,0.08)] sm:px-8 sm:py-6" style={{ borderColor: 'rgba(255,255,255,0.82)', background: 'linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.76) 100%)' }}>
           <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
@@ -576,24 +576,24 @@ export default async function TripDetailPage({
         </div>
       </div>
 
-      <section className="section-shell p-4 sm:p-5">
+      <section className="section-shell overflow-hidden p-4 sm:p-5">
         <div className="grid gap-3 xl:grid-cols-[minmax(0,0.96fr)_minmax(360px,1.12fr)_minmax(300px,0.82fr)] xl:items-start">
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+          <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
             <div className="flex h-full flex-col gap-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                   Trip overview
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="-mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                   <Link
                     href={user ? '/dashboard' : '/'}
-                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                    className="inline-flex flex-shrink-0 items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
                     style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
                   >
                     {user ? 'Dashboard' : 'Home'}
                   </Link>
                   <span
-                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                    className="inline-flex flex-shrink-0 items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
                     style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
                   >
                     <Sparkles className="h-3 w-3" />
@@ -603,7 +603,7 @@ export default async function TripDetailPage({
                   <VisibilityBadge visibility={trip.visibility} />
                   {isArchived && (
                     <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                      className="inline-flex flex-shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold"
                       style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
                     >
                       Archived
@@ -618,7 +618,7 @@ export default async function TripDetailPage({
                     Planning dates
                   </p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-                    <div className="mini-stat flex min-w-0 items-center gap-3 px-3 py-3">
+                    <div className="mini-stat flex min-w-0 items-center gap-3 overflow-hidden px-3 py-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
                         <Calendar className="h-4 w-4" />
                       </div>
@@ -627,7 +627,7 @@ export default async function TripDetailPage({
                           From date
                         </p>
                         <div className="mt-1 flex items-start gap-2">
-                          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+                          <p className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
                             {formatSnapshotDate(trip.start_date)}
                           </p>
                           <TripDatesEditor
@@ -641,7 +641,7 @@ export default async function TripDetailPage({
                       </div>
                     </div>
 
-                    <div className="mini-stat flex min-w-0 items-center gap-3 px-3 py-3">
+                    <div className="mini-stat flex min-w-0 items-center gap-3 overflow-hidden px-3 py-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
                         <Calendar className="h-4 w-4" />
                       </div>
@@ -650,7 +650,7 @@ export default async function TripDetailPage({
                           To date
                         </p>
                         <div className="mt-1 flex items-start gap-2">
-                          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
+                          <p className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
                             {formatSnapshotDate(trip.end_date)}
                           </p>
                           <TripDatesEditor
@@ -690,7 +690,7 @@ export default async function TripDetailPage({
               )}
 
               {showCoverMedia ? (
-                <div className="rounded-[1.25rem] bg-white/70 p-3">
+                <div className="min-w-0 overflow-hidden rounded-[1.25rem] bg-white/70 p-3">
                   <div className="mb-3 px-1">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                       Cover setting
@@ -718,7 +718,7 @@ export default async function TripDetailPage({
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+          <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
             <div className="mb-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                 Budget
@@ -778,9 +778,9 @@ export default async function TripDetailPage({
                     <Link
                       key={expense.id}
                       href={`/trips/${tripId}/expenses/${expense.id}`}
-                      className={`${index >= 3 ? 'hidden lg:flex' : 'flex'} items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 transition-transform hover:-translate-y-0.5`}
+                      className={`${index >= 3 ? 'hidden lg:flex' : 'flex'} flex-col items-start gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between`}
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 w-full flex-1">
                         <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                           {expense.title}
                         </p>
@@ -796,7 +796,7 @@ export default async function TripDetailPage({
                           </p>
                         )}
                       </div>
-                      <div className="text-right">
+                      <div className="w-full text-left sm:w-auto sm:text-right">
                         <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
                           {formatCurrency(expense.amount, expense.currency)}
                         </p>
@@ -811,19 +811,19 @@ export default async function TripDetailPage({
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+            <div className="mb-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                   Crew
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {canManage && <InviteLinkButton tripId={tripId} />}
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                {canManage && <InviteLinkButton tripId={tripId} className="w-full justify-center sm:w-auto" />}
                 {isMember && (
                   <Link
                     href={`/trips/${tripId}/members`}
-                    className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
+                    className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm sm:w-auto"
                     style={{ color: 'var(--color-text-muted)' }}
                   >
                     <UserCog className="h-4 w-4" />
@@ -841,7 +841,7 @@ export default async function TripDetailPage({
                   const name = member.profile.display_name ?? 'Unknown member';
 
                   return (
-                    <div key={member.id} className="flex items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3">
+                    <div key={member.id} className="flex flex-col gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar
                           user={{ display_name: name, avatar_url: member.profile.avatar_url }}
@@ -856,7 +856,7 @@ export default async function TripDetailPage({
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="w-full text-left sm:w-auto sm:text-right">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--color-text-subtle)' }}>
                           {balanceInfo.label}
                         </p>
