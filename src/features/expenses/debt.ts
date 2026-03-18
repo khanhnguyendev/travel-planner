@@ -1,5 +1,69 @@
 import type { ExpenseWithSplits } from './queries';
 
+export interface MemberBalance {
+  userId: string;
+  currency: string;
+  /** Positive = owed back, Negative = owes others */
+  net: number;
+  paid: number;
+  share: number;
+}
+
+/**
+ * Calculate net balance per member per currency.
+ * Optionally includes a budget contribution: the budget payer starts with
+ * +budget credit, split equally as a debt among all other members.
+ */
+export function calculateMemberBalances(
+  expenses: ExpenseWithSplits[],
+  options?: {
+    budgetAmount?: number | null;
+    budgetCurrency?: string;
+    budgetPayerUserId?: string | null;
+    memberUserIds?: string[];
+  }
+): MemberBalance[] {
+  const { budgetAmount, budgetCurrency, budgetPayerUserId, memberUserIds = [] } = options ?? {};
+
+  // currency → userId → { paid, share }
+  const byCurrency = new Map<string, Map<string, { paid: number; share: number }>>();
+
+  function getUser(currency: string, userId: string) {
+    if (!byCurrency.has(currency)) byCurrency.set(currency, new Map());
+    const map = byCurrency.get(currency)!;
+    if (!map.has(userId)) map.set(userId, { paid: 0, share: 0 });
+    return map.get(userId)!;
+  }
+
+  // Apply budget contribution: payer funded the trip, others owe equal shares
+  if (budgetAmount && budgetAmount > 0 && budgetCurrency && budgetPayerUserId && memberUserIds.length > 0) {
+    const perPerson = budgetAmount / memberUserIds.length;
+    // Payer: paid = budgetAmount, share = perPerson (their own portion)
+    getUser(budgetCurrency, budgetPayerUserId).paid += budgetAmount;
+    for (const uid of memberUserIds) {
+      getUser(budgetCurrency, uid).share += perPerson;
+    }
+  }
+
+  // Apply actual expenses
+  for (const expense of expenses) {
+    const cur = expense.currency;
+    getUser(cur, expense.paid_by_user_id).paid += expense.amount;
+    for (const split of expense.splits) {
+      getUser(cur, split.user_id).share += split.amount_owed;
+    }
+  }
+
+  const results: MemberBalance[] = [];
+  for (const [currency, userMap] of byCurrency) {
+    for (const [userId, { paid, share }] of userMap) {
+      const net = Math.round((paid - share) * 100) / 100;
+      results.push({ userId, currency, net, paid, share });
+    }
+  }
+  return results;
+}
+
 export interface DebtSummary {
   from: string; // userId — the person who owes
   to: string;   // userId — the person who is owed

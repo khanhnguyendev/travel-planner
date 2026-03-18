@@ -3,12 +3,18 @@
  * @param amount  The numeric amount (e.g. 12.5)
  * @param currency ISO 4217 currency code (e.g. "USD")
  */
+// Currencies that don't use decimal places
+const ZERO_DECIMAL_CURRENCIES = new Set(['VND', 'JPY', 'KRW', 'IDR', 'HUF']);
+
 export function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
+  const decimals = ZERO_DECIMAL_CURRENCIES.has(currency.toUpperCase()) ? 0 : 2;
+  // Use Vietnamese locale for VND so separators look natural (12.000.000 ₫)
+  const locale = currency.toUpperCase() === 'VND' ? 'vi-VN' : 'en-US';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(amount);
 }
 

@@ -2,7 +2,7 @@
 export type ProjectRole = 'owner' | 'admin' | 'editor' | 'viewer';
 export type ProjectStatus = 'active' | 'archived';
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
-export type Visibility = 'private' | 'shared';
+export type Visibility = 'private' | 'public';
 export type VoteType = 'upvote' | 'downvote' | 'score';
 export type SplitStatus = 'pending' | 'settled';
 
@@ -30,6 +30,9 @@ export interface Project {
   status: ProjectStatus;
   start_date: string | null;
   end_date: string | null;
+  budget: number | null;
+  budget_currency: string;
+  budget_payer_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +59,8 @@ export interface ProjectInvite {
   created_at: string;
 }
 
+export type CategoryType = 'general' | 'accommodation';
+
 export interface Category {
   id: string;
   project_id: string;
@@ -63,6 +68,7 @@ export interface Category {
   color: string | null;
   icon: string | null;
   sort_order: number | null;
+  category_type: CategoryType;
   created_at: string;
 }
 
@@ -86,6 +92,8 @@ export interface Place {
   visit_time_from: string | null;  // time: HH:MM
   visit_time_to: string | null;    // time: HH:MM
   backup_place_id: string | null;  // FK → places.id
+  note: string | null;             // editor-only trip note
+  checkout_date: string | null;    // accommodation check-out date (YYYY-MM-DD)
   created_at: string;
 }
 
@@ -131,6 +139,7 @@ export interface Expense {
   currency: string;
   expense_date: string | null;
   note: string | null;
+  category: string | null;
   receipt_path: string | null;
   created_at: string;
   updated_at: string;
@@ -171,12 +180,15 @@ export type Database = {
       };
       projects: {
         Row: R<Project>;
-        Insert: R<Omit<Project, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status'> & {
+        Insert: R<Omit<Project, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status' | 'budget' | 'budget_currency' | 'budget_payer_user_id'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
           cover_image_url?: string | null;
           status?: ProjectStatus;
+          budget?: number | null;
+          budget_currency?: string;
+          budget_payer_user_id?: string | null;
         }>;
         Update: R<Partial<Omit<Project, 'id' | 'created_at'>>>;
         Relationships: [];
@@ -201,18 +213,21 @@ export type Database = {
       };
       categories: {
         Row: R<Category>;
-        Insert: R<Omit<Category, 'id' | 'created_at'> & {
+        Insert: R<Omit<Category, 'id' | 'created_at' | 'category_type'> & {
           id?: string;
           created_at?: string;
+          category_type?: CategoryType;
         }>;
         Update: R<Partial<Omit<Category, 'id' | 'created_at'>>>;
         Relationships: [];
       };
       places: {
         Row: R<Place>;
-        Insert: R<Omit<Place, 'id' | 'created_at'> & {
+        Insert: R<Omit<Place, 'id' | 'created_at' | 'note' | 'checkout_date'> & {
           id?: string;
           created_at?: string;
+          note?: string | null;
+          checkout_date?: string | null;
         }>;
         Update: R<Partial<Omit<Place, 'id' | 'created_at'>>>;
         Relationships: [];
@@ -244,10 +259,11 @@ export type Database = {
       };
       expenses: {
         Row: R<Expense>;
-        Insert: R<Omit<Expense, 'id' | 'created_at' | 'updated_at'> & {
+        Insert: R<Omit<Expense, 'id' | 'created_at' | 'updated_at' | 'category'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
+          category?: string | null;
         }>;
         Update: R<Partial<Omit<Expense, 'id' | 'created_at'>>>;
         Relationships: [];

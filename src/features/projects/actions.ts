@@ -14,9 +14,11 @@ import type { Project } from '@/lib/types';
 const createProjectSchema = z.object({
   title: z.string().min(1, 'Title is required').max(120),
   description: z.string().max(500).optional(),
-  visibility: z.enum(['private', 'shared']).default('private'),
+  visibility: z.enum(['private', 'public']).default('private'),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
+  budget: z.number().positive().optional().nullable(),
+  budgetCurrency: z.string().length(3).optional(),
 });
 
 // -------------------------------------------------------
@@ -26,9 +28,11 @@ const createProjectSchema = z.object({
 export async function createProject(
   title: string,
   description: string | undefined,
-  visibility: 'private' | 'shared',
+  visibility: 'private' | 'public',
   startDate?: string | null,
-  endDate?: string | null
+  endDate?: string | null,
+  budget?: number | null,
+  budgetCurrency?: string
 ): Promise<ActionResult<{ projectId: string }>> {
   const parsed = createProjectSchema.safeParse({
     title,
@@ -36,6 +40,8 @@ export async function createProject(
     visibility,
     startDate,
     endDate,
+    budget,
+    budgetCurrency,
   });
 
   if (!parsed.success) {
@@ -77,6 +83,8 @@ export async function createProject(
       visibility: parsed.data.visibility,
       start_date: parsed.data.startDate ?? null,
       end_date: parsed.data.endDate ?? null,
+      budget: parsed.data.budget ?? null,
+      budget_currency: parsed.data.budgetCurrency ?? 'VND',
     })
     .select('id')
     .single();
@@ -157,6 +165,55 @@ export async function updateProject(
   revalidatePath('/dashboard');
 
   return { ok: true, data: { projectId } };
+}
+
+// -------------------------------------------------------
+// updateProjectBudget
+// -------------------------------------------------------
+
+export async function updateProjectBudget(
+  projectId: string,
+  budget: number | null,
+  budgetCurrency: string,
+  payerUserId: string | null
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: 'Not authenticated' };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: memberData } = await admin
+    .from('project_members')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  const { error } = await admin
+    .from('projects')
+    .update({ budget, budget_currency: budgetCurrency, budget_payer_user_id: payerUserId })
+    .eq('id', projectId);
+
+  if (error) {
+    console.error('updateProjectBudget error:', error);
+    return { ok: false, error: 'Failed to update budget' };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+
+  return { ok: true, data: undefined };
 }
 
 // -------------------------------------------------------
