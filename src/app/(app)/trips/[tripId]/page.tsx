@@ -507,15 +507,40 @@ export default async function TripDetailPage({
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="section-shell px-4 pb-1 pt-2 text-center sm:px-5">
-        <h1 className="text-3xl font-semibold leading-tight section-title sm:text-[2.5rem]" style={{ color: 'var(--color-text)' }}>
-          {trip.title}
-        </h1>
-        {trip.description && (
-          <p className="mx-auto mt-2 max-w-3xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
-            {trip.description}
-          </p>
-        )}
+      <div className="px-4 pb-2 pt-2 sm:px-6">
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[1.9rem] border px-5 py-5 text-center shadow-[0_18px_42px_rgba(87,67,40,0.08)] sm:px-8 sm:py-6" style={{ borderColor: 'rgba(255,255,255,0.82)', background: 'linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.76) 100%)' }}>
+          <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+          <div className="pointer-events-none absolute -left-10 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-teal-200/35 blur-3xl" />
+          <div className="pointer-events-none absolute -right-12 top-0 h-28 w-28 rounded-full bg-indigo-200/35 blur-3xl" />
+
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              <MapPin className="h-3.5 w-3.5" />
+              Trip identity
+            </span>
+
+            <h1 className="mt-3 text-[2rem] font-semibold leading-[1.02] section-title sm:text-[2.9rem]" style={{ color: 'var(--color-text)' }}>
+              {trip.title}
+            </h1>
+
+            {trip.description && (
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
+                {trip.description}
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                <Calendar className="h-3.5 w-3.5" />
+                {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible dates'}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                <MapPin className="h-3.5 w-3.5" />
+                {places.length} place{places.length === 1 ? '' : 's'} saved
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <section className="section-shell p-4 sm:p-5">
