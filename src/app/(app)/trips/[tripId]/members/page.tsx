@@ -22,7 +22,7 @@ export async function generateMetadata({
   const { tripId } = await params;
   const trip = await getTrip(tripId);
   return {
-    title: trip ? `Members — ${trip.title}` : 'Members',
+    title: trip ? `Thành viên — ` : 'Thành viên',
   };
 }
 

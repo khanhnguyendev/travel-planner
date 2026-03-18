@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'New Trip',
+  title: 'Tạo chuyến đi mới',
 };
 
 export default async function NewProjectPage() {

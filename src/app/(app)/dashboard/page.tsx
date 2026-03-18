@@ -9,7 +9,7 @@ import type { Trip } from '@/lib/types'; // used by StatusBadge / VisibilityBadg
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
+  title: 'Trang chủ',
 };
 
 function VisibilityBadge({ visibility }: { visibility: Trip['visibility'] }) {

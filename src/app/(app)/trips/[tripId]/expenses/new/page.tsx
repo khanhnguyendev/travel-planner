@@ -6,7 +6,7 @@ import { ExpenseForm } from '@/components/expenses/expense-form';
 import { PageHeader } from '@/components/ui/page-header';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Add Expense' };
+export const metadata: Metadata = { title: 'Thêm chi tiêu' };
 
 export default async function NewExpensePage({
   params,

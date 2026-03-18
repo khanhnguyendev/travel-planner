@@ -18,7 +18,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { tripId } = await params;
   const trip = await getTrip(tripId);
-  return { title: trip ? `Expenses — ${trip.title}` : 'Expenses' };
+  return { title: trip ? `Chi tiêu — ` : 'Chi tiêu' };
 }
 
 export default async function ExpensesPage({
