@@ -627,6 +627,8 @@ export default async function TripDetailPage({
             currentUserId={currentUserId}
             canVote={canVote}
             canComment={canComment}
+            tripStartDate={trip.start_date}
+            tripEndDate={trip.end_date}
           />
 
           <div className="mt-4">
@@ -643,6 +645,8 @@ export default async function TripDetailPage({
               reviewsByPlaceId={reviewsByPlaceId}
               commentsByPlaceId={commentsByPlaceId}
               commentAuthors={commentAuthors}
+              tripStartDate={trip.start_date}
+              tripEndDate={trip.end_date}
             />
           </div>
         </div>
@@ -663,6 +667,8 @@ export default async function TripDetailPage({
             reviewsByPlaceId={reviewsByPlaceId}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
+            tripStartDate={trip.start_date}
+            tripEndDate={trip.end_date}
           />
         </div>
       )}
@@ -681,6 +687,8 @@ export default async function TripDetailPage({
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}
+            tripStartDate={trip.start_date}
+            tripEndDate={trip.end_date}
           />
         </div>
       )}

@@ -21,6 +21,8 @@ interface AccommodationSectionProps {
   reviewsByPlaceId: Record<string, PlaceReview[]>;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
 }
 
 function formatDate(dateStr: string): string {
@@ -202,6 +204,8 @@ export function AccommodationSection({
   reviewsByPlaceId,
   commentsByPlaceId,
   commentAuthors,
+  tripStartDate,
+  tripEndDate,
 }: AccommodationSectionProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -269,6 +273,8 @@ export function AccommodationSection({
           canComment={canComment}
           allPlaces={places}
           canEdit={canEdit}
+          tripStartDate={tripStartDate}
+          tripEndDate={tripEndDate}
           onClose={() => setOpenPlaceId(null)}
         />
       )}

@@ -18,6 +18,8 @@ interface MapTabClientProps {
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
 }
 
 export function MapTabClient({
@@ -32,6 +34,8 @@ export function MapTabClient({
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
+  tripStartDate,
+  tripEndDate,
 }: MapTabClientProps) {
   const [openPlace, setOpenPlace] = useState<Place | null>(null);
 
@@ -60,6 +64,8 @@ export function MapTabClient({
           canVote={canVote}
           canComment={canComment}
           allPlaces={places}
+          tripStartDate={tripStartDate}
+          tripEndDate={tripEndDate}
           onClose={() => setOpenPlace(null)}
         />
       )}

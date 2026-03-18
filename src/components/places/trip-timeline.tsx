@@ -19,6 +19,8 @@ interface TripTimelineProps {
   reviewsByPlaceId: Record<string, PlaceReview[]>;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
 }
 
 function formatDayHeader(dateStr: string): string {
@@ -124,6 +126,8 @@ export function TripTimeline({
   reviewsByPlaceId,
   commentsByPlaceId,
   commentAuthors,
+  tripStartDate,
+  tripEndDate,
 }: TripTimelineProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -275,6 +279,8 @@ export function TripTimeline({
           canComment={canComment}
           allPlaces={places}
           canEdit={canEdit}
+          tripStartDate={tripStartDate}
+          tripEndDate={tripEndDate}
           onClose={() => setOpenPlaceId(null)}
         />
       )}

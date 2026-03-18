@@ -23,6 +23,8 @@ interface PlaceDetailDrawerProps {
   canComment?: boolean;
   allPlaces?: Place[];
   canEdit?: boolean;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
   onClose: () => void;
 }
 
@@ -92,21 +94,39 @@ function ScheduleEditor({
   place,
   allPlaces,
   canEdit,
+  tripStartDate,
+  tripEndDate,
 }: {
   place: Place;
   allPlaces: Place[];
   canEdit: boolean;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
 }) {
   const [editing, setEditing] = useState(false);
-  const [date, setDate] = useState(place.visit_date ?? '');
-  const [from, setFrom] = useState(place.visit_time_from ?? '');
-  const [to, setTo] = useState(place.visit_time_to ?? '');
-  const [backupId, setBackupId] = useState(place.backup_place_id ?? '');
+  // Saved state mirrors what's in the DB — updated on successful save so view mode stays fresh
+  const [savedDate, setSavedDate] = useState(place.visit_date ?? '');
+  const [savedFrom, setSavedFrom] = useState(place.visit_time_from ?? '');
+  const [savedTo, setSavedTo] = useState(place.visit_time_to ?? '');
+  const [savedBackupId, setSavedBackupId] = useState(place.backup_place_id ?? '');
+  // Draft state used while editing
+  const [date, setDate] = useState(savedDate);
+  const [from, setFrom] = useState(savedFrom);
+  const [to, setTo] = useState(savedTo);
+  const [backupId, setBackupId] = useState(savedBackupId);
   const [pending, setPending] = useState(false);
   const loadingToast = useLoadingToast();
 
   const otherPlaces = allPlaces.filter((p) => p.id !== place.id);
-  const backupPlace = allPlaces.find((p) => p.id === place.backup_place_id);
+  const savedBackupPlace = allPlaces.find((p) => p.id === savedBackupId);
+
+  function openEditor() {
+    setDate(savedDate);
+    setFrom(savedFrom);
+    setTo(savedTo);
+    setBackupId(savedBackupId);
+    setEditing(true);
+  }
 
   async function handleSave() {
     setPending(true);
@@ -120,6 +140,10 @@ function ScheduleEditor({
     setPending(false);
     if (result.ok) {
       resolve('Schedule saved!', 'success');
+      setSavedDate(date);
+      setSavedFrom(from);
+      setSavedTo(to);
+      setSavedBackupId(backupId);
       setEditing(false);
     } else {
       resolve(result.error, 'error');
@@ -127,21 +151,21 @@ function ScheduleEditor({
   }
 
   if (!editing) {
-    const hasSchedule = place.visit_date || place.visit_time_from;
+    const hasSchedule = savedDate || savedFrom;
     return (
       <div className="space-y-2">
         {hasSchedule ? (
           <div className="flex items-center gap-2 flex-wrap">
-            {place.visit_date && (
+            {savedDate && (
               <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
                 <CalendarDays className="w-3.5 h-3.5" />
-                {new Date(place.visit_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(savedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             )}
-            {(place.visit_time_from || place.visit_time_to) && (
+            {(savedFrom || savedTo) && (
               <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
                 <Clock className="w-3.5 h-3.5" />
-                {place.visit_time_from ?? '?'} – {place.visit_time_to ?? '?'}
+                {savedFrom || '?'} – {savedTo || '?'}
               </span>
             )}
           </div>
@@ -149,24 +173,24 @@ function ScheduleEditor({
           <p className="text-xs text-stone-400">No visit time set</p>
         )}
 
-        {backupPlace && (
+        {savedBackupPlace && (
           <div className="flex items-center gap-1.5 text-xs text-orange-600 bg-orange-50 px-2.5 py-1.5 rounded-lg">
             <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Backup: <span className="font-medium">{backupPlace.name}</span></span>
+            <span>Backup: <span className="font-medium">{savedBackupPlace.name}</span></span>
           </div>
         )}
 
         {canEdit && (
           <button
-            onClick={() => setEditing(true)}
+            onClick={openEditor}
             className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1 cursor-pointer"
             style={{
-              backgroundColor: hasSchedule || backupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
-              color: hasSchedule || backupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
+              backgroundColor: hasSchedule || savedBackupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
+              color: hasSchedule || savedBackupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
             }}
           >
             <Pencil className="w-3 h-3" />
-            {hasSchedule || backupPlace ? 'Edit schedule' : 'Add schedule'}
+            {hasSchedule || savedBackupPlace ? 'Edit schedule' : 'Add schedule'}
           </button>
         )}
       </div>
@@ -183,6 +207,8 @@ function ScheduleEditor({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+            min={tripStartDate ?? undefined}
+            max={tripEndDate ?? undefined}
             className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
@@ -469,6 +495,8 @@ export function PlaceDetailDrawer({
   canComment = true,
   allPlaces = [],
   canEdit = false,
+  tripStartDate,
+  tripEndDate,
   onClose,
 }: PlaceDetailDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -593,7 +621,7 @@ export function PlaceDetailDrawer({
           {/* Schedule + backup */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
-            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} />
+            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripStartDate={tripStartDate} tripEndDate={tripEndDate} />
           </div>
 
           {/* Note (editors write, viewers read) */}

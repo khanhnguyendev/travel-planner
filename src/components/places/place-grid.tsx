@@ -25,6 +25,8 @@ interface PlaceGridProps {
   canVote: boolean;
   canComment: boolean;
   canEdit?: boolean;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
   onAddPlace?: () => void;
 }
 
@@ -45,6 +47,8 @@ export function PlaceGrid({
   canVote,
   canComment,
   canEdit = false,
+  tripStartDate,
+  tripEndDate,
   onAddPlace,
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
@@ -177,6 +181,8 @@ export function PlaceGrid({
           canComment={canComment}
           allPlaces={places}
           canEdit={canEdit}
+          tripStartDate={tripStartDate}
+          tripEndDate={tripEndDate}
           onClose={() => setOpenPlaceId(null)}
         />
       )}
