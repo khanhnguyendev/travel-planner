@@ -516,39 +516,15 @@ export default async function TripDetailPage({
         <div className="grid gap-3 xl:grid-cols-[minmax(0,0.96fr)_minmax(360px,1.12fr)_minmax(300px,0.82fr)] xl:items-start">
           <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
             <div className="flex h-full flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={user ? '/dashboard' : '/'}
-                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
-                  style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                >
-                  {user ? 'Dashboard' : 'Home'}
-                </Link>
-                <span
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  {tripPhase}
-                </span>
-                <RoleBadge role={resolvedRole} />
-                <VisibilityBadge visibility={trip.visibility} />
-                {isArchived && (
-                  <span
-                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                  >
-                    Archived
-                  </span>
-                )}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Trip overview
+                </p>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.9fr)] lg:items-start">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                    Trip overview
-                  </p>
-                  <h1 className="mt-1 text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
+                  <h1 className="text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
                     {trip.title}
                   </h1>
                   {trip.description && (
@@ -556,6 +532,33 @@ export default async function TripDetailPage({
                       {trip.description}
                     </p>
                   )}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <Link
+                      href={user ? '/dashboard' : '/'}
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                      style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                    >
+                      {user ? 'Dashboard' : 'Home'}
+                    </Link>
+                    <span
+                      className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                      style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      {tripPhase}
+                    </span>
+                    <RoleBadge role={resolvedRole} />
+                    <VisibilityBadge visibility={trip.visibility} />
+                    {isArchived && (
+                      <span
+                        className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                      >
+                        Archived
+                      </span>
+                    )}
+                  </div>
 
                   {!isMember && (
                     <div className="mt-4 max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
@@ -652,6 +655,7 @@ export default async function TripDetailPage({
                   tripId={tripId}
                   members={members}
                   currentUserId={currentUserId}
+                  places={places}
                   trigger={(
                     <button
                       type="button"
@@ -943,6 +947,7 @@ export default async function TripDetailPage({
                     tripId={tripId}
                     members={members}
                     currentUserId={currentUserId}
+                    places={places}
                   />
                 )}
                 <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] text-sm">

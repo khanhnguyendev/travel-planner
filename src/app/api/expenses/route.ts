@@ -129,6 +129,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       expense_date: expenseDate ?? new Date().toISOString(),
       note: note ?? null,
       receipt_path: receiptPath ?? null,
+      place_id: null,
     })
     .select('id')
     .single();
