@@ -145,6 +145,17 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface ProjectActivity {
+  id: string;
+  project_id: string;
+  user_id: string;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  meta: Json;
+  created_at: string;
+}
+
 export interface ExpenseSplit {
   id: string;
   expense_id: string;
@@ -266,6 +277,12 @@ export type Database = {
           category?: string | null;
         }>;
         Update: R<Partial<Omit<Expense, 'id' | 'created_at'>>>;
+        Relationships: [];
+      };
+      project_activity: {
+        Row: R<ProjectActivity>;
+        Insert: R<Omit<ProjectActivity, 'id' | 'created_at'> & { id?: string; created_at?: string }>;
+        Update: R<Partial<Omit<ProjectActivity, 'id' | 'created_at'>>>;
         Relationships: [];
       };
       expense_splits: {
