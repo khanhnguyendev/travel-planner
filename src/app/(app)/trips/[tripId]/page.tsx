@@ -177,13 +177,15 @@ function SnapshotPill({
   icon,
   label,
   value,
+  className,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  className?: string;
 }) {
   return (
-    <div className="mini-stat flex min-w-[172px] items-center gap-3 px-3 py-3">
+    <div className={`mini-stat flex min-w-[172px] items-center gap-3 px-3 py-3 ${className ?? ''}`}>
       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
         {icon}
       </div>
@@ -360,60 +362,120 @@ export default async function TripDetailPage({
     <div className="animate-in fade-in duration-300">
       <section className="section-shell p-4 sm:p-5">
         <div className="flex flex-col gap-4">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_280px] lg:items-start">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={user ? '/dashboard' : '/'}
-                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
-                  style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                >
-                  {user ? 'Dashboard' : 'Home'}
-                </Link>
-                <span
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  {tripPhase}
-                </span>
-                <RoleBadge role={resolvedRole} />
-                <VisibilityBadge visibility={trip.visibility} />
-                {isArchived && (
-                  <span
-                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_280px] lg:items-stretch">
+            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+              <div className="flex h-full flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={user ? '/dashboard' : '/'}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
                     style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
                   >
-                    Archived
+                    {user ? 'Dashboard' : 'Home'}
+                  </Link>
+                  <span
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {tripPhase}
                   </span>
-                )}
-              </div>
+                  <RoleBadge role={resolvedRole} />
+                  <VisibilityBadge visibility={trip.visibility} />
+                  {isArchived && (
+                    <span
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                      style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                    >
+                      Archived
+                    </span>
+                  )}
+                </div>
 
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Trip overview
-                </p>
-                <h1 className="mt-1 text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
-                  {trip.title}
-                </h1>
-                {trip.description && (
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
-                    {trip.description}
-                  </p>
-                )}
-              </div>
-
-              {!isMember && (
-                <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
-                  <div className="flex items-start gap-2">
-                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <p>
-                      This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] xl:items-end">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                      Trip overview
                     </p>
+                    <h1 className="mt-1 text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
+                      {trip.title}
+                    </h1>
+                    {trip.description && (
+                      <p className="mt-2 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
+                        {trip.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                    <SnapshotPill
+                      label="Dates"
+                      value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
+                      icon={<Calendar className="h-4 w-4" />}
+                      className="min-w-0"
+                    />
+                    <SnapshotPill
+                      label="Places"
+                      value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
+                      icon={<MapPin className="h-4 w-4" />}
+                      className="min-w-0"
+                    />
+                    <SnapshotPill
+                      label="Money"
+                      value={expenses.length > 0 ? spendSummary : 'No spending yet'}
+                      icon={<Receipt className="h-4 w-4" />}
+                      className="min-w-0"
+                    />
                   </div>
                 </div>
-              )}
 
+                {!isMember && (
+                  <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+                    <div className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      <p>
+                        This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="mini-stat flex min-w-0 items-center gap-2 px-3 py-3 text-sm">
+                    <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                        Previous stop
+                      </p>
+                      <p className="mt-1 truncate font-semibold" style={{ color: 'var(--color-text)' }}>
+                        {stopPointers.previous?.name ?? 'None yet'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mini-stat flex min-w-0 items-center gap-2 px-3 py-3 text-sm">
+                    <Clock3 className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                        Current
+                      </p>
+                      <p className="mt-1 truncate font-semibold" style={{ color: 'var(--color-text)' }}>
+                        {stopPointers.current?.name ?? (scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mini-stat flex min-w-0 items-center gap-2 px-3 py-3 text-sm">
+                    <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                        Next stop
+                      </p>
+                      <p className="mt-1 truncate font-semibold" style={{ color: 'var(--color-text)' }}>
+                        {stopPointers.next?.name ?? (scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {showCoverMedia ? (
@@ -444,48 +506,6 @@ export default async function TripDetailPage({
                 </div>
               </div>
             ) : null}
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <SnapshotPill
-              label="Dates"
-              value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
-              icon={<Calendar className="h-4 w-4" />}
-            />
-            <SnapshotPill
-              label="Places"
-              value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
-              icon={<MapPin className="h-4 w-4" />}
-            />
-            <SnapshotPill
-              label="Money"
-              value={expenses.length > 0 ? spendSummary : 'No spending yet'}
-              icon={<Receipt className="h-4 w-4" />}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
-              <MapPin className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>Previous stop:</span>
-              <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                {stopPointers.previous?.name ?? 'None yet'}
-              </span>
-            </span>
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
-              <Clock3 className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>Current:</span>
-              <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                {stopPointers.current?.name ?? (scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled')}
-              </span>
-            </span>
-            <span className="mini-stat inline-flex items-center gap-2 px-3 py-2 text-sm">
-              <MapPin className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>Next stop:</span>
-              <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                {stopPointers.next?.name ?? (scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled')}
-              </span>
-            </span>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
