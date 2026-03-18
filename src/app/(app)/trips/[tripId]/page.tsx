@@ -15,7 +15,6 @@ import {
   Activity,
   Sparkles,
   Coins,
-  ExternalLink,
   LogIn,
   LogOut,
 } from 'lucide-react';
@@ -36,10 +35,12 @@ import { DebtSummary } from '@/components/expenses/debt-summary';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
+import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
 import { MemberBalances } from '@/components/trips/member-balances';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
+import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { ActivityFeed } from '@/components/activity/activity-feed';
 import { getTripActivity } from '@/features/activity/queries';
 import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment, Place } from '@/lib/types';
@@ -203,20 +204,6 @@ function SnapshotPill({
   );
 }
 
-function googleMapsUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) {
-    return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
-  }
-  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`;
-}
-
-function vietmapUrl(place: Place): string {
-  if (place.lat != null && place.lng != null) {
-    return `https://maps.vietmap.vn/?q=${place.lat},${place.lng}`;
-  }
-  return `https://maps.vietmap.vn/?q=${encodeURIComponent(place.name)}`;
-}
-
 function formatStopPlan(place: Place): string {
   const parts: string[] = [];
   if (place.visit_date) {
@@ -230,6 +217,9 @@ function formatStopPlan(place: Place): string {
   }
   if (place.visit_time_from || place.visit_time_to) {
     parts.push(`${place.visit_time_from ?? '?'} - ${place.visit_time_to ?? '?'}`);
+  }
+  if (place.checkout_date) {
+    parts.push(`Checkout ${formatDate(place.checkout_date)}`);
   }
   return parts.length > 0 ? parts.join(' • ') : 'No schedule yet';
 }
@@ -291,59 +281,16 @@ function StopSpotlightCard({
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {place ? (
-          <>
-            <a
-              href={googleMapsUrl(place)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
-              style={{ color: 'var(--color-text)' }}
-            >
-              <ExternalLink className="h-4 w-4" />
-              Google Maps
-            </a>
-            <a
-              href={vietmapUrl(place)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-            >
-              <ExternalLink className="h-4 w-4" />
-              VietMap
-            </a>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ color: 'var(--color-text)' }}
-            >
-              <ExternalLink className="h-4 w-4" />
-              Google Maps
-            </button>
-            <button
-              type="button"
-              disabled
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-            >
-              <ExternalLink className="h-4 w-4" />
-              VietMap
-            </button>
-          </>
-        )}
-      </div>
+      {place && (
+        <div className="mt-4">
+          <PlaceMapLinks place={place} />
+        </div>
+      )}
 
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled
-          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[0.03]"
           style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
         >
           <LogIn className="h-4 w-4" />
@@ -351,8 +298,7 @@ function StopSpotlightCard({
         </button>
         <button
           type="button"
-          disabled
-          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[0.03]"
           style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
         >
           <LogOut className="h-4 w-4" />
@@ -570,12 +516,20 @@ export default async function TripDetailPage({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                    <SnapshotPill
-                      label="Dates"
-                      value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
-                      icon={<Calendar className="h-4 w-4" />}
-                      className="min-w-0"
-                    />
+                    <div className="min-w-0">
+                      <SnapshotPill
+                        label="Dates"
+                        value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
+                        icon={<Calendar className="h-4 w-4" />}
+                        className="min-w-0"
+                      />
+                      <TripDatesEditor
+                        tripId={tripId}
+                        startDate={trip.start_date}
+                        endDate={trip.end_date}
+                        canManage={canManage}
+                      />
+                    </div>
                     <SnapshotPill
                       label="Places"
                       value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}

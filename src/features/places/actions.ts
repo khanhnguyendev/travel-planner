@@ -131,6 +131,14 @@ export async function deletePlace(id: string): Promise<ActionResult> {
 
   log.info('place.delete.ok', { placeId: id, tripId: place.trip_id });
   revalidatePath(`/trips/${place.trip_id}`);
+  void logActivity({
+    tripId: place.trip_id,
+    userId: user.id,
+    action: 'place.delete',
+    entityType: 'place',
+    entityId: id,
+    meta: { placeName: place.name },
+  });
   return { ok: true, data: undefined };
 }
 

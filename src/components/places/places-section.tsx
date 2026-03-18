@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Tag, X } from 'lucide-react';
+import { Plus, Tag, X, Trash2, CheckSquare } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -10,6 +10,8 @@ import { PlaceGrid } from '@/components/places/place-grid';
 import { PlaceSearch } from '@/components/places/place-search';
 import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
 import { Dialog } from '@/components/ui/dialog';
+import { deletePlace } from '@/features/places/actions';
+import { useLoadingToast } from '@/components/ui/toast';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
 interface PlacesSectionProps {
@@ -69,6 +71,10 @@ export function PlacesSection({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [searchResults, setSearchResults] = useState<Place[] | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const loadingToast = useLoadingToast();
 
   const editor = canEdit(role);
 
@@ -80,6 +86,33 @@ export function PlacesSection({
     setPlaces((prev) => [place, ...prev]);
     if (reviews.length > 0) {
       setReviewsByPlaceId((prev) => ({ ...prev, [place.id]: reviews }));
+    }
+  }
+
+  function handlePlaceDeleted(placeId: string) {
+    setPlaces((prev) => prev.filter((p) => p.id !== placeId));
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(placeId); return next; });
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Remove ${selectedIds.size} place${selectedIds.size > 1 ? 's' : ''} from this trip?`)) return;
+    setBulkDeleting(true);
+    const resolve = loadingToast(`Removing ${selectedIds.size} places…`);
+    const results = await Promise.all([...selectedIds].map((id) => deletePlace(id)));
+    const failed = results.filter((r) => !r.ok).length;
+    setBulkDeleting(false);
+    if (failed === 0) {
+      resolve('Places removed', 'success');
+      const deleted = new Set(selectedIds);
+      setPlaces((prev) => prev.filter((p) => !deleted.has(p.id)));
+      setSelectedIds(new Set());
+      setSelectMode(false);
+    } else {
+      resolve(`${failed} failed to delete`, 'error');
+      const succeeded = [...selectedIds].filter((_, i) => results[i].ok);
+      setPlaces((prev) => prev.filter((p) => !succeeded.includes(p.id)));
+      setSelectedIds((prev) => { const next = new Set(prev); succeeded.forEach((id) => next.delete(id)); return next; });
     }
   }
 
@@ -186,7 +219,7 @@ export function PlacesSection({
               </div>
             )}
 
-            {editor && (
+            {editor && !selectMode && (
               <button
                 onClick={() => setShowAddPlace(true)}
                 className="hidden min-h-[48px] items-center gap-2 rounded-[1.1rem] bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
@@ -194,6 +227,36 @@ export function PlacesSection({
                 <Plus className="h-4 w-4" />
                 Add place
               </button>
+            )}
+            {editor && places.length > 0 && !selectMode && (
+              <button
+                onClick={() => { setSelectMode(true); setSelectedIds(new Set()); }}
+                className="hidden min-h-[48px] items-center gap-2 rounded-[1.1rem] border px-4 py-3 text-sm font-semibold transition-colors hover:bg-black/[0.03] md:inline-flex"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
+              >
+                <CheckSquare className="h-4 w-4" />
+                Select
+              </button>
+            )}
+            {selectMode && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedIds.size === 0 || bulkDeleting}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[1rem] bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-40"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+                </button>
+                <button
+                  onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[1rem] border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
+                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+              </div>
             )}
           </div>
 
@@ -276,6 +339,18 @@ export function PlacesSection({
         tripStartDate={tripStartDate}
         tripEndDate={tripEndDate}
         onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
+        onPlaceDeleted={handlePlaceDeleted}
+        selectMode={selectMode}
+        selectedIds={selectedIds}
+        onToggleSelect={(id) => setSelectedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(id)) {
+            next.delete(id);
+          } else {
+            next.add(id);
+          }
+          return next;
+        })}
       />
     </div>
   );

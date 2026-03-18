@@ -6,7 +6,7 @@ import type { Place, PlaceReview, Category, PlaceVote, PlaceComment } from '@/li
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
-import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComment } from '@/features/places/actions';
+import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComment, deletePlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
 interface PlaceDetailDrawerProps {
@@ -26,6 +26,7 @@ interface PlaceDetailDrawerProps {
   tripStartDate?: string | null;
   tripEndDate?: string | null;
   onClose: () => void;
+  onDeleted?: () => void;
 }
 
 function StarFull({ rating }: { rating: number }) {
@@ -498,7 +499,25 @@ export function PlaceDetailDrawer({
   tripStartDate,
   tripEndDate,
   onClose,
+  onDeleted,
 }: PlaceDetailDrawerProps) {
+  const [deleting, setDeleting] = useState(false);
+  const loadingToastDrawer = useLoadingToast();
+
+  async function handleDelete() {
+    if (!confirm(`Remove "${place.name}" from this trip?`)) return;
+    setDeleting(true);
+    const resolve = loadingToastDrawer('Removing place…');
+    const result = await deletePlace(place.id);
+    setDeleting(false);
+    if (result.ok) {
+      resolve('Place removed', 'success');
+      onDeleted?.();
+      onClose();
+    } else {
+      resolve(result.error, 'error');
+    }
+  }
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -590,14 +609,28 @@ export function PlaceDetailDrawer({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors flex-shrink-0 hover:bg-stone-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-            style={{ color: 'var(--color-text-muted)' }}
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {canEdit && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="p-2 rounded-lg transition-colors hover:bg-red-50 min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
+                style={{ color: '#EF4444' }}
+                aria-label="Delete place"
+                title="Remove from trip"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg transition-colors hover:bg-stone-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              style={{ color: 'var(--color-text-muted)' }}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable body */}

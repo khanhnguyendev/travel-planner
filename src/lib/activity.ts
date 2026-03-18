@@ -6,12 +6,14 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ActivityAction =
   | 'trip.create'
+  | 'trip.date_update'
   | 'place.add'
   | 'place.delete'
   | 'comment.add'
   | 'vote.upvote'
   | 'vote.downvote'
   | 'expense.add'
+  | 'expense.delete'
   | 'category.add'
   | 'member.join';
 

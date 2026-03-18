@@ -128,6 +128,55 @@ export async function createTrip(
 }
 
 // -------------------------------------------------------
+// updateTripDates
+// -------------------------------------------------------
+
+export async function updateTripDates(
+  tripId: string,
+  startDate: string | null,
+  endDate: string | null
+): Promise<ActionResult<{ tripId: string }>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const admin = createAdminClient();
+  const { data: memberData } = await admin
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  const { error } = await admin
+    .from('trips')
+    .update({ start_date: startDate, end_date: endDate })
+    .eq('id', tripId);
+
+  if (error) {
+    console.error('updateTripDates error:', error);
+    return { ok: false, error: 'Failed to update trip dates' };
+  }
+
+  await logActivity({
+    tripId,
+    userId: user.id,
+    action: 'trip.date_update',
+    meta: { startDate, endDate },
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath('/dashboard');
+  return { ok: true, data: { tripId } };
+}
+
+// -------------------------------------------------------
 // updateTrip
 // -------------------------------------------------------
 

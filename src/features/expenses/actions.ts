@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireEditor } from '@/lib/membership';
+import { logActivity } from '@/lib/activity';
 import type { ActionResult } from '@/features/auth/actions';
 
 // -------------------------------------------------------
@@ -256,11 +257,11 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   // Fetch trip_id for membership check + revalidation
   const { data: expenseData } = await admin
     .from('expenses')
-    .select('id, trip_id')
+    .select('id, trip_id, title')
     .eq('id', id)
     .single();
 
-  const expense = expenseData as unknown as { id: string; trip_id: string } | null;
+  const expense = expenseData as unknown as { id: string; trip_id: string; title: string } | null;
   if (!expense) return { ok: false, error: 'Expense not found' };
 
   const editorRole = await requireEditor(expense.trip_id, user.id);
@@ -276,9 +277,16 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
     return { ok: false, error: 'Failed to delete expense' };
   }
 
-  if (expense) {
-    revalidatePath(`/trips/${expense.trip_id}/expenses`);
-  }
+  revalidatePath(`/trips/${expense.trip_id}/expenses`);
+  revalidatePath(`/trips/${expense.trip_id}`);
+  void logActivity({
+    tripId: expense.trip_id,
+    userId: user.id,
+    action: 'expense.delete',
+    entityType: 'expense',
+    entityId: id,
+    meta: { title: expense.title },
+  });
 
   return { ok: true, data: undefined };
 }

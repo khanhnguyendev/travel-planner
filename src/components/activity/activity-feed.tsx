@@ -1,4 +1,4 @@
-import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass } from 'lucide-react';
+import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass, CalendarDays } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import type { ActivityEntry } from '@/features/activity/queries';
 
@@ -52,11 +52,23 @@ const ACTION_CONFIG: Record<string, {
     bg: '#FFF7ED',
     label: (m) => `downvoted ${m?.placeName ? `"${m.placeName}"` : 'a place'}`,
   },
+  'trip.date_update': {
+    icon: CalendarDays,
+    color: '#0D9488',
+    bg: '#F0FDFA',
+    label: (m) => `updated trip dates${m?.startDate ? ` to ${m.startDate}${m.endDate ? ` – ${m.endDate}` : ''}` : ''}`,
+  },
   'expense.add': {
     icon: Receipt,
     color: '#8B5CF6',
     bg: '#F5F3FF',
     label: (m) => `added expense ${m?.title ? `"${m.title}"` : ''}`,
+  },
+  'expense.delete': {
+    icon: Receipt,
+    color: '#EF4444',
+    bg: '#FEF2F2',
+    label: (m) => `removed expense ${m?.title ? `"${m.title}"` : ''}`,
   },
   'category.add': {
     icon: Tag,
