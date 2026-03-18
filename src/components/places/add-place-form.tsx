@@ -154,7 +154,8 @@ useEffect(() => {
   const showNoResults = !isSuggestLoading && showDropdown && suggestions.length === 0 && query.trim().length >= 2 && !selected;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-5">
       {/* Search input */}
       <div>
         <label htmlFor="place-search" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text)' }}>
@@ -290,21 +291,6 @@ useEffect(() => {
             )}
           </div>
 
-          {/* New category dialog */}
-          {showCategoryDialog && (
-            <Dialog title="New category" onClose={() => setShowCategoryDialog(false)}>
-              <AddCategoryForm
-                tripId={tripId}
-                onCreated={(cat) => {
-                  setLocalCategories((prev) => [...prev, cat]);
-                  setCategoryId(cat.id);
-                  setShowCategoryDialog(false);
-                }}
-                onCancel={() => setShowCategoryDialog(false)}
-              />
-            </Dialog>
-          )}
-
           {/* Schedule (optional) */}
           <div>
             <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
@@ -363,6 +349,21 @@ useEffect(() => {
           </button>
         )}
       </div>
-    </form>
+      </form>
+
+      {showCategoryDialog && (
+        <Dialog title="New category" onClose={() => setShowCategoryDialog(false)}>
+          <AddCategoryForm
+            tripId={tripId}
+            onCreated={(cat) => {
+              setLocalCategories((prev) => [...prev, cat]);
+              setCategoryId(cat.id);
+              setShowCategoryDialog(false);
+            }}
+            onCancel={() => setShowCategoryDialog(false)}
+          />
+        </Dialog>
+      )}
+    </>
   );
 }
