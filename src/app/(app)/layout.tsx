@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, LayoutDashboard, LogOut } from 'lucide-react';
+import { Compass, LogOut, LayoutDashboard } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/features/auth/actions';
@@ -22,27 +22,27 @@ async function UserMenu({ userId }: { userId: string }) {
   return (
     <>
       {/* Desktop user menu */}
-      <div className="hidden md:flex items-center gap-3">
-        <Avatar user={{ display_name: displayName, avatar_url: profile?.avatar_url ?? null }} size="md" />
-        <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-          {displayName}
-        </span>
+      <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+          <Avatar user={{ display_name: displayName, avatar_url: profile?.avatar_url ?? null }} size="sm" />
+          <span className="text-sm font-medium max-w-[120px] truncate" style={{ color: 'var(--color-text)' }}>
+            {displayName}
+          </span>
+        </div>
         <form action={async () => { 'use server'; await signOut(); }}>
           <button
             type="submit"
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]"
-            style={{
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-muted)',
-            }}
+            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl border transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 min-h-[36px] cursor-pointer"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-subtle)' }}
+            title="Sign out"
           >
             <LogOut className="w-3.5 h-3.5" />
-            Sign out
+            <span className="hidden lg:inline">Sign out</span>
           </button>
         </form>
       </div>
 
-      {/* Mobile hamburger + nav — client component */}
+      {/* Mobile hamburger */}
       <MobileNav displayName={displayName} />
     </>
   );
@@ -54,38 +54,39 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <ToastProvider>
       <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
-        {/* Top nav */}
-        <header
-          className="sticky top-0 z-40 border-b"
-          style={{
-            backgroundColor: 'white',
-            borderColor: 'var(--color-border)',
-          }}
-        >
+
+        {/* Top nav — glassmorphism */}
+        <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'rgba(229,231,235,0.6)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            {/* Left: logo + desktop nav */}
+
+            {/* Logo */}
             <div className="flex items-center gap-6">
-              <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-                <MapPin className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-                <span className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
+              <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0 group">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+                  style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)' }}
+                >
+                  <Compass className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-bold text-sm tracking-tight" style={{ color: 'var(--color-text)' }}>
                   Travel Planner
                 </span>
               </Link>
 
-              {/* Desktop nav links */}
-              <nav className="hidden md:flex items-center gap-1">
+              {/* Desktop nav */}
+              <nav className="hidden md:flex items-center gap-0.5">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-stone-100 min-h-[36px]"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-white/70 min-h-[36px]"
                   style={{ color: 'var(--color-text-muted)' }}
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Dashboard</span>
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  My Trips
                 </Link>
               </nav>
             </div>
 
-            {/* Right: user menu (desktop) + hamburger (mobile) */}
+            {/* User menu */}
             <UserMenu userId={user.id} />
           </div>
         </header>
