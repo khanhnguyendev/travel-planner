@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 import { revokeInvite } from '@/features/members/actions';
 import type { PendingInvite } from '@/features/members/queries';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 import { CopyButton } from '@/components/ui/copy-button';
 
 // -------------------------------------------------------
@@ -14,7 +14,7 @@ import { CopyButton } from '@/components/ui/copy-button';
 // -------------------------------------------------------
 
 interface PendingInvitesListProps {
-  projectId: string;
+  tripId: string;
   invites: PendingInvite[];
   canManage: boolean;
 }
@@ -23,7 +23,7 @@ interface PendingInvitesListProps {
 // Role badge colors
 // -------------------------------------------------------
 
-const roleBadgeClass: Record<ProjectRole, string> = {
+const roleBadgeClass: Record<TripRole, string> = {
   owner: 'bg-teal-100 text-teal-800',
   admin: 'bg-blue-100 text-blue-800',
   editor: 'bg-stone-200 text-stone-700',
@@ -34,7 +34,7 @@ const roleBadgeClass: Record<ProjectRole, string> = {
 // PendingInvitesList
 // -------------------------------------------------------
 
-export function PendingInvitesList({ projectId, invites, canManage }: PendingInvitesListProps) {
+export function PendingInvitesList({ tripId, invites, canManage }: PendingInvitesListProps) {
   const [revoking, setRevoking] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
 
@@ -45,7 +45,7 @@ export function PendingInvitesList({ projectId, invites, canManage }: PendingInv
     setRevoking(inviteId);
     const resolve = loadingToast('Revoking invite…');
     try {
-      const result = await revokeInvite(projectId, inviteId);
+      const result = await revokeInvite(tripId, inviteId);
       if (result.ok) {
         resolve('Invite revoked', 'success');
       } else {
@@ -69,7 +69,7 @@ export function PendingInvitesList({ projectId, invites, canManage }: PendingInv
       {invites.map((invite) => {
         const isRevoking = revoking === invite.id;
         const expiresAt = new Date(invite.expires_at);
-        const role = invite.role as ProjectRole;
+        const role = invite.role as TripRole;
 
         return (
           <div

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectInvite, ProjectRole } from '@/lib/types';
+import type { TripInvite, TripRole } from '@/lib/types';
 
 // -------------------------------------------------------
 // Helpers
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Look up invite by token (use admin client since token column is sensitive)
   const { data: inviteData, error: inviteError } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .select('*')
     .eq('token', token)
     .maybeSingle();
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('server_error', 'Failed to look up invite', 500);
   }
 
-  const invite = inviteData as ProjectInvite | null;
+  const invite = inviteData as TripInvite | null;
 
   if (!invite) {
     return errorResponse('not_found', 'Invite not found', 404);
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (new Date(invite.expires_at) < new Date()) {
     // Mark as expired
     await admin
-      .from('project_invites')
+      .from('trip_invites')
       .update({ status: 'expired' })
       .eq('id', invite.id);
     return errorResponse('forbidden', 'This invite has expired', 403);
@@ -117,28 +117,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Check if user is already a member
   const { data: existingMember } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('id')
-    .eq('project_id', invite.project_id)
+    .eq('trip_id', invite.trip_id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (existingMember) {
     // Mark invite as accepted and return success
     await admin
-      .from('project_invites')
+      .from('trip_invites')
       .update({ status: 'accepted' })
       .eq('id', invite.id);
 
     return NextResponse.json({
       ok: true,
-      data: { projectId: invite.project_id, role: invite.role as ProjectRole },
+      data: { tripId: invite.trip_id, role: invite.role as TripRole },
     });
   }
 
-  // Create project_members row
-  const { error: memberError } = await admin.from('project_members').insert({
-    project_id: invite.project_id,
+  // Create trip_members row
+  const { error: memberError } = await admin.from('trip_members').insert({
+    trip_id: invite.trip_id,
     user_id: user.id,
     role: invite.role,
     invite_status: 'accepted',
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Mark invite as accepted
   const { error: updateError } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .update({ status: 'accepted' })
     .eq('id', invite.id);
 
@@ -163,6 +163,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({
     ok: true,
-    data: { projectId: invite.project_id, role: invite.role as ProjectRole },
+    data: { tripId: invite.trip_id, role: invite.role as TripRole },
   });
 }

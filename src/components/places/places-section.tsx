@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Tag, Receipt, X } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, ProjectRole, PlaceComment } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { AddPlaceForm } from '@/components/places/add-place-form';
@@ -15,8 +15,8 @@ import type { VoteSummaryEntry } from '@/features/votes/queries';
 import type { MemberWithProfile } from '@/features/members/queries';
 
 interface PlacesSectionProps {
-  projectId: string;
-  role: ProjectRole;
+  tripId: string;
+  role: TripRole;
   initialPlaces: Place[];
   initialCategories: Category[];
   initialVoteSummaries: VoteSummaryEntry[];
@@ -28,7 +28,7 @@ interface PlacesSectionProps {
   members: MemberWithProfile[];
 }
 
-const canEdit = (role: ProjectRole) =>
+const canEdit = (role: TripRole) =>
   ['owner', 'admin', 'editor'].includes(role);
 
 type SortOption = 'newest' | 'most_voted' | 'visit_date' | 'name';
@@ -41,7 +41,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export function PlacesSection({
-  projectId,
+  tripId,
   role,
   initialPlaces,
   initialCategories,
@@ -132,7 +132,7 @@ export function PlacesSection({
       {showAddCategory && editor && (
         <Dialog title="Add category" onClose={() => setShowAddCategory(false)} maxWidth="max-w-sm">
           <AddCategoryForm
-            projectId={projectId}
+            tripId={tripId}
             onCreated={(cat) => { handleCategoryCreated(cat); setShowAddCategory(false); }}
             onCancel={() => setShowAddCategory(false)}
           />
@@ -142,7 +142,7 @@ export function PlacesSection({
       {showAddPlace && editor && (
         <Dialog title="Add a place" onClose={() => setShowAddPlace(false)} maxWidth="max-w-lg">
           <AddPlaceForm
-            projectId={projectId}
+            tripId={tripId}
             categories={categories}
             onAdded={(place, reviews) => { handlePlaceAdded(place, reviews); setShowAddPlace(false); }}
             onCancel={() => setShowAddPlace(false)}
@@ -172,7 +172,7 @@ export function PlacesSection({
               </button>
 
               <AddExpenseDialog
-                projectId={projectId}
+                tripId={tripId}
                 members={members}
                 currentUserId={currentUserId}
                 trigger={
@@ -260,7 +260,7 @@ export function PlacesSection({
           <PlaceGrid
             places={sortedPlaces}
             categories={categories}
-            projectId={projectId}
+            tripId={tripId}
             selectedCategoryId={selectedCategoryId}
             selectedLocationTag={selectedLocationTag}
             onLocationTagClick={(tag) =>

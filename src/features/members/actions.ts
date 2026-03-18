@@ -4,10 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 
 // Role rank for privilege checks
-const ROLE_RANK: Record<ProjectRole, number> = {
+const ROLE_RANK: Record<TripRole, number> = {
   owner: 4,
   admin: 3,
   editor: 2,
@@ -19,9 +19,9 @@ const ROLE_RANK: Record<ProjectRole, number> = {
 // -------------------------------------------------------
 
 export async function sendInvite(
-  projectId: string,
+  tripId: string,
   email: string,
-  role: ProjectRole = 'editor'
+  role: TripRole = 'editor'
 ): Promise<ActionResult<{ inviteId: string; token: string }>> {
   const supabase = await createClient();
   const {
@@ -34,14 +34,14 @@ export async function sendInvite(
 
   // Verify caller is owner or admin
   const { data: callerData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const callerRole = (callerData as { role: string } | null)?.role as ProjectRole | undefined;
+  const callerRole = (callerData as { role: string } | null)?.role as TripRole | undefined;
   if (!callerRole || !['owner', 'admin'].includes(callerRole)) {
     return { ok: false, error: 'Only owner or admin can send invites' };
   }
@@ -56,11 +56,11 @@ export async function sendInvite(
 
   const admin = createAdminClient();
 
-  // Prevent duplicate pending invite for same email+project
+  // Prevent duplicate pending invite for same email+trip
   const { data: existing } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .select('id')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('email', email)
     .eq('status', 'pending')
     .maybeSingle();
@@ -78,9 +78,9 @@ export async function sendInvite(
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: invite, error: inviteError } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .insert({
-      project_id: projectId,
+      trip_id: tripId,
       email,
       invited_by_user_id: user.id,
       token,
@@ -96,7 +96,7 @@ export async function sendInvite(
     return { ok: false, error: 'Failed to create invite' };
   }
 
-  revalidatePath(`/projects/${projectId}/members`);
+  revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: { inviteId: (invite as { id: string }).id, token } };
 }
 
@@ -105,22 +105,22 @@ export async function sendInvite(
 // -------------------------------------------------------
 
 export async function generateInviteLink(
-  projectId: string,
-  role: ProjectRole = 'editor'
+  tripId: string,
+  role: TripRole = 'editor'
 ): Promise<ActionResult<{ inviteUrl: string }>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Not authenticated' };
 
   const { data: callerData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const callerRole = (callerData as { role: string } | null)?.role as ProjectRole | undefined;
+  const callerRole = (callerData as { role: string } | null)?.role as TripRole | undefined;
   if (!callerRole || !['owner', 'admin'].includes(callerRole)) {
     return { ok: false, error: 'Only owner or admin can create invite links' };
   }
@@ -130,8 +130,8 @@ export async function generateInviteLink(
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const admin = createAdminClient();
-  const { error } = await admin.from('project_invites').insert({
-    project_id: projectId,
+  const { error } = await admin.from('trip_invites').insert({
+    trip_id: tripId,
     email: `link-invite-${token.slice(0, 8)}@noemail.local`,
     invited_by_user_id: user.id,
     token,
@@ -148,7 +148,7 @@ export async function generateInviteLink(
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const inviteUrl = `${siteUrl}/invite/accept?token=${token}`;
 
-  revalidatePath(`/projects/${projectId}/members`);
+  revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: { inviteUrl } };
 }
 
@@ -158,7 +158,7 @@ export async function generateInviteLink(
 
 export async function acceptInvite(
   token: string
-): Promise<ActionResult<{ projectId: string; role: ProjectRole }>> {
+): Promise<ActionResult<{ tripId: string; role: TripRole }>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -171,7 +171,7 @@ export async function acceptInvite(
   const admin = createAdminClient();
 
   const { data: inviteData, error: lookupError } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .select('*')
     .eq('token', token)
     .maybeSingle();
@@ -182,7 +182,7 @@ export async function acceptInvite(
 
   const invite = inviteData as {
     id: string;
-    project_id: string;
+    trip_id: string;
     role: string;
     status: string;
     expires_at: string;
@@ -195,26 +195,26 @@ export async function acceptInvite(
     return { ok: false, error: 'This invite has been revoked' };
   }
   if (invite.status === 'accepted') {
-    return { ok: true, data: { projectId: invite.project_id, role: invite.role as ProjectRole } };
+    return { ok: true, data: { tripId: invite.trip_id, role: invite.role as TripRole } };
   }
   if (new Date(invite.expires_at) < new Date()) {
-    await admin.from('project_invites').update({ status: 'expired' }).eq('id', invite.id);
+    await admin.from('trip_invites').update({ status: 'expired' }).eq('id', invite.id);
     return { ok: false, error: 'This invite has expired' };
   }
 
   // Check if already a member
   const { data: existing } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('id')
-    .eq('project_id', invite.project_id)
+    .eq('trip_id', invite.trip_id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existing) {
-    const { error: memberError } = await admin.from('project_members').insert({
-      project_id: invite.project_id,
+    const { error: memberError } = await admin.from('trip_members').insert({
+      trip_id: invite.trip_id,
       user_id: user.id,
-      role: invite.role as ProjectRole,
+      role: invite.role as TripRole,
       invite_status: 'accepted',
       joined_at: new Date().toISOString(),
     });
@@ -225,10 +225,10 @@ export async function acceptInvite(
     }
   }
 
-  await admin.from('project_invites').update({ status: 'accepted' }).eq('id', invite.id);
+  await admin.from('trip_invites').update({ status: 'accepted' }).eq('id', invite.id);
 
-  revalidatePath(`/projects/${invite.project_id}/members`);
-  return { ok: true, data: { projectId: invite.project_id, role: invite.role as ProjectRole } };
+  revalidatePath(`/trips/${invite.trip_id}/members`);
+  return { ok: true, data: { tripId: invite.trip_id, role: invite.role as TripRole } };
 }
 
 // -------------------------------------------------------
@@ -236,7 +236,7 @@ export async function acceptInvite(
 // -------------------------------------------------------
 
 export async function revokeInvite(
-  projectId: string,
+  tripId: string,
   inviteId: string
 ): Promise<ActionResult> {
   const supabase = await createClient();
@@ -250,9 +250,9 @@ export async function revokeInvite(
 
   // Verify caller is owner or admin
   const { data: callerData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
@@ -264,17 +264,17 @@ export async function revokeInvite(
 
   const admin = createAdminClient();
   const { error } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .update({ status: 'revoked' })
     .eq('id', inviteId)
-    .eq('project_id', projectId);
+    .eq('trip_id', tripId);
 
   if (error) {
     console.error('revokeInvite error:', error);
     return { ok: false, error: 'Failed to revoke invite' };
   }
 
-  revalidatePath(`/projects/${projectId}/members`);
+  revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: undefined };
 }
 
@@ -283,7 +283,7 @@ export async function revokeInvite(
 // -------------------------------------------------------
 
 export async function removeMember(
-  projectId: string,
+  tripId: string,
   userId: string
 ): Promise<ActionResult> {
   const supabase = await createClient();
@@ -297,9 +297,9 @@ export async function removeMember(
 
   // Verify caller is owner or admin
   const { data: callerData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
@@ -311,16 +311,16 @@ export async function removeMember(
 
   // Prevent removing the owner
   const { data: targetData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', userId)
     .eq('invite_status', 'accepted')
     .single();
 
   const targetRole = (targetData as { role: string } | null)?.role;
   if (targetRole === 'owner') {
-    return { ok: false, error: 'Cannot remove the project owner' };
+    return { ok: false, error: 'Cannot remove the trip owner' };
   }
 
   // Admin cannot remove another admin
@@ -330,9 +330,9 @@ export async function removeMember(
 
   const admin = createAdminClient();
   const { error } = await admin
-    .from('project_members')
+    .from('trip_members')
     .delete()
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', userId);
 
   if (error) {
@@ -340,7 +340,7 @@ export async function removeMember(
     return { ok: false, error: 'Failed to remove member' };
   }
 
-  revalidatePath(`/projects/${projectId}/members`);
+  revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: undefined };
 }
 
@@ -349,9 +349,9 @@ export async function removeMember(
 // -------------------------------------------------------
 
 export async function changeMemberRole(
-  projectId: string,
+  tripId: string,
   userId: string,
-  role: ProjectRole
+  role: TripRole
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -364,9 +364,9 @@ export async function changeMemberRole(
 
   // Verify caller is owner or admin
   const { data: callerData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
@@ -378,9 +378,9 @@ export async function changeMemberRole(
 
   // Prevent changing the owner's role
   const { data: targetData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', userId)
     .eq('invite_status', 'accepted')
     .single();
@@ -397,9 +397,9 @@ export async function changeMemberRole(
 
   const admin = createAdminClient();
   const { error } = await admin
-    .from('project_members')
+    .from('trip_members')
     .update({ role })
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', userId);
 
   if (error) {
@@ -407,6 +407,6 @@ export async function changeMemberRole(
     return { ok: false, error: 'Failed to change role' };
   }
 
-  revalidatePath(`/projects/${projectId}/members`);
+  revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: undefined };
 }

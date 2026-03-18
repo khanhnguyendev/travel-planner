@@ -12,7 +12,7 @@ export default function DashboardLoading() {
         <Skeleton className="h-10 w-28 rounded-xl" />
       </div>
 
-      {/* 3-column project card grid skeleton */}
+      {/* 3-column trip card grid skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <div

@@ -4,10 +4,10 @@ import type { Place, PlaceReview, PlaceComment } from '@/lib/types';
 export type PlaceWithReviews = Place & { reviews: PlaceReview[] };
 
 /**
- * Returns all places for a project, optionally filtered by category.
+ * Returns all places for a trip, optionally filtered by category.
  */
 export async function getPlaces(
-  projectId: string,
+  tripId: string,
   categoryId?: string
 ): Promise<Place[]> {
   const supabase = await createClient();
@@ -15,7 +15,7 @@ export async function getPlaces(
   let query = supabase
     .from('places')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .order('created_at', { ascending: false });
 
   if (categoryId) {
@@ -34,7 +34,7 @@ export async function getPlaces(
 
 /**
  * Returns a single place by ID with its reviews.
- * RLS ensures the caller is a project member.
+ * RLS ensures the caller is a trip member.
  */
 export async function getPlace(id: string): Promise<PlaceWithReviews | null> {
   const supabase = await createClient();
@@ -67,13 +67,13 @@ export async function getPlace(id: string): Promise<PlaceWithReviews | null> {
 }
 
 export async function getCommentsByProjectId(
-  projectId: string
+  tripId: string
 ): Promise<PlaceComment[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('place_comments')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .order('created_at', { ascending: true });
 
   if (error) {

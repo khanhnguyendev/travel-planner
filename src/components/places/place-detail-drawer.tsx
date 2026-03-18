@@ -16,7 +16,7 @@ interface PlaceDetailDrawerProps {
   commentAuthors: Record<string, string>; // userId -> displayName
   currentUserId: string;
   category: Category | null;
-  projectId: string;
+  tripId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
   allPlaces?: Place[];
@@ -320,13 +320,13 @@ function NoteEditor({
 
 function CommentsSection({
   placeId,
-  projectId,
+  tripId,
   initialComments,
   commentAuthors,
   currentUserId,
 }: {
   placeId: string;
-  projectId: string;
+  tripId: string;
   initialComments: PlaceComment[];
   commentAuthors: Record<string, string>;
   currentUserId: string;
@@ -341,7 +341,7 @@ function CommentsSection({
     if (!body.trim()) return;
     setPending(true);
     const resolve = loadingToast('Posting comment…');
-    const result = await addPlaceComment(placeId, projectId, body);
+    const result = await addPlaceComment(placeId, tripId, body);
     setPending(false);
     if (result.ok && result.data) {
       resolve('Comment posted!', 'success');
@@ -354,7 +354,7 @@ function CommentsSection({
 
   async function handleDelete(commentId: string) {
     const resolve = loadingToast('Deleting…');
-    const result = await deletePlaceComment(commentId, projectId);
+    const result = await deletePlaceComment(commentId, tripId);
     if (result.ok) {
       resolve('Comment deleted', 'success');
       setComments((prev) => prev.filter((c) => c.id !== commentId));
@@ -442,7 +442,7 @@ export function PlaceDetailDrawer({
   commentAuthors,
   currentUserId,
   category,
-  projectId,
+  tripId,
   voteSummary,
   userVote,
   allPlaces = [],
@@ -577,7 +577,7 @@ export function PlaceDetailDrawer({
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Your vote</h3>
             <VoteButtons
-              projectId={projectId}
+              tripId={tripId}
               placeId={place.id}
               upvotes={voteSummary?.upvotes ?? 0}
               downvotes={voteSummary?.downvotes ?? 0}
@@ -593,7 +593,7 @@ export function PlaceDetailDrawer({
             </h3>
             <CommentsSection
               placeId={place.id}
-              projectId={projectId}
+              tripId={tripId}
               initialComments={comments}
               commentAuthors={commentAuthors}
               currentUserId={currentUserId}

@@ -1,5 +1,5 @@
 import { requireSession } from '@/features/auth/session';
-import ProjectCreateForm from './project-create-form';
+import ProjectCreateForm from './trip-create-form';
 import { PageHeader } from '@/components/ui/page-header';
 import type { Metadata } from 'next';
 

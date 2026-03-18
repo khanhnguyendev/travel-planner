@@ -18,13 +18,13 @@ const PRESET_COLORS = [
 ];
 
 interface AddCategoryFormProps {
-  projectId: string;
+  tripId: string;
   onCreated?: (category: Category) => void;
   onCancel?: () => void;
 }
 
 export function AddCategoryForm({
-  projectId,
+  tripId,
   onCreated,
   onCancel,
 }: AddCategoryFormProps) {
@@ -49,7 +49,7 @@ export function AddCategoryForm({
 
     startTransition(async () => {
       const result = await createCategory(
-        projectId,
+        tripId,
         name.trim(),
         color,
         icon.trim() || null,

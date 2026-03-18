@@ -5,23 +5,23 @@ import { UserPlus, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 import { sendInvite } from '@/features/members/actions';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 
 // -------------------------------------------------------
 // Props
 // -------------------------------------------------------
 
 interface InviteFormProps {
-  projectId: string;
+  tripId: string;
 }
 
 // -------------------------------------------------------
 // InviteForm
 // -------------------------------------------------------
 
-export function InviteForm({ projectId }: InviteFormProps) {
+export function InviteForm({ tripId }: InviteFormProps) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<ProjectRole>('editor');
+  const [role, setRole] = useState<TripRole>('editor');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
@@ -39,7 +39,7 @@ export function InviteForm({ projectId }: InviteFormProps) {
     setIsSubmitting(true);
     const resolve = loadingToast('Sending invite…');
     try {
-      const result = await sendInvite(projectId, trimmed, role);
+      const result = await sendInvite(tripId, trimmed, role);
       if (result.ok) {
         resolve('Invite sent!', 'success');
         setEmail('');
@@ -114,7 +114,7 @@ export function InviteForm({ projectId }: InviteFormProps) {
           <select
             id="invite-role"
             value={role}
-            onChange={(e) => setRole(e.target.value as ProjectRole)}
+            onChange={(e) => setRole(e.target.value as TripRole)}
             disabled={isSubmitting}
             className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none disabled:opacity-60 disabled:cursor-not-allowed"
             style={{

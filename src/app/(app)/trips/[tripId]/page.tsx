@@ -13,7 +13,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getProject, getUserRole } from '@/features/projects/queries';
+import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByProjectId } from '@/features/places/queries';
@@ -28,15 +28,15 @@ import { MapTabClient } from '@/components/places/map-tab-client';
 import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
 import { Avatar } from '@/components/ui/avatar';
-import { CoverImageUpload } from '@/components/projects/cover-image-upload';
-import { BudgetEditor } from '@/components/projects/budget-editor';
-import { MemberBalances } from '@/components/projects/member-balances';
+import { CoverImageUpload } from '@/components/trips/cover-image-upload';
+import { BudgetEditor } from '@/components/trips/budget-editor';
+import { MemberBalances } from '@/components/trips/member-balances';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
 import { ActivityFeed } from '@/components/activity/activity-feed';
-import { getProjectActivity } from '@/features/activity/queries';
-import type { ProjectRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
+import { getTripActivity } from '@/features/activity/queries';
+import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import type { Metadata } from 'next';
 
 // -------------------------------------------------------
@@ -46,12 +46,12 @@ import type { Metadata } from 'next';
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ tripId: string }>;
 }): Promise<Metadata> {
-  const { projectId } = await params;
-  const project = await getProject(projectId);
+  const { tripId } = await params;
+  const trip = await getTrip(tripId);
   return {
-    title: project?.title ?? 'Trip',
+    title: trip?.title ?? 'Trip',
   };
 }
 
@@ -59,8 +59,8 @@ export async function generateMetadata({
 // Sub-components
 // -------------------------------------------------------
 
-function RoleBadge({ role }: { role: ProjectRole }) {
-  const styles: Record<ProjectRole, { bg: string; text: string }> = {
+function RoleBadge({ role }: { role: TripRole }) {
+  const styles: Record<TripRole, { bg: string; text: string }> = {
     owner: { bg: '#FEF3C7', text: '#92400E' },
     admin: { bg: '#EDE9FE', text: '#5B21B6' },
     editor: { bg: 'var(--color-primary-light)', text: 'var(--color-primary)' },
@@ -94,10 +94,10 @@ type TabValue = 'places' | 'timeline' | 'map' | 'expenses' | 'activity';
 
 function TabBar({
   activeTab,
-  projectId,
+  tripId,
 }: {
   activeTab: TabValue;
-  projectId: string;
+  tripId: string;
 }) {
   const tabs: { label: string; value: TabValue }[] = [
     { label: 'Places', value: 'places' },
@@ -117,7 +117,7 @@ function TabBar({
         return (
           <Link
             key={tab.value}
-            href={`/projects/${projectId}?tab=${tab.value}`}
+            href={`/trips/${tripId}?tab=${tab.value}`}
             className="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px] flex items-center justify-center"
             style={{
               backgroundColor: isActive ? 'white' : 'transparent',
@@ -141,10 +141,10 @@ export default async function ProjectDetailPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ tripId: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const { projectId } = await params;
+  const { tripId } = await params;
   const { tab: tabParam } = await searchParams;
   const user = await requireSession();
 
@@ -154,33 +154,33 @@ export default async function ProjectDetailPage({
       ? (tabParam as TabValue)
       : 'places';
 
-  const [project, role, members, categories, expenses] = await Promise.all([
-    getProject(projectId),
-    getUserRole(projectId),
-    getMembers(projectId),
-    getCategories(projectId),
-    getExpenses(projectId),
+  const [trip, role, members, categories, expenses] = await Promise.all([
+    getTrip(tripId),
+    getUserRole(tripId),
+    getMembers(tripId),
+    getCategories(tripId),
+    getExpenses(tripId),
   ]);
 
-  if (!project) {
+  if (!trip) {
     notFound();
   }
 
   // Non-members can view public projects in viewer mode
-  const effectiveRole: ProjectRole | null =
-    role ?? (project.visibility === 'public' ? 'viewer' : null);
+  const effectiveRole: TripRole | null =
+    role ?? (trip.visibility === 'public' ? 'viewer' : null);
   if (!effectiveRole) {
     notFound();
   }
   // From here effectiveRole is guaranteed non-null
-  const resolvedRole = effectiveRole as ProjectRole;
+  const resolvedRole = effectiveRole as TripRole;
 
   // Fetch places (needed for Places + Timeline + Map tabs)
-  const places = await getPlaces(projectId);
+  const places = await getPlaces(tripId);
 
   const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries] =
     await Promise.all([
-      getVoteSummary(projectId),
+      getVoteSummary(tripId),
       Promise.all(places.map((p) => getUserVote(p.id, user.id))),
       (async () => {
         if (places.length === 0) return [];
@@ -194,9 +194,9 @@ export default async function ProjectDetailPage({
           );
         return data ?? [];
       })(),
-      getCommentsByProjectId(projectId),
-      getExpensesWithSplits(projectId),
-      getProjectActivity(projectId),
+      getCommentsByProjectId(tripId),
+      getExpensesWithSplits(tripId),
+      getTripActivity(tripId),
     ]);
 
   const userVotes = userVotesRaw.filter(Boolean) as PlaceVote[];
@@ -222,7 +222,7 @@ export default async function ProjectDetailPage({
     commentAuthors[m.user_id] = m.profile.display_name ?? 'Member';
   }
 
-  const isArchived = project.status === 'archived';
+  const isArchived = trip.status === 'archived';
   const canEdit = ['owner', 'admin', 'editor'].includes(resolvedRole);
   const canManage = ['owner', 'admin'].includes(resolvedRole);
 
@@ -238,25 +238,25 @@ export default async function ProjectDetailPage({
       {/* Cover image strip */}
       {canManage ? (
         <div className="mb-6 rounded-2xl overflow-hidden">
-          <CoverImageUpload projectId={projectId} currentCoverUrl={project.cover_image_url} />
+          <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
         </div>
-      ) : project.cover_image_url ? (
+      ) : trip.cover_image_url ? (
         <div className="mb-6 rounded-2xl overflow-hidden h-32 sm:h-48 md:h-52">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={project.cover_image_url}
-            alt={`${project.title} cover`}
+            src={trip.cover_image_url}
+            alt={`${trip.title} cover`}
             className="w-full h-full object-cover"
           />
         </div>
       ) : null}
 
       <PageHeader
-        title={project.title}
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: project.title }]}
+        title={trip.title}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: trip.title }]}
       />
 
-      {/* Unified project header card */}
+      {/* Unified trip header card */}
       <div className="card p-6 mb-6">
         {/* Title row */}
         <div className="flex items-start justify-between gap-4 mb-3">
@@ -274,12 +274,12 @@ export default async function ProjectDetailPage({
                 </span>
               )}
             </div>
-            {project.description && (
+            {trip.description && (
               <p
                 className="text-sm leading-relaxed"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                {project.description}
+                {trip.description}
               </p>
             )}
           </div>
@@ -288,13 +288,13 @@ export default async function ProjectDetailPage({
 
         {/* Meta pills */}
         <div className="flex items-center gap-4 flex-wrap mb-4">
-          {project.start_date && project.end_date && (
+          {trip.start_date && trip.end_date && (
             <span
               className="inline-flex items-center gap-1.5 text-sm"
               style={{ color: 'var(--color-text-muted)' }}
             >
               <Calendar className="w-4 h-4" />
-              {formatDateRange(project.start_date, project.end_date)}
+              {formatDateRange(trip.start_date, trip.end_date)}
             </span>
           )}
           <span
@@ -304,7 +304,7 @@ export default async function ProjectDetailPage({
             <Users className="w-4 h-4" />
             {members.length} {members.length === 1 ? 'member' : 'members'}
           </span>
-          <VisibilityBadge visibility={project.visibility} />
+          <VisibilityBadge visibility={trip.visibility} />
         </div>
 
         {/* Budget */}
@@ -313,13 +313,13 @@ export default async function ProjectDetailPage({
           for (const exp of expenses) {
             totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
           }
-          const totalSpentInBudgetCurrency = totals[project.budget_currency] ?? 0;
+          const totalSpentInBudgetCurrency = totals[trip.budget_currency] ?? 0;
           return (
             <BudgetEditor
-              projectId={projectId}
-              budget={project.budget}
-              budgetCurrency={project.budget_currency}
-              budgetPayerUserId={project.budget_payer_user_id}
+              tripId={tripId}
+              budget={trip.budget}
+              budgetCurrency={trip.budget_currency}
+              budgetPayerUserId={trip.budget_payer_user_id}
               canManage={canManage}
               totalSpent={totalSpentInBudgetCurrency}
               members={members}
@@ -340,10 +340,10 @@ export default async function ProjectDetailPage({
           </h2>
           <div className="flex items-center gap-2">
             {canManage && (
-              <InviteLinkButton projectId={projectId} />
+              <InviteLinkButton tripId={tripId} />
             )}
             <Link
-              href={`/projects/${projectId}/members`}
+              href={`/trips/${tripId}/members`}
               className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
               style={{ color: 'var(--color-text-subtle)' }}
             >
@@ -383,9 +383,9 @@ export default async function ProjectDetailPage({
           expenses={expensesWithSplits}
           members={members}
           currentUserId={user.id}
-          budgetAmount={project.budget}
-          budgetCurrency={project.budget_currency}
-          budgetPayerUserId={project.budget_payer_user_id}
+          budgetAmount={trip.budget}
+          budgetCurrency={trip.budget_currency}
+          budgetPayerUserId={trip.budget_payer_user_id}
         />
       </div>
 
@@ -393,7 +393,7 @@ export default async function ProjectDetailPage({
       <AccommodationSection
         places={places}
         categories={categories}
-        projectId={projectId}
+        tripId={tripId}
         currentUserId={user.id}
         canEdit={canEdit}
         voteSummaries={voteSummaries}
@@ -404,13 +404,13 @@ export default async function ProjectDetailPage({
       />
 
       {/* Tab bar */}
-      <TabBar activeTab={activeTab} projectId={projectId} />
+      <TabBar activeTab={activeTab} tripId={tripId} />
 
       {/* Tab: Places */}
       {activeTab === 'places' && (
         <div className="mb-6">
           <PlacesSection
-            projectId={projectId}
+            tripId={tripId}
             role={resolvedRole}
             initialPlaces={places}
             initialCategories={categories}
@@ -431,7 +431,7 @@ export default async function ProjectDetailPage({
           <TripTimeline
             places={places}
             categories={categories}
-            projectId={projectId}
+            tripId={tripId}
             currentUserId={user.id}
             canEdit={canEdit}
             voteSummaries={voteSummaries}
@@ -447,7 +447,7 @@ export default async function ProjectDetailPage({
       {activeTab === 'map' && (
         <div className="mb-6">
           <MapTabClient
-            projectId={projectId}
+            tripId={tripId}
             places={places}
             categories={categories}
             voteSummaries={voteSummaries}
@@ -506,13 +506,13 @@ export default async function ProjectDetailPage({
                   <div className="flex items-center gap-2 flex-wrap">
                     {canEdit && (
                       <AddExpenseDialog
-                        projectId={projectId}
+                        tripId={tripId}
                         members={members}
                         currentUserId={user.id}
                       />
                     )}
                     <Link
-                      href={`/projects/${projectId}/expenses`}
+                      href={`/trips/${tripId}/expenses`}
                       className="btn-secondary text-sm min-h-[44px]"
                     >
                       View all
@@ -540,7 +540,7 @@ export default async function ProjectDetailPage({
                     {expenses.slice(0, 3).map((exp) => (
                       <Link
                         key={exp.id}
-                        href={`/projects/${projectId}/expenses/${exp.id}`}
+                        href={`/trips/${tripId}/expenses/${exp.id}`}
                         className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--color-bg-subtle)] min-h-[44px]"
                       >
                         <span className="text-sm truncate text-stone-800">

@@ -3,26 +3,26 @@
  * Always uses the admin client so the check works regardless of RLS state.
  */
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 
-const EDITOR_ROLES: ProjectRole[] = ['owner', 'admin', 'editor'];
+const EDITOR_ROLES: TripRole[] = ['owner', 'admin', 'editor'];
 
 /**
- * Returns the user's accepted role in a project, or null if not a member.
+ * Returns the user's accepted role in a trip, or null if not a member.
  */
 export async function getProjectRole(
-  projectId: string,
+  tripId: string,
   userId: string
-): Promise<ProjectRole | null> {
+): Promise<TripRole | null> {
   const admin = createAdminClient();
   const { data } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', userId)
     .eq('invite_status', 'accepted')
     .single();
-  return (data as { role: ProjectRole } | null)?.role ?? null;
+  return (data as { role: TripRole } | null)?.role ?? null;
 }
 
 /**
@@ -30,10 +30,10 @@ export async function getProjectRole(
  * Returns null if not a member.
  */
 export async function requireMember(
-  projectId: string,
+  tripId: string,
   userId: string
-): Promise<ProjectRole | null> {
-  return getProjectRole(projectId, userId);
+): Promise<TripRole | null> {
+  return getProjectRole(tripId, userId);
 }
 
 /**
@@ -41,10 +41,10 @@ export async function requireMember(
  * Returns the role if allowed, null otherwise.
  */
 export async function requireEditor(
-  projectId: string,
+  tripId: string,
   userId: string
-): Promise<ProjectRole | null> {
-  const role = await getProjectRole(projectId, userId);
+): Promise<TripRole | null> {
+  const role = await getProjectRole(tripId, userId);
   if (!role || !EDITOR_ROLES.includes(role)) return null;
   return role;
 }

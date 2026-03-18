@@ -6,15 +6,15 @@ import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 import { removeMember, changeMemberRole } from '@/features/members/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 import { Avatar } from '@/components/ui/avatar';
 
 // -------------------------------------------------------
 // Role badge
 // -------------------------------------------------------
 
-function RoleBadge({ role }: { role: ProjectRole }) {
-  const styles: Record<ProjectRole, string> = {
+function RoleBadge({ role }: { role: TripRole }) {
+  const styles: Record<TripRole, string> = {
     owner: 'bg-teal-100 text-teal-800',
     admin: 'bg-blue-100 text-blue-800',
     editor: 'bg-stone-200 text-stone-700',
@@ -38,20 +38,20 @@ function RoleBadge({ role }: { role: ProjectRole }) {
 // -------------------------------------------------------
 
 interface MemberListProps {
-  projectId: string;
+  tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
-  currentUserRole: ProjectRole;
+  currentUserRole: TripRole;
 }
 
-const ROLE_OPTIONS: ProjectRole[] = ['admin', 'editor', 'viewer'];
+const ROLE_OPTIONS: TripRole[] = ['admin', 'editor', 'viewer'];
 
 // -------------------------------------------------------
 // MemberList
 // -------------------------------------------------------
 
 export function MemberList({
-  projectId,
+  tripId,
   members,
   currentUserId,
   currentUserRole,
@@ -61,11 +61,11 @@ export function MemberList({
 
   const canManage = ['owner', 'admin'].includes(currentUserRole);
 
-  async function handleRoleChange(userId: string, newRole: ProjectRole) {
+  async function handleRoleChange(userId: string, newRole: TripRole) {
     setLoadingUserId(userId);
     const resolve = loadingToast('Updating role…');
     try {
-      const result = await changeMemberRole(projectId, userId, newRole);
+      const result = await changeMemberRole(tripId, userId, newRole);
       if (result.ok) {
         resolve('Role updated!', 'success');
       } else {
@@ -77,13 +77,13 @@ export function MemberList({
   }
 
   async function handleRemove(userId: string, name: string) {
-    const confirmed = window.confirm(`Remove ${name} from this project?`);
+    const confirmed = window.confirm(`Remove ${name} from this trip?`);
     if (!confirmed) return;
 
     setLoadingUserId(userId);
     const resolve = loadingToast('Removing member…');
     try {
-      const result = await removeMember(projectId, userId);
+      const result = await removeMember(tripId, userId);
       if (result.ok) {
         resolve('Member removed', 'success');
       } else {
@@ -147,7 +147,7 @@ export function MemberList({
             {canChangeRole ? (
               <select
                 value={m.role}
-                onChange={(e) => handleRoleChange(m.user_id, e.target.value as ProjectRole)}
+                onChange={(e) => handleRoleChange(m.user_id, e.target.value as TripRole)}
                 disabled={isLoading}
                 className="rounded-lg border px-2 py-1 text-xs outline-none"
                 style={{

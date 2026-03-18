@@ -1,18 +1,18 @@
 import Link from 'next/link';
 import { Plus, Compass, Calendar, Users, Globe, Lock } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getProjects, type ProjectWithRole } from '@/features/projects/queries';
+import { getTrips, type TripWithRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
 import { PageHeader } from '@/components/ui/page-header';
-import type { Project } from '@/lib/types'; // used by StatusBadge / VisibilityBadge props
+import type { Trip } from '@/lib/types'; // used by StatusBadge / VisibilityBadge props
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
 };
 
-function VisibilityBadge({ visibility }: { visibility: Project['visibility'] }) {
+function VisibilityBadge({ visibility }: { visibility: Trip['visibility'] }) {
   const isPublic = visibility === 'public';
   return (
     <span
@@ -28,7 +28,7 @@ function VisibilityBadge({ visibility }: { visibility: Project['visibility'] }) 
   );
 }
 
-function StatusBadge({ status }: { status: Project['status'] }) {
+function StatusBadge({ status }: { status: Trip['status'] }) {
   const isArchived = status === 'archived';
   return (
     <span
@@ -62,13 +62,13 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-async function ProjectCard({ project }: { project: ProjectWithRole }) {
-  const members = await getMembers(project.id);
-  const hasCover = !!project.cover_image_url;
+async function ProjectCard({ trip }: { trip: TripWithRole }) {
+  const members = await getMembers(trip.id);
+  const hasCover = !!trip.cover_image_url;
 
   return (
     <Link
-      href={`/projects/${project.id}`}
+      href={`/trips/${trip.id}`}
       className="card card-hover block group transition-all hover:scale-[1.02] hover:shadow-md overflow-hidden"
     >
       {/* Cover image or plain header */}
@@ -76,25 +76,25 @@ async function ProjectCard({ project }: { project: ProjectWithRole }) {
         <div className="relative h-36">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={project.cover_image_url!}
-            alt={`${project.title} cover`}
+            src={trip.cover_image_url!}
+            alt={`${trip.title} cover`}
             className="w-full h-full object-cover"
           />
           {/* Gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
           {/* Badges on top of cover */}
           <div className="absolute top-3 right-3 flex items-center gap-1.5">
-            <VisibilityBadge visibility={project.visibility} />
-            <StatusBadge status={project.status} />
+            <VisibilityBadge visibility={trip.visibility} />
+            <StatusBadge status={trip.status} />
           </div>
           {/* Role badge bottom-left */}
           <div className="absolute bottom-3 left-3">
-            <RoleBadge role={project.myRole} />
+            <RoleBadge role={trip.myRole} />
           </div>
           {/* Title on cover */}
           <div className="absolute bottom-0 left-0 right-0 p-4 pt-7">
             <h3 className="font-semibold text-lg truncate text-white">
-              {project.title}
+              {trip.title}
             </h3>
           </div>
         </div>
@@ -105,32 +105,32 @@ async function ProjectCard({ project }: { project: ProjectWithRole }) {
           <div className="flex items-start justify-between mb-3 gap-3">
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-lg truncate mb-1 text-stone-800">
-                {project.title}
+                {trip.title}
               </h3>
-              {project.description && (
+              {trip.description && (
                 <p className="text-sm line-clamp-2 text-stone-600">
-                  {project.description}
+                  {trip.description}
                 </p>
               )}
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <VisibilityBadge visibility={project.visibility} />
-              <StatusBadge status={project.status} />
+              <VisibilityBadge visibility={trip.visibility} />
+              <StatusBadge status={trip.status} />
             </div>
           </div>
         )}
 
-        {hasCover && project.description && (
+        {hasCover && trip.description && (
           <p className="text-sm line-clamp-2 text-stone-600 mb-3">
-            {project.description}
+            {trip.description}
           </p>
         )}
 
         <div className="flex items-center gap-4 text-xs text-stone-400">
-          {project.start_date && project.end_date && (
+          {trip.start_date && trip.end_date && (
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
-              {formatDateRange(project.start_date, project.end_date)}
+              {formatDateRange(trip.start_date, trip.end_date)}
             </span>
           )}
           <span className="flex items-center gap-1">
@@ -138,7 +138,7 @@ async function ProjectCard({ project }: { project: ProjectWithRole }) {
             {members.length} {members.length === 1 ? 'member' : 'members'}
           </span>
           {!hasCover && (
-            <RoleBadge role={project.myRole} />
+            <RoleBadge role={trip.myRole} />
           )}
         </div>
       </div>
@@ -148,11 +148,11 @@ async function ProjectCard({ project }: { project: ProjectWithRole }) {
 
 export default async function DashboardPage() {
   await requireSession();
-  const projects = await getProjects();
+  const projects = await getTrips();
 
   const newTripButton = (
     <Link
-      href="/projects/new"
+      href="/trips/new"
       className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
     >
       <Plus className="w-4 h-4" />
@@ -187,7 +187,7 @@ export default async function DashboardPage() {
             Collect places, vote on destinations, and track shared expenses — all in one collaborative workspace.
           </p>
           <Link
-            href="/projects/new"
+            href="/trips/new"
             className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
@@ -196,8 +196,8 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+          {projects.map((trip) => (
+            <ProjectCard key={trip.id} trip={trip} />
           ))}
         </div>
       )}

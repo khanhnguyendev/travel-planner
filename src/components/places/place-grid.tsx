@@ -11,7 +11,7 @@ import type { VoteSummaryEntry } from '@/features/votes/queries';
 interface PlaceGridProps {
   places: Place[];
   categories: Category[];
-  projectId: string;
+  tripId: string;
   selectedCategoryId: string | null;
   selectedLocationTag: string | null;
   onLocationTagClick: (tag: string) => void;
@@ -29,7 +29,7 @@ interface PlaceGridProps {
 export function PlaceGrid({
   places,
   categories,
-  projectId,
+  tripId,
   selectedCategoryId,
   selectedLocationTag,
   onLocationTagClick,
@@ -143,7 +143,7 @@ export function PlaceGrid({
                     key={place.id}
                     place={place}
                     category={cat}
-                    projectId={projectId}
+                    tripId={tripId}
                     voteSummary={voteSummaryMap[place.id] ?? null}
                     userVote={userVoteMap[place.id] ?? null}
                     comments={commentsByPlaceId[place.id] ?? []}
@@ -167,7 +167,7 @@ export function PlaceGrid({
           commentAuthors={commentAuthors}
           currentUserId={currentUserId}
           category={categoryMap[openPlace.category_id] ?? null}
-          projectId={projectId}
+          tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
           allPlaces={places}

@@ -6,7 +6,7 @@ export default function ProjectDetailLoading() {
       {/* Back link skeleton */}
       <Skeleton className="h-4 w-36" />
 
-      {/* Project header card skeleton */}
+      {/* Trip header card skeleton */}
       <div className="bg-white rounded-2xl border border-stone-100 p-6 shadow-sm space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-2">

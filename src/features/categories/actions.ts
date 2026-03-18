@@ -30,7 +30,7 @@ const updateCategorySchema = z.object({
 // -------------------------------------------------------
 
 export async function createCategory(
-  projectId: string,
+  tripId: string,
   name: string,
   color?: string | null,
   icon?: string | null,
@@ -55,7 +55,7 @@ export async function createCategory(
   const { data, error } = await admin
     .from('categories')
     .insert({
-      project_id: projectId,
+      trip_id: tripId,
       name: parsed.data.name,
       color: parsed.data.color ?? null,
       icon: parsed.data.icon ?? null,
@@ -73,7 +73,7 @@ export async function createCategory(
     return { ok: false, error: 'Failed to create category' };
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/trips/${tripId}`);
 
   return { ok: true, data: { category: data as Category } };
 }
@@ -127,7 +127,7 @@ export async function updateCategory(
     return { ok: false, error: 'Failed to update category' };
   }
 
-  revalidatePath(`/projects/${(data as Category).project_id}`);
+  revalidatePath(`/trips/${(data as Category).trip_id}`);
 
   return { ok: true, data: { category: data as Category } };
 }
@@ -146,13 +146,13 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     return { ok: false, error: 'Not authenticated' };
   }
 
-  // Fetch the category first to get project_id for revalidation.
+  // Fetch the category first to get trip_id for revalidation.
   const { data: categoryData } = await supabase
     .from('categories')
     .select('*')
     .eq('id', id)
     .single();
-  const category = categoryData as { project_id: string } | null;
+  const category = categoryData as { trip_id: string } | null;
 
   const admin = createAdminClient();
   const { error } = await admin.from('categories').delete().eq('id', id);
@@ -163,7 +163,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
   }
 
   if (category) {
-    revalidatePath(`/projects/${category.project_id}`);
+    revalidatePath(`/trips/${category.trip_id}`);
   }
 
   return { ok: true, data: undefined };

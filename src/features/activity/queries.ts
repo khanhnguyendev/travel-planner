@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface ActivityEntry {
   id: string;
-  project_id: string;
+  trip_id: string;
   user_id: string;
   action: string;
   entity_type: string | null;
@@ -15,18 +15,18 @@ export interface ActivityEntry {
   } | null;
 }
 
-export async function getProjectActivity(projectId: string): Promise<ActivityEntry[]> {
+export async function getTripActivity(tripId: string): Promise<ActivityEntry[]> {
   const admin = createAdminClient();
 
   const { data, error } = await admin
-    .from('project_activity')
+    .from('trip_activity')
     .select('*, profiles(display_name, avatar_url)')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .order('created_at', { ascending: false })
     .limit(60);
 
   if (error) {
-    console.error('[activity] getProjectActivity error:', error);
+    console.error('[activity] getTripActivity error:', error);
     return [];
   }
 

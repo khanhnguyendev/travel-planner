@@ -6,7 +6,7 @@ import type { PlaceVote, VoteType } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
 
 interface VoteButtonsProps {
-  projectId: string;
+  tripId: string;
   placeId: string;
   upvotes: number;
   downvotes: number;
@@ -14,7 +14,7 @@ interface VoteButtonsProps {
 }
 
 export function VoteButtons({
-  projectId,
+  tripId,
   placeId,
   upvotes: initialUpvotes,
   downvotes: initialDownvotes,
@@ -56,7 +56,7 @@ export function VoteButtons({
           const res = await fetch('/api/votes', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectId, placeId }),
+            body: JSON.stringify({ tripId, placeId }),
           });
           if (!res.ok) throw new Error('delete failed');
           resolve('Vote removed', 'success');
@@ -64,7 +64,7 @@ export function VoteButtons({
           const res = await fetch('/api/votes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectId, placeId, voteType }),
+            body: JSON.stringify({ tripId, placeId, voteType }),
           });
           if (!res.ok) throw new Error('upsert failed');
           const data = await res.json();

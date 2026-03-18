@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { searchPlaces } from '@/features/places/mapbox';
-import type { ProjectMember } from '@/lib/types';
+import type { TripMember } from '@/lib/types';
 
 function errorResponse(
   code: string,
@@ -15,7 +15,7 @@ function errorResponse(
 }
 
 // -------------------------------------------------------
-// GET /api/places/search?q=...&sessionToken=...&projectId=...
+// GET /api/places/search?q=...&sessionToken=...&tripId=...
 // -------------------------------------------------------
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -33,10 +33,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = req.nextUrl;
   const q = searchParams.get('q') ?? '';
   const sessionToken = searchParams.get('sessionToken') ?? '';
-  const projectId = searchParams.get('projectId') ?? '';
+  const tripId = searchParams.get('tripId') ?? '';
 
-  if (!projectId) {
-    return errorResponse('invalid', 'projectId is required', 400);
+  if (!tripId) {
+    return errorResponse('invalid', 'tripId is required', 400);
   }
 
   if (!sessionToken) {
@@ -48,19 +48,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: true, data: { suggestions: [] } });
   }
 
-  // 3. Verify caller is project member
+  // 3. Verify caller is trip member
   const { data: membershipData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const membership = membershipData as ProjectMember | null;
+  const membership = membershipData as TripMember | null;
 
   if (!membership) {
-    return errorResponse('forbidden', 'Not a member of this project', 403);
+    return errorResponse('forbidden', 'Not a member of this trip', 403);
   }
 
   // 4. Fetch suggestions

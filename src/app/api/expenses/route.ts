@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectMember } from '@/lib/types';
+import type { TripMember } from '@/lib/types';
 
 // -------------------------------------------------------
 // Helpers
@@ -22,7 +22,7 @@ const splitSchema = z.object({
 });
 
 const postExpenseSchema = z.object({
-  projectId: z.string().uuid(),
+  tripId: z.string().uuid(),
   title: z.string().min(1),
   amount: z.number().positive(),
   currency: z.string().min(1).max(10),
@@ -59,20 +59,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { projectId, title, amount, currency, expenseDate, note, paidByUserId, splits, receiptPath } = parsed.data;
+  const { tripId, title, amount, currency, expenseDate, note, paidByUserId, splits, receiptPath } = parsed.data;
 
   // Validate caller role (owner/admin/editor)
   const { data: callerMemberData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role, invite_status')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const callerMember = callerMemberData as Pick<ProjectMember, 'role' | 'invite_status'> | null;
+  const callerMember = callerMemberData as Pick<TripMember, 'role' | 'invite_status'> | null;
   if (!callerMember) {
-    return errorResponse('forbidden', 'Not a member of this project', 403);
+    return errorResponse('forbidden', 'Not a member of this trip', 403);
   }
 
   if (!['owner', 'admin', 'editor'].includes(callerMember.role)) {
@@ -92,9 +92,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const allUserIds = Array.from(new Set([paidByUserId, ...splits.map((s) => s.userId)]));
 
   const { data: membersData } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('user_id')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('invite_status', 'accepted')
     .in('user_id', allUserIds);
 
@@ -102,26 +102,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   for (const uid of allUserIds) {
     if (!acceptedIds.has(uid)) {
-      return errorResponse('invalid', `User ${uid} is not an accepted member of this project`, 400);
+      return errorResponse('invalid', `User ${uid} is not an accepted member of this trip`, 400);
     }
   }
 
-  // Check project is active
+  // Check trip is active
   const { data: projectData } = await admin
     .from('projects')
     .select('status')
-    .eq('id', projectId)
+    .eq('id', tripId)
     .single();
 
   if ((projectData as { status: string } | null)?.status === 'archived') {
-    return errorResponse('forbidden', 'Cannot add expenses to an archived project', 403);
+    return errorResponse('forbidden', 'Cannot add expenses to an archived trip', 403);
   }
 
   // Create expense row
   const { data: expenseData, error: expenseError } = await admin
     .from('expenses')
     .insert({
-      project_id: projectId,
+      trip_id: tripId,
       paid_by_user_id: paidByUserId,
       title,
       amount,
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Create splits rows
   const splitRows = splits.map((s) => ({
     expense_id: expenseId,
-    project_id: projectId,
+    trip_id: tripId,
     user_id: s.userId,
     amount_owed: s.amountOwed,
     status: 'pending' as const,
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let finalReceiptPath = receiptPath;
   if (receiptPath && receiptPath.includes('/temp/')) {
     const filename = receiptPath.split('/').pop() ?? 'receipt';
-    finalReceiptPath = `project/${projectId}/expenses/${expenseId}/${filename}`;
+    finalReceiptPath = `trip/${tripId}/expenses/${expenseId}/${filename}`;
 
     // Copy to final path
     const { error: copyError } = await admin.storage

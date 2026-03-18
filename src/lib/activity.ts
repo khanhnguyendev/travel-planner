@@ -1,5 +1,5 @@
 /**
- * Fire-and-forget activity logging for the project activity feed.
+ * Fire-and-forget activity logging for the trip activity feed.
  * Never throws — a logging failure must never crash the main operation.
  */
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -15,7 +15,7 @@ export type ActivityAction =
   | 'member.join';
 
 export async function logActivity(params: {
-  projectId: string;
+  tripId: string;
   userId: string;
   action: ActivityAction;
   entityType?: string;
@@ -24,8 +24,8 @@ export async function logActivity(params: {
 }): Promise<void> {
   try {
     const admin = createAdminClient();
-    await admin.from('project_activity').insert({
-      project_id: params.projectId,
+    await admin.from('trip_activity').insert({
+      trip_id: params.tripId,
       user_id: params.userId,
       action: params.action,
       entity_type: params.entityType ?? null,

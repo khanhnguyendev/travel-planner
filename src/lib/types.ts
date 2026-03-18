@@ -1,6 +1,6 @@
 // Enums
-export type ProjectRole = 'owner' | 'admin' | 'editor' | 'viewer';
-export type ProjectStatus = 'active' | 'archived';
+export type TripRole = 'owner' | 'admin' | 'editor' | 'viewer';
+export type TripStatus = 'active' | 'archived';
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
 export type Visibility = 'private' | 'public';
 export type VoteType = 'upvote' | 'downvote' | 'score';
@@ -20,14 +20,14 @@ export interface Profile {
   created_at: string;
 }
 
-export interface Project {
+export interface Trip {
   id: string;
   owner_user_id: string;
   title: string;
   description: string | null;
   cover_image_url: string | null;
   visibility: Visibility;
-  status: ProjectStatus;
+  status: TripStatus;
   start_date: string | null;
   end_date: string | null;
   budget: number | null;
@@ -37,23 +37,23 @@ export interface Project {
   updated_at: string;
 }
 
-export interface ProjectMember {
+export interface TripMember {
   id: string;
-  project_id: string;
+  trip_id: string;
   user_id: string;
-  role: ProjectRole;
+  role: TripRole;
   invite_status: InviteStatus;
   joined_at: string | null;
   created_at: string;
 }
 
-export interface ProjectInvite {
+export interface TripInvite {
   id: string;
-  project_id: string;
+  trip_id: string;
   email: string;
   invited_by_user_id: string;
   token: string;
-  role: ProjectRole;
+  role: TripRole;
   status: InviteStatus;
   expires_at: string;
   created_at: string;
@@ -63,7 +63,7 @@ export type CategoryType = 'general' | 'accommodation';
 
 export interface Category {
   id: string;
-  project_id: string;
+  trip_id: string;
   name: string;
   color: string | null;
   icon: string | null;
@@ -74,7 +74,7 @@ export interface Category {
 
 export interface Place {
   id: string;
-  project_id: string;
+  trip_id: string;
   category_id: string;
   created_by_user_id: string;
   source_url: string | null;
@@ -100,7 +100,7 @@ export interface Place {
 export interface PlaceReview {
   id: string;
   place_id: string;
-  project_id: string;
+  trip_id: string;
   author_name: string | null;
   rating: number | null;
   text: string | null;
@@ -112,7 +112,7 @@ export interface PlaceReview {
 
 export interface PlaceVote {
   id: string;
-  project_id: string;
+  trip_id: string;
   place_id: string;
   user_id: string;
   vote_type: VoteType;
@@ -124,7 +124,7 @@ export interface PlaceVote {
 export interface PlaceComment {
   id: string;
   place_id: string;
-  project_id: string;
+  trip_id: string;
   user_id: string;
   body: string;
   created_at: string;
@@ -132,7 +132,7 @@ export interface PlaceComment {
 
 export interface Expense {
   id: string;
-  project_id: string;
+  trip_id: string;
   paid_by_user_id: string;
   title: string;
   amount: number;
@@ -145,9 +145,9 @@ export interface Expense {
   updated_at: string;
 }
 
-export interface ProjectActivity {
+export interface TripActivity {
   id: string;
-  project_id: string;
+  trip_id: string;
   user_id: string;
   action: string;
   entity_type: string | null;
@@ -159,7 +159,7 @@ export interface ProjectActivity {
 export interface ExpenseSplit {
   id: string;
   expense_id: string;
-  project_id: string;
+  trip_id: string;
   user_id: string;
   amount_owed: number;
   status: SplitStatus;
@@ -190,36 +190,36 @@ export type Database = {
         Relationships: [];
       };
       projects: {
-        Row: R<Project>;
-        Insert: R<Omit<Project, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status' | 'budget' | 'budget_currency' | 'budget_payer_user_id'> & {
+        Row: R<Trip>;
+        Insert: R<Omit<Trip, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status' | 'budget' | 'budget_currency' | 'budget_payer_user_id'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
           cover_image_url?: string | null;
-          status?: ProjectStatus;
+          status?: TripStatus;
           budget?: number | null;
           budget_currency?: string;
           budget_payer_user_id?: string | null;
         }>;
-        Update: R<Partial<Omit<Project, 'id' | 'created_at'>>>;
+        Update: R<Partial<Omit<Trip, 'id' | 'created_at'>>>;
         Relationships: [];
       };
-      project_members: {
-        Row: R<ProjectMember>;
-        Insert: R<Omit<ProjectMember, 'id' | 'created_at'> & {
+      trip_members: {
+        Row: R<TripMember>;
+        Insert: R<Omit<TripMember, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
         }>;
-        Update: R<Partial<Omit<ProjectMember, 'id' | 'created_at'>>>;
+        Update: R<Partial<Omit<TripMember, 'id' | 'created_at'>>>;
         Relationships: [];
       };
-      project_invites: {
-        Row: R<ProjectInvite>;
-        Insert: R<Omit<ProjectInvite, 'id' | 'created_at'> & {
+      trip_invites: {
+        Row: R<TripInvite>;
+        Insert: R<Omit<TripInvite, 'id' | 'created_at'> & {
           id?: string;
           created_at?: string;
         }>;
-        Update: R<Partial<Omit<ProjectInvite, 'id' | 'created_at'>>>;
+        Update: R<Partial<Omit<TripInvite, 'id' | 'created_at'>>>;
         Relationships: [];
       };
       categories: {
@@ -279,10 +279,10 @@ export type Database = {
         Update: R<Partial<Omit<Expense, 'id' | 'created_at'>>>;
         Relationships: [];
       };
-      project_activity: {
-        Row: R<ProjectActivity>;
-        Insert: R<Omit<ProjectActivity, 'id' | 'created_at'> & { id?: string; created_at?: string }>;
-        Update: R<Partial<Omit<ProjectActivity, 'id' | 'created_at'>>>;
+      trip_activity: {
+        Row: R<TripActivity>;
+        Insert: R<Omit<TripActivity, 'id' | 'created_at'> & { id?: string; created_at?: string }>;
+        Update: R<Partial<Omit<TripActivity, 'id' | 'created_at'>>>;
         Relationships: [];
       };
       expense_splits: {
@@ -298,8 +298,8 @@ export type Database = {
     Views: Record<string, { Row: Record<string, unknown>; Relationships: [] }>;
     Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>;
     Enums: {
-      project_role: ProjectRole;
-      project_status: ProjectStatus;
+      trip_role: TripRole;
+      trip_status: TripStatus;
       invite_status: InviteStatus;
       visibility: Visibility;
       vote_type: VoteType;

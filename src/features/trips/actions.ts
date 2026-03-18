@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
-import type { Project } from '@/lib/types';
+import type { Trip } from '@/lib/types';
 
 // -------------------------------------------------------
 // Schemas
@@ -22,10 +22,10 @@ const createProjectSchema = z.object({
 });
 
 // -------------------------------------------------------
-// createProject
+// createTrip
 // -------------------------------------------------------
 
-export async function createProject(
+export async function createTrip(
   title: string,
   description: string | undefined,
   visibility: 'private' | 'public',
@@ -33,7 +33,7 @@ export async function createProject(
   endDate?: string | null,
   budget?: number | null,
   budgetCurrency?: string
-): Promise<ActionResult<{ projectId: string }>> {
+): Promise<ActionResult<{ tripId: string }>> {
   const parsed = createProjectSchema.safeParse({
     title,
     description,
@@ -60,7 +60,7 @@ export async function createProject(
   // Use admin client to bypass RLS on insert (projects insert is service-role only).
   const admin = createAdminClient();
 
-  // Ensure profile exists before creating the project (FK constraint).
+  // Ensure profile exists before creating the trip (FK constraint).
   const { error: profileError } = await admin.from('profiles').upsert({
     id: user.id,
     display_name:
@@ -74,7 +74,7 @@ export async function createProject(
     return { ok: false, error: 'Failed to initialize profile' };
   }
 
-  const { data: project, error: projectError } = await admin
+  const { data: trip, error: projectError } = await admin
     .from('projects')
     .insert({
       owner_user_id: user.id,
@@ -89,14 +89,14 @@ export async function createProject(
     .select('id')
     .single();
 
-  if (projectError || !project) {
-    console.error('createProject error:', projectError);
-    return { ok: false, error: 'Failed to create project' };
+  if (projectError || !trip) {
+    console.error('createTrip error:', projectError);
+    return { ok: false, error: 'Failed to create trip' };
   }
 
   // Add the creator as an accepted owner member.
-  const { error: memberError } = await admin.from('project_members').insert({
-    project_id: project.id,
+  const { error: memberError } = await admin.from('trip_members').insert({
+    trip_id: trip.id,
     user_id: user.id,
     role: 'owner',
     invite_status: 'accepted',
@@ -104,23 +104,23 @@ export async function createProject(
   });
 
   if (memberError) {
-    console.error('project_members insert error:', memberError);
-    // Project was created; still return success but log the issue.
+    console.error('trip_members insert error:', memberError);
+    // Trip was created; still return success but log the issue.
   }
 
   revalidatePath('/dashboard');
 
-  return { ok: true, data: { projectId: project.id } };
+  return { ok: true, data: { tripId: trip.id } };
 }
 
 // -------------------------------------------------------
-// updateProject
+// updateTrip
 // -------------------------------------------------------
 
-export async function updateProject(
-  projectId: string,
+export async function updateTrip(
+  tripId: string,
   fields: { cover_image_url?: string | null; title?: string; description?: string | null }
-): Promise<ActionResult<{ projectId: string }>> {
+): Promise<ActionResult<{ tripId: string }>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -134,9 +134,9 @@ export async function updateProject(
 
   // Verify role
   const { data: memberData } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
@@ -154,17 +154,17 @@ export async function updateProject(
   const { error } = await admin
     .from('projects')
     .update(updatePayload)
-    .eq('id', projectId);
+    .eq('id', tripId);
 
   if (error) {
-    console.error('updateProject error:', error);
-    return { ok: false, error: 'Failed to update project' };
+    console.error('updateTrip error:', error);
+    return { ok: false, error: 'Failed to update trip' };
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/trips/${tripId}`);
   revalidatePath('/dashboard');
 
-  return { ok: true, data: { projectId } };
+  return { ok: true, data: { tripId } };
 }
 
 // -------------------------------------------------------
@@ -172,7 +172,7 @@ export async function updateProject(
 // -------------------------------------------------------
 
 export async function updateProjectBudget(
-  projectId: string,
+  tripId: string,
   budget: number | null,
   budgetCurrency: string,
   payerUserId: string | null
@@ -189,9 +189,9 @@ export async function updateProjectBudget(
   const admin = createAdminClient();
 
   const { data: memberData } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('role')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
@@ -204,14 +204,14 @@ export async function updateProjectBudget(
   const { error } = await admin
     .from('projects')
     .update({ budget, budget_currency: budgetCurrency, budget_payer_user_id: payerUserId })
-    .eq('id', projectId);
+    .eq('id', tripId);
 
   if (error) {
     console.error('updateProjectBudget error:', error);
     return { ok: false, error: 'Failed to update budget' };
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/trips/${tripId}`);
 
   return { ok: true, data: undefined };
 }
@@ -221,7 +221,7 @@ export async function updateProjectBudget(
 // -------------------------------------------------------
 
 export async function archiveProject(
-  projectId: string
+  tripId: string
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -235,30 +235,30 @@ export async function archiveProject(
   // Verify the user is the owner before archiving.
   const admin = createAdminClient();
   const { data: memberData } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
   const member = memberData as { role: string } | null;
   if (!member || member.role !== 'owner') {
-    return { ok: false, error: 'Only the project owner can archive a project' };
+    return { ok: false, error: 'Only the trip owner can archive a trip' };
   }
 
   const { error } = await admin
     .from('projects')
     .update({ status: 'archived' })
-    .eq('id', projectId);
+    .eq('id', tripId);
 
   if (error) {
     console.error('archiveProject error:', error);
-    return { ok: false, error: 'Failed to archive project' };
+    return { ok: false, error: 'Failed to archive trip' };
   }
 
   revalidatePath('/dashboard');
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/trips/${tripId}`);
 
   return { ok: true, data: undefined };
 }

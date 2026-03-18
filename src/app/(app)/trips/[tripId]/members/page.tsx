@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Users, ArrowLeft } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getProject, getUserRole } from '@/features/projects/queries';
+import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers, getPendingInvites } from '@/features/members/queries';
 import { PageHeader } from '@/components/ui/page-header';
 import { MemberList } from '@/components/members/member-list';
@@ -17,12 +17,12 @@ import type { Metadata } from 'next';
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ tripId: string }>;
 }): Promise<Metadata> {
-  const { projectId } = await params;
-  const project = await getProject(projectId);
+  const { tripId } = await params;
+  const trip = await getTrip(tripId);
   return {
-    title: project ? `Members — ${project.title}` : 'Members',
+    title: trip ? `Members — ${trip.title}` : 'Members',
   };
 }
 
@@ -33,19 +33,19 @@ export async function generateMetadata({
 export default async function MembersPage({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ tripId: string }>;
 }) {
-  const { projectId } = await params;
+  const { tripId } = await params;
   const user = await requireSession();
 
-  const [project, role, members, pendingInvites] = await Promise.all([
-    getProject(projectId),
-    getUserRole(projectId),
-    getMembers(projectId),
-    getPendingInvites(projectId),
+  const [trip, role, members, pendingInvites] = await Promise.all([
+    getTrip(tripId),
+    getUserRole(tripId),
+    getMembers(tripId),
+    getPendingInvites(tripId),
   ]);
 
-  if (!project || !role) {
+  if (!trip || !role) {
     notFound();
   }
 
@@ -57,12 +57,12 @@ export default async function MembersPage({
         title="Members"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: project.title, href: `/projects/${projectId}` },
+          { label: trip.title, href: `/trips/${tripId}` },
           { label: 'Members' },
         ]}
         action={
           <Link
-            href={`/projects/${projectId}`}
+            href={`/trips/${tripId}`}
             className="inline-flex items-center gap-1.5 btn-secondary text-sm min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -86,7 +86,7 @@ export default async function MembersPage({
                 Invite someone
               </h2>
             </div>
-            <InviteForm projectId={projectId} />
+            <InviteForm tripId={tripId} />
           </div>
         )}
 
@@ -104,7 +104,7 @@ export default async function MembersPage({
               )}
             </h2>
             <PendingInvitesList
-              projectId={projectId}
+              tripId={tripId}
               invites={pendingInvites}
               canManage={canManage}
             />
@@ -122,7 +122,7 @@ export default async function MembersPage({
             </span>
           </h2>
           <MemberList
-            projectId={projectId}
+            tripId={tripId}
             members={members}
             currentUserId={user.id}
             currentUserRole={role}

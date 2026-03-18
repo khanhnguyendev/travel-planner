@@ -3,23 +3,23 @@
 import { useState } from 'react';
 import { Link2, Copy, Check, Loader2, UserPlus, ChevronDown } from 'lucide-react';
 import { generateInviteLink } from '@/features/members/actions';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
 import { Dialog } from '@/components/ui/dialog';
 
 interface InviteLinkButtonProps {
-  projectId: string;
+  tripId: string;
 }
 
-const ROLES: { value: ProjectRole; label: string; description: string }[] = [
+const ROLES: { value: TripRole; label: string; description: string }[] = [
   { value: 'editor', label: 'Editor', description: 'Can add places, vote, and add expenses' },
   { value: 'viewer', label: 'Viewer', description: 'Can view and vote only' },
   { value: 'admin', label: 'Admin', description: 'Can manage members and settings' },
 ];
 
-export function InviteLinkButton({ projectId }: InviteLinkButtonProps) {
+export function InviteLinkButton({ tripId }: InviteLinkButtonProps) {
   const [open, setOpen] = useState(false);
-  const [role, setRole] = useState<ProjectRole>('editor');
+  const [role, setRole] = useState<TripRole>('editor');
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export function InviteLinkButton({ projectId }: InviteLinkButtonProps) {
   async function handleGenerate() {
     setLoading(true);
     const resolve = loadingToast('Generating link…');
-    const result = await generateInviteLink(projectId, role);
+    const result = await generateInviteLink(tripId, role);
     setLoading(false);
     if (result.ok) {
       resolve('Link ready!', 'success');

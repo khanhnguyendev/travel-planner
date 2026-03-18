@@ -10,7 +10,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 
 interface AddPlaceFormProps {
-  projectId: string;
+  tripId: string;
   categories: Category[];
   onAdded?: (place: Place, reviews: PlaceReview[]) => void;
   onCancel?: () => void;
@@ -21,7 +21,7 @@ function newSessionToken(): string {
 }
 
 
-export function AddPlaceForm({ projectId, categories, onAdded, onCancel }: AddPlaceFormProps) {
+export function AddPlaceForm({ tripId, categories, onAdded, onCancel }: AddPlaceFormProps) {
   const [sessionToken, setSessionToken] = useState<string>(() => newSessionToken());
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
@@ -61,12 +61,12 @@ useEffect(() => {
     if (q.trim().length < 2) { setSuggestions([]); setShowDropdown(false); return; }
     setIsSuggestLoading(true);
     try {
-      const params = new URLSearchParams({ q: q.trim(), sessionToken, projectId });
+      const params = new URLSearchParams({ q: q.trim(), sessionToken, tripId });
       const res = await fetch(`/api/places/search?${params.toString()}`);
       const data = (await res.json()) as { ok: boolean; data?: { suggestions: MapboxSuggestion[] } };
       if (data.ok && data.data) { setSuggestions(data.data.suggestions); setShowDropdown(true); setActiveIndex(-1); }
     } catch { /* ignore */ } finally { setIsSuggestLoading(false); }
-  }, [projectId, sessionToken]);
+  }, [tripId, sessionToken]);
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
@@ -117,7 +117,7 @@ useEffect(() => {
           body: JSON.stringify({
             mapboxId: selected.mapbox_id,
             sessionToken,
-            projectId,
+            tripId,
             categoryId,
             visitDate: visitDate || null,
             visitTimeFrom: visitTimeFrom || null,
@@ -277,7 +277,7 @@ useEffect(() => {
           {showCategoryDialog && (
             <Dialog title="New category" onClose={() => setShowCategoryDialog(false)}>
               <AddCategoryForm
-                projectId={projectId}
+                tripId={tripId}
                 onCreated={(cat) => {
                   setLocalCategories((prev) => [...prev, cat]);
                   setCategoryId(cat.id);

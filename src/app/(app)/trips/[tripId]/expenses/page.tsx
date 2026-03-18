@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getProject, getUserRole } from '@/features/projects/queries';
+import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { getMembers } from '@/features/members/queries';
 import { ExpenseList } from '@/components/expenses/expense-list';
@@ -14,30 +14,30 @@ import type { Metadata } from 'next';
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ tripId: string }>;
 }): Promise<Metadata> {
-  const { projectId } = await params;
-  const project = await getProject(projectId);
-  return { title: project ? `Expenses — ${project.title}` : 'Expenses' };
+  const { tripId } = await params;
+  const trip = await getTrip(tripId);
+  return { title: trip ? `Expenses — ${trip.title}` : 'Expenses' };
 }
 
 export default async function ExpensesPage({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ tripId: string }>;
 }) {
-  const { projectId } = await params;
+  const { tripId } = await params;
   const user = await requireSession();
 
-  const [project, role, expenses, expensesWithSplits, members] = await Promise.all([
-    getProject(projectId),
-    getUserRole(projectId),
-    getExpenses(projectId),
-    getExpensesWithSplits(projectId),
-    getMembers(projectId),
+  const [trip, role, expenses, expensesWithSplits, members] = await Promise.all([
+    getTrip(tripId),
+    getUserRole(tripId),
+    getExpenses(tripId),
+    getExpensesWithSplits(tripId),
+    getMembers(tripId),
   ]);
 
-  if (!project || !role) {
+  if (!trip || !role) {
     notFound();
   }
 
@@ -60,7 +60,7 @@ export default async function ExpensesPage({
 
   const addExpenseButton = canEdit ? (
     <Link
-      href={`/projects/${projectId}/expenses/new`}
+      href={`/trips/${tripId}/expenses/new`}
       className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
     >
       <Plus className="w-4 h-4" />
@@ -74,7 +74,7 @@ export default async function ExpensesPage({
         title="Expenses"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: project.title, href: `/projects/${projectId}` },
+          { label: trip.title, href: `/trips/${tripId}` },
           { label: 'Expenses' },
         ]}
         action={addExpenseButton}
@@ -100,7 +100,7 @@ export default async function ExpensesPage({
       )}
 
       {/* List */}
-      <ExpenseList expenses={expenses} projectId={projectId} canEdit={canEdit} />
+      <ExpenseList expenses={expenses} tripId={tripId} canEdit={canEdit} />
     </div>
   );
 }

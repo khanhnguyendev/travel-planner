@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectInvite, ProjectRole } from '@/lib/types';
+import type { TripInvite, TripRole } from '@/lib/types';
 
 // -------------------------------------------------------
 // Accept invite page (server component)
@@ -29,7 +29,7 @@ export default async function AcceptInvitePage({
 
   // Look up invite
   const { data: inviteData, error: lookupError } = await admin
-    .from('project_invites')
+    .from('trip_invites')
     .select('*')
     .eq('token', token)
     .maybeSingle();
@@ -39,7 +39,7 @@ export default async function AcceptInvitePage({
     return <ErrorView message="An error occurred while looking up the invite." />;
   }
 
-  const invite = inviteData as ProjectInvite | null;
+  const invite = inviteData as TripInvite | null;
 
   if (!invite) {
     return <ErrorView message="Invite not found. It may have already been used or revoked." />;
@@ -50,50 +50,50 @@ export default async function AcceptInvitePage({
   }
 
   if (invite.status === 'accepted') {
-    // Already accepted — redirect to the project
-    redirect(`/projects/${invite.project_id}`);
+    // Already accepted — redirect to the trip
+    redirect(`/trips/${invite.trip_id}`);
   }
 
   if (new Date(invite.expires_at) < new Date()) {
     await admin
-      .from('project_invites')
+      .from('trip_invites')
       .update({ status: 'expired' })
       .eq('id', invite.id);
-    return <ErrorView message="This invite has expired. Please ask the project owner to send a new one." />;
+    return <ErrorView message="This invite has expired. Please ask the trip owner to send a new one." />;
   }
 
   // Check if user is already a member
   const { data: existingMember } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('id')
-    .eq('project_id', invite.project_id)
+    .eq('trip_id', invite.trip_id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existingMember) {
     // Create member row
-    const { error: memberError } = await admin.from('project_members').insert({
-      project_id: invite.project_id,
+    const { error: memberError } = await admin.from('trip_members').insert({
+      trip_id: invite.trip_id,
       user_id: user.id,
-      role: invite.role as ProjectRole,
+      role: invite.role as TripRole,
       invite_status: 'accepted',
       joined_at: new Date().toISOString(),
     });
 
     if (memberError) {
       console.error('acceptInvite member insert error:', memberError);
-      return <ErrorView message="Failed to add you to the project. Please try again." />;
+      return <ErrorView message="Failed to add you to the trip. Please try again." />;
     }
   }
 
   // Mark invite as accepted
   await admin
-    .from('project_invites')
+    .from('trip_invites')
     .update({ status: 'accepted' })
     .eq('id', invite.id);
 
-  // Redirect to the project
-  redirect(`/projects/${invite.project_id}`);
+  // Redirect to the trip
+  redirect(`/trips/${invite.trip_id}`);
 }
 
 // -------------------------------------------------------

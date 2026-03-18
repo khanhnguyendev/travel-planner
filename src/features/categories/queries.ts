@@ -2,15 +2,15 @@ import { createClient } from '@/lib/supabase/server';
 import type { Category } from '@/lib/types';
 
 /**
- * Returns all categories for a project, ordered by sort_order then created_at.
+ * Returns all categories for a trip, ordered by sort_order then created_at.
  */
-export async function getCategories(projectId: string): Promise<Category[]> {
+export async function getCategories(tripId: string): Promise<Category[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('categories')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: true });
 
@@ -23,7 +23,7 @@ export async function getCategories(projectId: string): Promise<Category[]> {
 }
 
 /**
- * Returns a single category by ID. RLS ensures the caller is a project member.
+ * Returns a single category by ID. RLS ensures the caller is a trip member.
  */
 export async function getCategory(id: string): Promise<Category | null> {
   const supabase = await createClient();

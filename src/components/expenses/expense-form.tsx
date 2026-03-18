@@ -39,7 +39,7 @@ interface SplitRow {
 }
 
 interface ExpenseFormProps {
-  projectId: string;
+  tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
   /** Called on successful save (dialog mode). Uses router if not provided. */
@@ -133,7 +133,7 @@ function InputField({
 // Main component
 // -------------------------------------------------------
 
-export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ tripId, members, currentUserId, onSuccess, onCancel }: ExpenseFormProps) {
   const router = useRouter();
 
   // Form fields
@@ -242,7 +242,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            projectId,
+            tripId,
             filename: file.name,
             contentType: file.type,
           }),
@@ -278,7 +278,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
         setIsUploading(false);
       }
     },
-    [projectId]
+    [tripId]
   );
 
   function clearReceipt() {
@@ -325,7 +325,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
     }));
 
     const input: CreateExpenseInput = {
-      projectId,
+      tripId,
       title: title.trim(),
       category: category ?? null,
       amount: totalAmount,
@@ -343,7 +343,7 @@ export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCa
       const result = await createExpense(input);
       if (result.ok) {
         resolve('Expense added!', 'success');
-        if (onSuccess) { onSuccess(); } else { router.push(`/projects/${projectId}/expenses`); }
+        if (onSuccess) { onSuccess(); } else { router.push(`/trips/${tripId}/expenses`); }
       } else {
         const msg = result.error ?? 'Failed to create expense';
         resolve(msg, 'error');

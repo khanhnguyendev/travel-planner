@@ -2,15 +2,15 @@
 
 import { useRef, useState } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
-import { updateProject } from '@/features/projects/actions';
+import { updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
 interface CoverImageUploadProps {
-  projectId: string;
+  tripId: string;
   currentCoverUrl?: string | null;
 }
 
-export function CoverImageUpload({ projectId, currentCoverUrl }: CoverImageUploadProps) {
+export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentCoverUrl ?? null);
@@ -29,7 +29,7 @@ export function CoverImageUpload({ projectId, currentCoverUrl }: CoverImageUploa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId,
+          tripId,
           filename: file.name,
           contentType: file.type,
         }),
@@ -60,11 +60,11 @@ export function CoverImageUpload({ projectId, currentCoverUrl }: CoverImageUploa
         return;
       }
 
-      // 3. Build public URL and save to project
+      // 3. Build public URL and save to trip
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publicUrl = `${supabaseUrl}/storage/v1/object/public/covers/${coverPath}`;
 
-      const result = await updateProject(projectId, { cover_image_url: publicUrl });
+      const result = await updateTrip(tripId, { cover_image_url: publicUrl });
 
       if (result.ok) {
         setPreviewUrl(publicUrl);

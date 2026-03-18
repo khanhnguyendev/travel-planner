@@ -9,7 +9,7 @@ import type { VoteSummaryEntry } from '@/features/votes/queries';
 interface TripTimelineProps {
   places: Place[];
   categories: Category[];
-  projectId: string;
+  tripId: string;
   currentUserId: string;
   canEdit?: boolean;
   voteSummaries: VoteSummaryEntry[];
@@ -112,7 +112,7 @@ function PlaceRow({ place, category, onClick }: PlaceRowProps) {
 export function TripTimeline({
   places,
   categories,
-  projectId,
+  tripId,
   currentUserId,
   canEdit = false,
   voteSummaries,
@@ -264,7 +264,7 @@ export function TripTimeline({
           commentAuthors={commentAuthors}
           currentUserId={currentUserId}
           category={categoryMap.get(openPlace.category_id) ?? null}
-          projectId={projectId}
+          tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
           allPlaces={places}

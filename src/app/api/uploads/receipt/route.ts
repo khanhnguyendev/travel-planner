@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectMember } from '@/lib/types';
+import type { TripMember } from '@/lib/types';
 
 function errorResponse(code: string, message: string, status: number): NextResponse {
   return NextResponse.json({ ok: false, error: { code, message } }, { status });
 }
 
 const postReceiptSchema = z.object({
-  projectId: z.string().uuid(),
+  tripId: z.string().uuid(),
   expenseId: z.string().uuid().optional().nullable(),
   filename: z.string().min(1).max(255),
   contentType: z.string().min(1),
@@ -38,20 +38,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { projectId, expenseId, filename, contentType } = parsed.data;
+  const { tripId, expenseId, filename, contentType } = parsed.data;
 
   // Validate caller role (owner/admin/editor)
   const { data: callerMemberData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('role, invite_status')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const callerMember = callerMemberData as Pick<ProjectMember, 'role' | 'invite_status'> | null;
+  const callerMember = callerMemberData as Pick<TripMember, 'role' | 'invite_status'> | null;
   if (!callerMember) {
-    return errorResponse('forbidden', 'Not a member of this project', 403);
+    return errorResponse('forbidden', 'Not a member of this trip', 403);
   }
 
   if (!['owner', 'admin', 'editor'].includes(callerMember.role)) {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Sanitize filename — keep only safe characters
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
   const segment = expenseId ?? 'temp';
-  const receiptPath = `project/${projectId}/expenses/${segment}/${safeName}`;
+  const receiptPath = `trip/${tripId}/expenses/${segment}/${safeName}`;
 
   const admin = createAdminClient();
 

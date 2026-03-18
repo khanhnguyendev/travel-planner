@@ -7,7 +7,7 @@ import { PlacesMap } from '@/components/places/places-map';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
 
 interface MapTabClientProps {
-  projectId: string;
+  tripId: string;
   places: Place[];
   categories: Category[];
   voteSummaries: VoteSummaryEntry[];
@@ -19,7 +19,7 @@ interface MapTabClientProps {
 }
 
 export function MapTabClient({
-  projectId,
+  tripId,
   places,
   categories,
   voteSummaries,
@@ -50,7 +50,7 @@ export function MapTabClient({
           commentAuthors={commentAuthors}
           currentUserId={currentUserId}
           category={categories.find((c) => c.id === openPlace.category_id) ?? null}
-          projectId={projectId}
+          tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
           allPlaces={places}

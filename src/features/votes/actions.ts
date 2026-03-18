@@ -14,7 +14,7 @@ import type { PlaceVote } from '@/lib/types';
 
 const upsertVoteSchema = z
   .object({
-    projectId: z.string().uuid(),
+    tripId: z.string().uuid(),
     placeId: z.string().uuid(),
     voteType: z.enum(['upvote', 'downvote', 'score']),
     score: z.number().int().min(1).max(10).optional().nullable(),
@@ -37,7 +37,7 @@ const upsertVoteSchema = z
   });
 
 const deleteVoteSchema = z.object({
-  projectId: z.string().uuid(),
+  tripId: z.string().uuid(),
   placeId: z.string().uuid(),
 });
 
@@ -46,13 +46,13 @@ const deleteVoteSchema = z.object({
 // -------------------------------------------------------
 
 export async function upsertVote(
-  projectId: string,
+  tripId: string,
   placeId: string,
   voteType: 'upvote' | 'downvote' | 'score',
   score?: number | null
 ): Promise<ActionResult<{ vote: PlaceVote }>> {
   const parsed = upsertVoteSchema.safeParse({
-    projectId,
+    tripId,
     placeId,
     voteType,
     score,
@@ -76,7 +76,7 @@ export async function upsertVote(
     .from('place_votes')
     .upsert(
       {
-        project_id: parsed.data.projectId,
+        trip_id: parsed.data.tripId,
         place_id: parsed.data.placeId,
         user_id: user.id,
         vote_type: parsed.data.voteType,
@@ -89,12 +89,12 @@ export async function upsertVote(
     .single();
 
   if (error) {
-    createLogger({ action: 'upsertVote', userId: user.id }).error('vote.upsert.failed', { error: error.message, placeId, projectId });
+    createLogger({ action: 'upsertVote', userId: user.id }).error('vote.upsert.failed', { error: error.message, placeId, tripId });
     return { ok: false, error: 'Failed to save vote' };
   }
 
   const activityAction = parsed.data.voteType === 'upvote' ? 'vote.upvote' : 'vote.downvote';
-  void logActivity({ projectId, userId: user.id, action: activityAction, entityType: 'place', entityId: placeId });
+  void logActivity({ tripId, userId: user.id, action: activityAction, entityType: 'place', entityId: placeId });
 
   return { ok: true, data: { vote: data as PlaceVote } };
 }
@@ -104,10 +104,10 @@ export async function upsertVote(
 // -------------------------------------------------------
 
 export async function deleteVote(
-  projectId: string,
+  tripId: string,
   placeId: string
 ): Promise<ActionResult> {
-  const parsed = deleteVoteSchema.safeParse({ projectId, placeId });
+  const parsed = deleteVoteSchema.safeParse({ tripId, placeId });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.errors[0].message };
   }
@@ -127,7 +127,7 @@ export async function deleteVote(
     .delete()
     .eq('place_id', parsed.data.placeId)
     .eq('user_id', user.id)
-    .eq('project_id', parsed.data.projectId);
+    .eq('trip_id', parsed.data.tripId);
 
   if (error) {
     console.error('deleteVote error:', error);

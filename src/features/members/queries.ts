@@ -1,23 +1,23 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectMember, ProjectInvite, Profile } from '@/lib/types';
+import type { TripMember, TripInvite, Profile } from '@/lib/types';
 
 /**
- * Returns all pending (non-expired, non-revoked) invites for a project.
+ * Returns all pending (non-expired, non-revoked) invites for a trip.
  * Uses admin client because the token column requires service-role access.
  * Token is included so invite links can be shared.
  */
-export type PendingInvite = ProjectInvite;
+export type PendingInvite = TripInvite;
 
 export async function getPendingInvites(
-  projectId: string
+  tripId: string
 ): Promise<PendingInvite[]> {
   const admin = createAdminClient();
 
   const { data, error } = await admin
-    .from('project_invites')
-    .select('id, project_id, email, invited_by_user_id, token, role, status, expires_at, created_at')
-    .eq('project_id', projectId)
+    .from('trip_invites')
+    .select('id, trip_id, email, invited_by_user_id, token, role, status, expires_at, created_at')
+    .eq('trip_id', tripId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
@@ -29,27 +29,27 @@ export async function getPendingInvites(
   return (data ?? []) as PendingInvite[];
 }
 
-export type MemberWithProfile = ProjectMember & {
+export type MemberWithProfile = TripMember & {
   profile: Pick<Profile, 'id' | 'display_name' | 'avatar_url'>;
 };
 
 /**
- * Returns all accepted members of a project with their profile information.
+ * Returns all accepted members of a trip with their profile information.
  */
 export async function getMembers(
-  projectId: string
+  tripId: string
 ): Promise<MemberWithProfile[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select(
       `
       *,
       profile:profiles(id, display_name, avatar_url)
     `
     )
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('invite_status', 'accepted')
     .order('joined_at', { ascending: true });
 

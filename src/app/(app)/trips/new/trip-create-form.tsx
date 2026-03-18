@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, Loader2, X } from 'lucide-react';
-import { createProject, updateProject } from '@/features/projects/actions';
+import { createTrip, updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 
 export default function ProjectCreateForm() {
@@ -42,7 +42,7 @@ export default function ProjectCreateForm() {
     const resolve = loadingToast('Creating trip…');
 
     const parsedBudget = budget ? parseFloat(budget) : null;
-    const result = await createProject(
+    const result = await createTrip(
       title,
       description || undefined,
       visibility,
@@ -59,7 +59,7 @@ export default function ProjectCreateForm() {
       return;
     }
 
-    const projectId = result.data.projectId;
+    const tripId = result.data.tripId;
 
     // Upload cover image if selected
     if (coverFile) {
@@ -67,19 +67,19 @@ export default function ProjectCreateForm() {
         const res = await fetch('/api/uploads/cover', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId, filename: coverFile.name, contentType: coverFile.type }),
+          body: JSON.stringify({ tripId, filename: coverFile.name, contentType: coverFile.type }),
         });
         const json = await res.json() as { ok: boolean; data?: { uploadUrl: string; coverPath: string } };
         if (json.ok && json.data) {
           await fetch(json.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': coverFile.type }, body: coverFile });
           const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/covers/${json.data.coverPath}`;
-          await updateProject(projectId, { cover_image_url: publicUrl });
+          await updateTrip(tripId, { cover_image_url: publicUrl });
         }
       } catch { /* non-fatal — trip is already created */ }
     }
 
     resolve('Trip created!', 'success');
-    router.push(`/projects/${projectId}`);
+    router.push(`/trips/${tripId}`);
   }
 
   function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {

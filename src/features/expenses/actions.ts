@@ -16,7 +16,7 @@ export interface SplitInput {
 }
 
 export interface CreateExpenseInput {
-  projectId: string;
+  tripId: string;
   title: string;
   amount: number;
   currency: string;
@@ -85,11 +85,11 @@ export async function createExpense(
     return { ok: false, error: 'Not authenticated' };
   }
 
-  const { projectId, title, amount, currency, expenseDate, note, category, paidByUserId, splits, receiptPath } = input;
+  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, splits, receiptPath } = input;
 
   // Caller must be editor or above
-  const callerRole = await requireEditor(projectId, user.id);
-  if (!callerRole) return { ok: false, error: 'Not a member of this project or insufficient permissions' };
+  const callerRole = await requireEditor(tripId, user.id);
+  if (!callerRole) return { ok: false, error: 'Not a member of this trip or insufficient permissions' };
 
   // Validate splits total
   const splitsTotal = splits.reduce((sum, s) => sum + s.amountOwed, 0);
@@ -103,9 +103,9 @@ export async function createExpense(
   // Validate all split user IDs and paidByUserId are accepted members
   const allUserIds = Array.from(new Set([paidByUserId, ...splits.map((s) => s.userId)]));
   const { data: membersData } = await admin
-    .from('project_members')
+    .from('trip_members')
     .select('user_id')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('invite_status', 'accepted')
     .in('user_id', allUserIds);
 
@@ -113,7 +113,7 @@ export async function createExpense(
 
   for (const uid of allUserIds) {
     if (!acceptedIds.has(uid)) {
-      return { ok: false, error: `User ${uid} is not an accepted member of this project` };
+      return { ok: false, error: `User ${uid} is not an accepted member of this trip` };
     }
   }
 
@@ -121,7 +121,7 @@ export async function createExpense(
   const { data: expenseData, error: expenseError } = await admin
     .from('expenses')
     .insert({
-      project_id: projectId,
+      trip_id: tripId,
       paid_by_user_id: paidByUserId,
       title,
       amount,
@@ -144,7 +144,7 @@ export async function createExpense(
   // Insert all expense_splits rows
   const splitRows = splits.map((s) => ({
     expense_id: expenseId,
-    project_id: projectId,
+    trip_id: tripId,
     user_id: s.userId,
     amount_owed: s.amountOwed,
     status: 'pending' as const,
@@ -162,7 +162,7 @@ export async function createExpense(
   // Move receipt from temp path if needed
   if (receiptPath && receiptPath.includes('/temp/')) {
     const filename = receiptPath.split('/').pop() ?? 'receipt';
-    const finalPath = `project/${projectId}/expenses/${expenseId}/${filename}`;
+    const finalPath = `trip/${tripId}/expenses/${expenseId}/${filename}`;
     await moveReceiptToFinalPath(admin, receiptPath, finalPath);
 
     // Update expense with final receipt path
@@ -172,7 +172,7 @@ export async function createExpense(
       .eq('id', expenseId);
   }
 
-  revalidatePath(`/projects/${projectId}/expenses`);
+  revalidatePath(`/trips/${tripId}/expenses`);
 
   return { ok: true, data: { expenseId } };
 }
@@ -196,10 +196,10 @@ export async function updateExpense(
 
   const admin = createAdminClient();
 
-  // Fetch existing expense to get project_id for membership check + revalidation
+  // Fetch existing expense to get trip_id for membership check + revalidation
   const { data: existingData } = await admin
     .from('expenses')
-    .select('id, project_id')
+    .select('id, trip_id')
     .eq('id', id)
     .single();
 
@@ -207,9 +207,9 @@ export async function updateExpense(
     return { ok: false, error: 'Expense not found' };
   }
 
-  const existing = existingData as unknown as { id: string; project_id: string };
+  const existing = existingData as unknown as { id: string; trip_id: string };
 
-  const editorRole = await requireEditor(existing.project_id, user.id);
+  const editorRole = await requireEditor(existing.trip_id, user.id);
   if (!editorRole) return { ok: false, error: 'Insufficient permissions' };
 
   const updatePayload: Record<string, unknown> = {};
@@ -231,8 +231,8 @@ export async function updateExpense(
     return { ok: false, error: 'Failed to update expense' };
   }
 
-  revalidatePath(`/projects/${existing.project_id}/expenses`);
-  revalidatePath(`/projects/${existing.project_id}/expenses/${id}`);
+  revalidatePath(`/trips/${existing.trip_id}/expenses`);
+  revalidatePath(`/trips/${existing.trip_id}/expenses/${id}`);
 
   return { ok: true, data: undefined };
 }
@@ -253,17 +253,17 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
 
   const admin = createAdminClient();
 
-  // Fetch project_id for membership check + revalidation
+  // Fetch trip_id for membership check + revalidation
   const { data: expenseData } = await admin
     .from('expenses')
-    .select('id, project_id')
+    .select('id, trip_id')
     .eq('id', id)
     .single();
 
-  const expense = expenseData as unknown as { id: string; project_id: string } | null;
+  const expense = expenseData as unknown as { id: string; trip_id: string } | null;
   if (!expense) return { ok: false, error: 'Expense not found' };
 
-  const editorRole = await requireEditor(expense.project_id, user.id);
+  const editorRole = await requireEditor(expense.trip_id, user.id);
   if (!editorRole) return { ok: false, error: 'Insufficient permissions' };
 
   // Delete splits first (FK constraint)
@@ -277,7 +277,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   }
 
   if (expense) {
-    revalidatePath(`/projects/${expense.project_id}/expenses`);
+    revalidatePath(`/trips/${expense.trip_id}/expenses`);
   }
 
   return { ok: true, data: undefined };

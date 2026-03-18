@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { updateProjectBudget } from '@/features/projects/actions';
+import { updateProjectBudget } from '@/features/trips/actions';
 import { formatCurrency } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 
@@ -12,7 +12,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'];
 
 interface BudgetEditorProps {
-  projectId: string;
+  tripId: string;
   budget: number | null;
   budgetCurrency: string;
   budgetPayerUserId: string | null;
@@ -22,7 +22,7 @@ interface BudgetEditorProps {
 }
 
 export function BudgetEditor({
-  projectId,
+  tripId,
   budget,
   budgetCurrency,
   budgetPayerUserId,
@@ -49,7 +49,7 @@ export function BudgetEditor({
     }
     setPending(true);
     setError(null);
-    const result = await updateProjectBudget(projectId, parsed ?? null, currency, parsed ? payerUserId : null);
+    const result = await updateProjectBudget(tripId, parsed ?? null, currency, parsed ? payerUserId : null);
     setPending(false);
     if (!result.ok) {
       setError(result.error);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ExpenseSplit, ProjectMember, SplitStatus } from '@/lib/types';
+import type { ExpenseSplit, TripMember, SplitStatus } from '@/lib/types';
 
 // -------------------------------------------------------
 // Helpers
@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 
   const admin = createAdminClient();
 
-  // Fetch the split to validate ownership / project membership
+  // Fetch the split to validate ownership / trip membership
   const { data: splitData, error: splitError } = await admin
     .from('expense_splits')
     .select('*')
@@ -64,25 +64,25 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 
   const split = splitData as unknown as ExpenseSplit;
 
-  // Check caller is split owner OR project owner/admin
+  // Check caller is split owner OR trip owner/admin
   const isSplitOwner = split.user_id === user.id;
 
   if (!isSplitOwner) {
-    // Check if caller is project owner or admin
+    // Check if caller is trip owner or admin
     const { data: memberData } = await admin
-      .from('project_members')
+      .from('trip_members')
       .select('role, invite_status')
-      .eq('project_id', split.project_id)
+      .eq('trip_id', split.trip_id)
       .eq('user_id', user.id)
       .eq('invite_status', 'accepted')
       .single();
 
-    const member = memberData as Pick<ProjectMember, 'role' | 'invite_status'> | null;
+    const member = memberData as Pick<TripMember, 'role' | 'invite_status'> | null;
 
     if (!member || !['owner', 'admin'].includes(member.role)) {
       return errorResponse(
         'forbidden',
-        'Only the split owner or a project owner/admin can update this split',
+        'Only the split owner or a trip owner/admin can update this split',
         403
       );
     }

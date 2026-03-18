@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
-import type { ProjectRole } from '@/lib/types';
+import type { TripRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
@@ -14,10 +14,10 @@ import { Avatar } from '@/components/ui/avatar';
 
 interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
-  projectId: string;
+  tripId: string;
   projectTitle?: string;
   currentUserId: string;
-  role: ProjectRole;
+  role: TripRole;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -127,7 +127,7 @@ function SplitRow({
 
 export function ExpenseDetail({
   expense,
-  projectId,
+  tripId,
   projectTitle,
   currentUserId,
   role,
@@ -153,7 +153,7 @@ export function ExpenseDetail({
     const result = await deleteExpense(expense.id);
     if (result.ok) {
       resolve('Expense deleted', 'success');
-      router.push(`/projects/${projectId}/expenses`);
+      router.push(`/trips/${tripId}/expenses`);
     } else {
       const msg = result.error ?? 'Failed to delete expense';
       resolve(msg, 'error');
@@ -210,8 +210,8 @@ export function ExpenseDetail({
         title={expense.title}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: projectTitle ?? 'Trip', href: `/projects/${projectId}` },
-          { label: 'Expenses', href: `/projects/${projectId}/expenses` },
+          { label: projectTitle ?? 'Trip', href: `/trips/${tripId}` },
+          { label: 'Expenses', href: `/trips/${tripId}/expenses` },
           { label: expense.title },
         ]}
       />
@@ -293,7 +293,7 @@ export function ExpenseDetail({
           style={{ borderColor: 'var(--color-border-muted)' }}
         >
           <a
-            href={`/projects/${projectId}/expenses/${expense.id}/edit`}
+            href={`/trips/${tripId}/expenses/${expense.id}/edit`}
             className={cn(
               'inline-flex items-center gap-1.5 btn-secondary text-sm min-h-[44px]'
             )}

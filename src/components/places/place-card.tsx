@@ -9,7 +9,7 @@ import { extractLocationTag } from '@/lib/address';
 interface PlaceCardProps {
   place: Place;
   category: Category | null;
-  projectId: string;
+  tripId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
   comments?: PlaceComment[];
@@ -71,7 +71,7 @@ function vietmapUrl(place: Place): string {
 export function PlaceCard({
   place,
   category,
-  projectId,
+  tripId,
   voteSummary,
   userVote,
   comments = [],
@@ -255,7 +255,7 @@ export function PlaceCard({
 
           {/* Votes */}
           <VoteButtons
-            projectId={projectId}
+            tripId={tripId}
             placeId={place.id}
             upvotes={voteSummary?.upvotes ?? 0}
             downvotes={voteSummary?.downvotes ?? 0}

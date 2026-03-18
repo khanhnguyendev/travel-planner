@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { retrievePlace } from '@/features/places/mapbox';
 import { createLogger } from '@/lib/logger';
 import { logActivity } from '@/lib/activity';
-import type { ProjectMember, Category } from '@/lib/types';
+import type { TripMember, Category } from '@/lib/types';
 
 // -------------------------------------------------------
 // Request schema
@@ -14,7 +14,7 @@ import type { ProjectMember, Category } from '@/lib/types';
 const retrieveSchema = z.object({
   mapboxId: z.string().min(1, 'mapboxId is required'),
   sessionToken: z.string().min(1, 'sessionToken is required'),
-  projectId: z.string().uuid('projectId must be a valid UUID'),
+  tripId: z.string().uuid('tripId must be a valid UUID'),
   categoryId: z.string().uuid('categoryId must be a valid UUID'),
   visitDate: z.string().nullable().optional(),
   visitTimeFrom: z.string().nullable().optional(),
@@ -66,21 +66,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { mapboxId, sessionToken, projectId, categoryId, visitDate, visitTimeFrom, visitTimeTo } = parsed.data;
+  const { mapboxId, sessionToken, tripId, categoryId, visitDate, visitTimeFrom, visitTimeTo } = parsed.data;
 
-  // 3. Verify caller is editor/admin/owner of project
+  // 3. Verify caller is editor/admin/owner of trip
   const { data: membershipData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const membership = membershipData as ProjectMember | null;
+  const membership = membershipData as TripMember | null;
 
   if (!membership) {
-    return errorResponse('forbidden', 'Not a member of this project', 403);
+    return errorResponse('forbidden', 'Not a member of this trip', 403);
   }
 
   const canEdit = ['owner', 'admin', 'editor'].includes(membership.role);
@@ -88,12 +88,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('forbidden', 'Insufficient permissions', 403);
   }
 
-  // 4. Validate categoryId belongs to same project
+  // 4. Validate categoryId belongs to same trip
   const { data: categoryData } = await supabase
     .from('categories')
     .select('*')
     .eq('id', categoryId)
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .single();
 
   const category = categoryData as Category | null;
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!category) {
     return errorResponse(
       'invalid',
-      'categoryId does not belong to this project',
+      'categoryId does not belong to this trip',
       400
     );
   }
@@ -117,9 +117,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const admin = createAdminClient();
 
-  // 6. Upsert into places table (unique on project_id + external_place_id)
+  // 6. Upsert into places table (unique on trip_id + external_place_id)
   const placePayload = {
-    project_id: projectId,
+    trip_id: tripId,
     category_id: categoryId,
     created_by_user_id: user.id,
     source_url: null,
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { status: 409 }
       );
     }
-    log.error('place.insert.failed', { error: insertError.message, projectId, name: detail.name });
+    log.error('place.insert.failed', { error: insertError.message, tripId, name: detail.name });
     return errorResponse('server_error', 'Failed to save place', 500);
   }
 
@@ -160,9 +160,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('server_error', 'Failed to save place', 500);
   }
 
-  log.info('place.add.ok', { placeId: (inserted as { id: string }).id, name: detail.name, projectId });
+  log.info('place.add.ok', { placeId: (inserted as { id: string }).id, name: detail.name, tripId });
   void logActivity({
-    projectId,
+    tripId,
     userId: user.id,
     action: 'place.add',
     entityType: 'place',

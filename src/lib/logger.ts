@@ -3,8 +3,8 @@
  * Outputs newline-delimited JSON to stdout/stderr — never exposed to the UI.
  *
  * Usage:
- *   const log = createLogger({ action: 'createProject', userId, projectId });
- *   log.info('project.created', { title });
+ *   const log = createLogger({ action: 'createTrip', userId, tripId });
+ *   log.info('trip.created', { title });
  *   log.error('db.insert_failed', { error: err.message });
  */
 
@@ -13,7 +13,7 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 interface LogContext {
   traceId?: string;
   userId?: string;
-  projectId?: string;
+  tripId?: string;
   [key: string]: unknown;
 }
 

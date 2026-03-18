@@ -21,7 +21,7 @@ const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
 
 interface ExpenseListProps {
   expenses: Expense[];
-  projectId: string;
+  tripId: string;
   canEdit?: boolean;
 }
 
@@ -58,7 +58,7 @@ function CurrencyPill({ currency }: { currency: string }) {
   );
 }
 
-export function ExpenseList({ expenses, projectId, canEdit }: ExpenseListProps) {
+export function ExpenseList({ expenses, tripId, canEdit }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <div className="card p-12 flex flex-col items-center justify-center text-center">
@@ -76,7 +76,7 @@ export function ExpenseList({ expenses, projectId, canEdit }: ExpenseListProps) 
         </p>
         {canEdit && (
           <Link
-            href={`/projects/${projectId}/expenses/new`}
+            href={`/trips/${tripId}/expenses/new`}
             className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
@@ -92,7 +92,7 @@ export function ExpenseList({ expenses, projectId, canEdit }: ExpenseListProps) 
       {expenses.map((expense) => (
         <Link
           key={expense.id}
-          href={`/projects/${projectId}/expenses/${expense.id}`}
+          href={`/trips/${tripId}/expenses/${expense.id}`}
           className={cn(
             'card card-hover flex items-center gap-4 p-4 group transition-all',
             'hover:scale-[1.01] hover:shadow-md',

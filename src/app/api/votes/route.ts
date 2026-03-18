@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { ProjectMember, Project, Place, PlaceVote } from '@/lib/types';
+import type { TripMember, Trip, Place, PlaceVote } from '@/lib/types';
 
 // -------------------------------------------------------
 // Helpers
@@ -25,7 +25,7 @@ function errorResponse(
 
 const postVoteSchema = z
   .object({
-    projectId: z.string().uuid(),
+    tripId: z.string().uuid(),
     placeId: z.string().uuid(),
     voteType: z.enum(['upvote', 'downvote', 'score']),
     score: z.number().int().min(1).max(10).optional().nullable(),
@@ -69,54 +69,54 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { projectId, placeId, voteType, score } = parsed.data;
+  const { tripId, placeId, voteType, score } = parsed.data;
 
   const { data: membershipData } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
-  const membership = membershipData as ProjectMember | null;
+  const membership = membershipData as TripMember | null;
   if (!membership) {
-    return errorResponse('forbidden', 'Not a member of this project', 403);
+    return errorResponse('forbidden', 'Not a member of this trip', 403);
   }
 
   const { data: placeData } = await supabase
     .from('places')
     .select('*')
     .eq('id', placeId)
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .single();
 
   const place = placeData as Place | null;
   if (!place) {
-    return errorResponse('not_found', 'Place not found in this project', 404);
+    return errorResponse('not_found', 'Place not found in this trip', 404);
   }
 
   const { data: projectData } = await supabase
     .from('projects')
     .select('*')
-    .eq('id', projectId)
+    .eq('id', tripId)
     .single();
 
-  const project = projectData as Project | null;
-  if (project?.status === 'archived') {
-    return errorResponse('forbidden', 'Cannot vote on an archived project', 403);
+  const trip = projectData as Trip | null;
+  if (trip?.status === 'archived') {
+    return errorResponse('forbidden', 'Cannot vote on an archived trip', 403);
   }
 
   // Use admin client for the mutation — the SSR client's Database generic
   // resolves place_votes as `never` due to a @supabase/ssr type import mismatch.
-  // RLS still applies via the service role only when project membership is
+  // RLS still applies via the service role only when trip membership is
   // pre-verified above (which we've done).
   const admin = createAdminClient();
   const { data: voteData, error: voteError } = await admin
     .from('place_votes')
     .upsert(
       {
-        project_id: projectId,
+        trip_id: tripId,
         place_id: placeId,
         user_id: user.id,
         vote_type: voteType,
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // -------------------------------------------------------
 
 const deleteVoteSchema = z.object({
-  projectId: z.string().uuid(),
+  tripId: z.string().uuid(),
   placeId: z.string().uuid(),
 });
 
@@ -177,28 +177,28 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { projectId, placeId } = parsed.data;
+  const { tripId, placeId } = parsed.data;
 
   const [{ data: membershipData }, { data: projectData }] = await Promise.all([
     supabase
-      .from('project_members')
+      .from('trip_members')
       .select('*')
-      .eq('project_id', projectId)
+      .eq('trip_id', tripId)
       .eq('user_id', user.id)
       .eq('invite_status', 'accepted')
       .single(),
-    supabase.from('projects').select('*').eq('id', projectId).single(),
+    supabase.from('projects').select('*').eq('id', tripId).single(),
   ]);
 
-  const membership = membershipData as ProjectMember | null;
-  const project = projectData as Project | null;
+  const membership = membershipData as TripMember | null;
+  const trip = projectData as Trip | null;
 
   if (!membership) {
-    return errorResponse('forbidden', 'Not a member of this project', 403);
+    return errorResponse('forbidden', 'Not a member of this trip', 403);
   }
 
-  if (project?.status === 'archived') {
-    return errorResponse('forbidden', 'Cannot modify votes on an archived project', 403);
+  if (trip?.status === 'archived') {
+    return errorResponse('forbidden', 'Cannot modify votes on an archived trip', 403);
   }
 
   const admin = createAdminClient();
@@ -207,7 +207,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     .delete()
     .eq('place_id', placeId)
     .eq('user_id', user.id)
-    .eq('project_id', projectId);
+    .eq('trip_id', tripId);
 
   if (error) {
     console.error('vote delete error:', error);

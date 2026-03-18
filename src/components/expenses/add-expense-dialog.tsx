@@ -7,14 +7,14 @@ import { ExpenseForm } from '@/components/expenses/expense-form';
 import type { MemberWithProfile } from '@/features/members/queries';
 
 interface AddExpenseDialogProps {
-  projectId: string;
+  tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
   /** Custom trigger element. If omitted, renders the default "Add expense" primary button. */
   trigger?: React.ReactElement<{ onClick?: () => void }>;
 }
 
-export function AddExpenseDialog({ projectId, members, currentUserId, trigger }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ tripId, members, currentUserId, trigger }: AddExpenseDialogProps) {
   const [open, setOpen] = useState(false);
 
   const triggerEl = trigger
@@ -36,7 +36,7 @@ export function AddExpenseDialog({ projectId, members, currentUserId, trigger }:
       {open && (
         <Dialog title="Add expense" onClose={() => setOpen(false)} maxWidth="max-w-xl">
           <ExpenseForm
-            projectId={projectId}
+            tripId={tripId}
             members={members}
             currentUserId={currentUserId}
             onSuccess={() => setOpen(false)}

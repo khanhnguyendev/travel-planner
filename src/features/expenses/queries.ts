@@ -11,15 +11,15 @@ export type ExpenseWithSplits = Expense & {
 };
 
 /**
- * Returns all expenses for a project ordered by expense_date desc.
+ * Returns all expenses for a trip ordered by expense_date desc.
  */
-export async function getExpenses(projectId: string): Promise<Expense[]> {
+export async function getExpenses(tripId: string): Promise<Expense[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .order('expense_date', { ascending: false });
 
   if (error) {
@@ -31,18 +31,18 @@ export async function getExpenses(projectId: string): Promise<Expense[]> {
 }
 
 /**
- * Returns all expenses for a project with their splits and member profiles joined.
+ * Returns all expenses for a trip with their splits and member profiles joined.
  * Used for debt calculation on the expenses list page.
  */
 export async function getExpensesWithSplits(
-  projectId: string
+  tripId: string
 ): Promise<ExpenseWithSplits[]> {
   const supabase = await createClient();
 
   const { data: expensesData, error: expensesError } = await supabase
     .from('expenses')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .order('expense_date', { ascending: false });
 
   if (expensesError || !expensesData || expensesData.length === 0) {

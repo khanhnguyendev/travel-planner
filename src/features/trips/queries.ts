@@ -1,15 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Project, ProjectRole } from '@/lib/types';
+import type { Trip, TripRole } from '@/lib/types';
 
-export interface ProjectWithRole extends Project {
-  myRole: ProjectRole;
+export interface TripWithRole extends Trip {
+  myRole: TripRole;
 }
 
 /**
  * Returns all projects the current user is an accepted member of,
  * including their role, ordered by most recently updated.
  */
-export async function getProjects(): Promise<ProjectWithRole[]> {
+export async function getTrips(): Promise<TripWithRole[]> {
   const supabase = await createClient();
 
   const {
@@ -24,31 +24,31 @@ export async function getProjects(): Promise<ProjectWithRole[]> {
     .select(
       `
       *,
-      project_members!inner(user_id, invite_status, role)
+      trip_members!inner(user_id, invite_status, role)
     `
     )
-    .eq('project_members.user_id', user.id)
-    .eq('project_members.invite_status', 'accepted')
+    .eq('trip_members.user_id', user.id)
+    .eq('trip_members.invite_status', 'accepted')
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('getProjects error:', error);
+    console.error('getTrips error:', error);
     return [];
   }
 
   // Cast the entire result to avoid SSR client type resolution issues
   return ((data ?? []) as Array<Record<string, unknown>>).map((row) => {
-    const pm = (row.project_members as Array<{ role: string }> | null)?.[0];
+    const pm = (row.trip_members as Array<{ role: string }> | null)?.[0];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { project_members: _pm, ...project } = row;
-    return { ...(project as unknown as Project), myRole: (pm?.role ?? 'viewer') as ProjectRole };
+    const { trip_members: _pm, ...trip } = row;
+    return { ...(trip as unknown as Trip), myRole: (pm?.role ?? 'viewer') as TripRole };
   });
 }
 
 /**
- * Returns a single project by ID. RLS ensures the user must be a member.
+ * Returns a single trip by ID. RLS ensures the user must be a member.
  */
-export async function getProject(id: string): Promise<Project | null> {
+export async function getTrip(id: string): Promise<Trip | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -58,19 +58,19 @@ export async function getProject(id: string): Promise<Project | null> {
     .single();
 
   if (error) {
-    console.error('getProject error:', error);
+    console.error('getTrip error:', error);
     return null;
   }
 
-  return data as unknown as Project;
+  return data as unknown as Trip;
 }
 
 /**
- * Returns the current user's role in a project, or null if not a member.
+ * Returns the current user's role in a trip, or null if not a member.
  */
 export async function getUserRole(
-  projectId: string
-): Promise<ProjectRole | null> {
+  tripId: string
+): Promise<TripRole | null> {
   const supabase = await createClient();
 
   const {
@@ -80,14 +80,14 @@ export async function getUserRole(
   if (!user) return null;
 
   const { data, error } = await supabase
-    .from('project_members')
+    .from('trip_members')
     .select('*')
-    .eq('project_id', projectId)
+    .eq('trip_id', tripId)
     .eq('user_id', user.id)
     .eq('invite_status', 'accepted')
     .single();
 
   if (error) return null;
 
-  return ((data as unknown as { role: string }) ?.role as ProjectRole) ?? null;
+  return ((data as unknown as { role: string }) ?.role as TripRole) ?? null;
 }

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { requireSession } from '@/features/auth/session';
-import { getProject, getUserRole } from '@/features/projects/queries';
+import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getExpense } from '@/features/expenses/queries';
 import { ExpenseDetail } from '@/components/expenses/expense-detail';
 import type { Metadata } from 'next';
@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ projectId: string; expenseId: string }>;
+  params: Promise<{ tripId: string; expenseId: string }>;
 }): Promise<Metadata> {
   const { expenseId } = await params;
   const expense = await getExpense(expenseId);
@@ -18,26 +18,26 @@ export async function generateMetadata({
 export default async function ExpenseDetailPage({
   params,
 }: {
-  params: Promise<{ projectId: string; expenseId: string }>;
+  params: Promise<{ tripId: string; expenseId: string }>;
 }) {
-  const { projectId, expenseId } = await params;
+  const { tripId, expenseId } = await params;
   const user = await requireSession();
 
-  const [project, role, expense] = await Promise.all([
-    getProject(projectId),
-    getUserRole(projectId),
+  const [trip, role, expense] = await Promise.all([
+    getTrip(tripId),
+    getUserRole(tripId),
     getExpense(expenseId),
   ]);
 
-  if (!project || !role || !expense || expense.project_id !== projectId) {
+  if (!trip || !role || !expense || expense.trip_id !== tripId) {
     notFound();
   }
 
   return (
     <ExpenseDetail
       expense={expense}
-      projectId={projectId}
-      projectTitle={project.title}
+      tripId={tripId}
+      projectTitle={trip.title}
       currentUserId={user.id}
       role={role}
     />

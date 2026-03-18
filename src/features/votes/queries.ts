@@ -50,17 +50,17 @@ export async function getUserVote(
 }
 
 /**
- * Returns an aggregate vote summary for all places in a project.
+ * Returns an aggregate vote summary for all places in a trip.
  */
 export async function getVoteSummary(
-  projectId: string
+  tripId: string
 ): Promise<VoteSummaryEntry[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('place_votes')
     .select('*')
-    .eq('project_id', projectId);
+    .eq('trip_id', tripId);
 
   if (error) {
     console.error('getVoteSummary error:', error);

@@ -11,7 +11,7 @@ import { useLoadingToast } from '@/components/ui/toast';
 interface AccommodationSectionProps {
   places: Place[];
   categories: Category[];
-  projectId: string;
+  tripId: string;
   currentUserId: string;
   canEdit: boolean;
   voteSummaries: VoteSummaryEntry[];
@@ -190,7 +190,7 @@ function AccommodationCard({
 export function AccommodationSection({
   places,
   categories,
-  projectId,
+  tripId,
   currentUserId,
   canEdit,
   voteSummaries,
@@ -255,7 +255,7 @@ export function AccommodationSection({
           commentAuthors={commentAuthors}
           currentUserId={currentUserId}
           category={categoryMap[openPlace.category_id] ?? null}
-          projectId={projectId}
+          tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
           allPlaces={places}
