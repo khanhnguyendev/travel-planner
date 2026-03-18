@@ -260,7 +260,24 @@ useEffect(() => {
             </div>
 
             {localCategories.length === 0 ? (
-              <p className="text-sm text-stone-400">No categories yet — create one first.</p>
+              <button
+                type="button"
+                onClick={() => setShowCategoryDialog(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed transition-colors hover:border-teal-400 hover:bg-teal-50 group"
+                style={{ borderColor: 'var(--color-border-strong)', backgroundColor: 'var(--color-bg-subtle)' }}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors group-hover:bg-teal-100" style={{ backgroundColor: 'var(--color-bg-muted)' }}>
+                  <Plus className="w-4 h-4 transition-colors group-hover:text-teal-600" style={{ color: 'var(--color-text-subtle)' }} />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium transition-colors group-hover:text-teal-700" style={{ color: 'var(--color-text-muted)' }}>
+                    Create a category first
+                  </p>
+                  <p className="text-xs transition-colors group-hover:text-teal-600" style={{ color: 'var(--color-text-subtle)' }}>
+                    e.g. Restaurant, Café, Hotel…
+                  </p>
+                </div>
+              </button>
             ) : (
               <select id="category-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required disabled={isPending}
                 className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 disabled:opacity-50 bg-white"
@@ -329,11 +346,16 @@ useEffect(() => {
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1">
-        {selected && (
-          <button type="submit" disabled={isPending || categories.length === 0} className="btn-primary inline-flex items-center gap-2 text-sm disabled:opacity-50">
+        {selected && localCategories.length === 0 ? (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            Create a category to continue
+          </div>
+        ) : selected ? (
+          <button type="submit" disabled={isPending} className="btn-primary inline-flex items-center gap-2 text-sm disabled:opacity-50">
             {isPending ? (<><Loader2 className="w-4 h-4 animate-spin" />Adding…</>) : 'Add place'}
           </button>
-        )}
+        ) : null}
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1 text-sm px-3 py-2 rounded-lg transition-colors" style={{ color: 'var(--color-text-muted)' }}>
             <X className="w-4 h-4" />
