@@ -514,11 +514,24 @@ export function PlaceDetailDrawer({
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex-1 min-w-0 pr-3">
-            {category && (
-              <div className="mb-2">
-                <CategoryBadge category={category} size="sm" />
-              </div>
-            )}
+            {(() => {
+              const meta = place.metadata_json as { place?: string } | null;
+              const tag = meta?.place ?? null;
+              return (category || tag) ? (
+                <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                  {category && <CategoryBadge category={category} size="sm" />}
+                  {tag && (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}
+                    >
+                      <MapPin className="w-3 h-3" />
+                      {tag}
+                    </span>
+                  )}
+                </div>
+              ) : null;
+            })()}
             <h2 className="text-xl font-bold leading-snug text-stone-800">{place.name}</h2>
             {place.address && (
               <p className="flex items-start gap-1 text-sm mt-1 text-stone-600">
@@ -577,6 +590,12 @@ export function PlaceDetailDrawer({
             </div>
           )}
 
+          {/* Schedule + backup */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
+            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} />
+          </div>
+
           {/* Note (editors write, viewers read) */}
           {(canEdit || place.note) && (
             <div>
@@ -588,12 +607,6 @@ export function PlaceDetailDrawer({
               <NoteEditor place={place} canEdit={canEdit} />
             </div>
           )}
-
-          {/* Schedule + backup */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
-            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} />
-          </div>
 
           {/* Votes */}
           <div>

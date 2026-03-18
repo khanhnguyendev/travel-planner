@@ -80,9 +80,14 @@ export function PlaceCard({
   onLocationTagClick,
 }: PlaceCardProps) {
   const hasSchedule = place.visit_date || place.visit_time_from;
-  const meta = place.metadata_json as { region?: string; district?: string } | null;
-  const locationTags: string[] = meta?.district || meta?.region
-    ? [meta?.district, meta?.region].filter(Boolean) as string[]
+  const meta = place.metadata_json as {
+    country?: string; region?: string; district?: string;
+    place?: string; street?: string; postcode?: string;
+    feature_type?: string; place_formatted?: string;
+  } | null;
+  const displayAddress = place.address ?? meta?.place_formatted;
+  const locationTags: string[] = meta?.place
+    ? [meta.place]
     : place.address ? [extractLocationTag(place.address)].filter(Boolean) as string[] : [];
 
   return (
@@ -129,7 +134,7 @@ export function PlaceCard({
                   e.stopPropagation();
                   onLocationTagClick?.(tag);
                 }}
-                className="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors"
+                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors"
                 style={{
                   backgroundColor: '#EFF6FF',
                   color: '#2563EB',
@@ -137,6 +142,7 @@ export function PlaceCard({
                 }}
                 title={onLocationTagClick ? `Filter by ${tag}` : undefined}
               >
+                <MapPin className="w-3 h-3" />
                 {tag}
               </button>
             ))}
@@ -149,10 +155,10 @@ export function PlaceCard({
             {place.name}
           </h3>
 
-          {place.address && (
+          {displayAddress && (
             <p className="flex items-start gap-1 text-xs leading-snug line-clamp-1 text-stone-400 mt-1">
               <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              {place.address}
+              {displayAddress}
             </p>
           )}
         </div>

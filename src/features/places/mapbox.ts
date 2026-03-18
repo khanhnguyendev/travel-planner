@@ -12,12 +12,19 @@ export interface MapboxSuggestion {
 
 export interface MapboxPlaceDetail {
   mapbox_id: string;
+  feature_type: string | null;
   name: string;
-  address: string | null;
+  address: string | null;         // full_address
+  place_formatted: string | null; // e.g. "Phường 9, Đà Lạt, Lâm Đồng, Vietnam"
   lat: number | null;
   lng: number | null;
-  region: string | null;
-  district: string | null;
+  // Structured context
+  country: string | null;
+  region: string | null;          // province / tỉnh
+  district: string | null;        // city / quận / huyện
+  place: string | null;           // ward / phường / xã
+  street: string | null;
+  postcode: string | null;
 }
 
 // -------------------------------------------------------
@@ -29,28 +36,19 @@ export async function searchPlaces(
   sessionToken: string
 ): Promise<MapboxSuggestion[]> {
   const token = process.env.MAPBOX_SECRET_TOKEN;
-  if (!token) {
-    throw new Error('MAPBOX_SECRET_TOKEN is not configured');
-  }
+  if (!token) throw new Error('MAPBOX_SECRET_TOKEN is not configured');
 
-  const url = new URL(
-    'https://api.mapbox.com/search/searchbox/v1/suggest'
-  );
+  const url = new URL('https://api.mapbox.com/search/searchbox/v1/suggest');
   url.searchParams.set('q', query);
   url.searchParams.set('session_token', sessionToken);
   url.searchParams.set('language', 'vi');
   url.searchParams.set('limit', '5');
   url.searchParams.set('access_token', token);
 
-  console.log('[mapbox] suggest', { query, sessionToken });
+  console.log('[mapbox] suggest', { query });
 
   const res = await fetch(url.toString());
-
-  if (!res.ok) {
-    throw new Error(
-      `Mapbox suggest API error: HTTP ${res.status} ${res.statusText}`
-    );
-  }
+  if (!res.ok) throw new Error(`Mapbox suggest API error: HTTP ${res.status} ${res.statusText}`);
 
   const json = (await res.json()) as {
     suggestions?: Array<{
@@ -80,9 +78,7 @@ export async function retrievePlace(
   sessionToken: string
 ): Promise<MapboxPlaceDetail> {
   const token = process.env.MAPBOX_SECRET_TOKEN;
-  if (!token) {
-    throw new Error('MAPBOX_SECRET_TOKEN is not configured');
-  }
+  if (!token) throw new Error('MAPBOX_SECRET_TOKEN is not configured');
 
   const url = new URL(
     `https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(mapboxId)}`
@@ -91,57 +87,57 @@ export async function retrievePlace(
   url.searchParams.set('language', 'vi');
   url.searchParams.set('access_token', token);
 
-  console.log('[mapbox] retrieve', { mapboxId, sessionToken });
+  console.log('[mapbox] retrieve', { mapboxId });
 
   const res = await fetch(url.toString());
-
-  if (!res.ok) {
-    throw new Error(
-      `Mapbox retrieve API error: HTTP ${res.status} ${res.statusText}`
-    );
-  }
+  if (!res.ok) throw new Error(`Mapbox retrieve API error: HTTP ${res.status} ${res.statusText}`);
 
   const json = (await res.json()) as {
     features?: Array<{
       properties?: {
         mapbox_id?: string;
+        feature_type?: string;
         name?: string;
         full_address?: string;
-        coordinates?: {
-          longitude?: number;
-          latitude?: number;
-        };
+        place_formatted?: string;
+        coordinates?: { longitude?: number; latitude?: number };
         context?: {
-          region?: { name?: string };
+          country?:  { name?: string; country_code?: string };
+          region?:   { name?: string; region_code?: string };
           district?: { name?: string };
+          place?:    { name?: string };
+          street?:   { name?: string };
+          postcode?: { name?: string };
         };
       };
     }>;
   };
 
+  console.log('[mapbox] retrieve raw json', JSON.stringify(json, null, 2));
+
   const feature = json.features?.[0];
-  if (!feature) {
-    throw new Error('Mapbox retrieve returned no features');
-  }
+  if (!feature) throw new Error('Mapbox retrieve returned no features');
 
-  const props = feature.properties ?? {};
-  console.log('[mapbox] retrieve result', {
-    name: props.name,
-    address: props.full_address,
-    district: props.context?.district?.name,
-    region: props.context?.region?.name,
-    lat: props.coordinates?.latitude,
-    lng: props.coordinates?.longitude,
-    mapbox_id: props.mapbox_id,
-  });
+  const p = feature.properties ?? {};
+  const ctx = p.context ?? {};
 
-  return {
-    mapbox_id: props.mapbox_id ?? mapboxId,
-    name: props.name ?? '',
-    address: props.full_address ?? null,
-    lat: props.coordinates?.latitude ?? null,
-    lng: props.coordinates?.longitude ?? null,
-    region: props.context?.region?.name ?? null,
-    district: props.context?.district?.name ?? null,
+  const detail: MapboxPlaceDetail = {
+    mapbox_id:      p.mapbox_id ?? mapboxId,
+    feature_type:   p.feature_type ?? null,
+    name:           p.name ?? '',
+    address:        p.full_address ?? null,
+    place_formatted: p.place_formatted ?? null,
+    lat:            p.coordinates?.latitude ?? null,
+    lng:            p.coordinates?.longitude ?? null,
+    country:        ctx.country?.name ?? null,
+    region:         ctx.region?.name ?? null,
+    district:       ctx.district?.name ?? null,
+    place:          ctx.place?.name ?? null,
+    street:         ctx.street?.name ?? null,
+    postcode:       ctx.postcode?.name ?? null,
   };
+
+  console.log('[mapbox] retrieve result', detail);
+
+  return detail;
 }
