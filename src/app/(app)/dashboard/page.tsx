@@ -1,18 +1,34 @@
 import Link from 'next/link';
-import { Plus, Compass, Calendar, Users, Globe, Lock, Crown, Pencil, Eye, ShieldCheck } from 'lucide-react';
+import {
+  Plus,
+  Compass,
+  Calendar,
+  Users,
+  Globe,
+  Lock,
+  Crown,
+  Pencil,
+  Eye,
+  ShieldCheck,
+  ArrowUpRight,
+  Wallet,
+  Sparkles,
+  Clock3,
+} from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getTrips, type TripWithRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
+import { formatCurrency } from '@/lib/format';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Trang chủ' };
+export const metadata: Metadata = { title: 'Trang chu' };
 
 const ROLE_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
-  owner:  { icon: <Crown className="w-3 h-3" />,       label: 'Owner',  color: '#B45309', bg: '#FEF3C7' },
-  admin:  { icon: <ShieldCheck className="w-3 h-3" />, label: 'Admin',  color: '#6D28D9', bg: '#EDE9FE' },
-  editor: { icon: <Pencil className="w-3 h-3" />,      label: 'Editor', color: '#065F46', bg: '#D1FAE5' },
-  viewer: { icon: <Eye className="w-3 h-3" />,         label: 'Viewer', color: '#374151', bg: '#F3F4F6' },
+  owner: { icon: <Crown className="h-3 w-3" />, label: 'Owner', color: '#B45309', bg: '#FEF3C7' },
+  admin: { icon: <ShieldCheck className="h-3 w-3" />, label: 'Admin', color: '#6D28D9', bg: '#EDE9FE' },
+  editor: { icon: <Pencil className="h-3 w-3" />, label: 'Editor', color: '#065F46', bg: '#D1FAE5' },
+  viewer: { icon: <Eye className="h-3 w-3" />, label: 'Viewer', color: '#374151', bg: '#F3F4F6' },
 };
 
 async function TripCard({ trip }: { trip: TripWithRole }) {
@@ -21,72 +37,100 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
   const role = ROLE_CONFIG[trip.myRole] ?? ROLE_CONFIG.viewer;
   const isArchived = trip.status === 'archived';
   const isPublic = trip.visibility === 'public';
+  const updatedLabel = new Date(trip.updated_at).toLocaleDateString('en', {
+    month: 'short',
+    day: 'numeric',
+  });
 
   return (
-    <Link href={`/trips/${trip.id}`} className="card card-hover block group overflow-hidden animate-in slide-up">
-
-      {/* Header — same structure for both cover and no-cover */}
-      <div className="relative h-40 overflow-hidden rounded-t-[1.25rem]">
+    <Link href={`/trips/${trip.id}`} className="group block overflow-hidden rounded-[1.75rem] section-shell animate-in slide-up">
+      <div className="relative h-48 overflow-hidden rounded-t-[1.75rem]">
         {hasCover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={trip.cover_image_url!}
             alt=""
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div
-            className="w-full h-full"
-            style={{ background: 'linear-gradient(135deg, #0D9488 0%, #0891B2 55%, #6366F1 100%)' }}
-          >
-            {/* Decorative circles */}
-            <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-15 bg-white" />
-            <div className="absolute right-4 bottom-0 w-20 h-20 rounded-full opacity-10 bg-white" />
+          <div className="hero-orb h-full w-full">
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/15" />
+            <div className="absolute left-6 top-10 h-16 w-16 rounded-full bg-white/12" />
+            <div className="absolute bottom-0 right-5 h-24 w-24 rounded-full bg-white/10" />
           </div>
         )}
 
-        {/* Gradient scrim — same for both */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <div className="trip-hero-overlay absolute inset-0" />
 
-        {/* Visibility badge — top right */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">
+            <Clock3 className="h-3 w-3" />
+            Updated {updatedLabel}
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">
+              {role.icon}
+              {role.label}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">
+              {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+              {isPublic ? 'Public' : 'Private'}
+            </span>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4">
           {isArchived && (
-            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(0,0,0,0.45)', color: 'white' }}>
+            <span className="mb-2 inline-flex items-center rounded-full bg-white/16 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
               Archived
             </span>
           )}
-          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(0,0,0,0.45)', color: 'white' }}>
-            {isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
-            {isPublic ? 'Public' : 'Private'}
-          </span>
-        </div>
-
-        {/* Title — bottom left, always */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="font-bold text-base leading-snug truncate text-white drop-shadow-sm">{trip.title}</h3>
+          <h3 className="line-clamp-2 text-lg font-semibold leading-snug text-white section-title">
+            {trip.title}
+          </h3>
           {trip.description && (
-            <p className="text-xs text-white/70 truncate mt-0.5">{trip.description}</p>
+            <p className="mt-1 line-clamp-2 text-sm text-white/74">
+              {trip.description}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 text-xs min-w-0" style={{ color: 'var(--color-text-subtle)' }}>
-            {trip.start_date && trip.end_date && (
-              <span className="flex items-center gap-1 truncate">
-                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                {formatDateRange(trip.start_date, trip.end_date)}
-              </span>
-            )}
-            <span className="flex items-center gap-1 flex-shrink-0">
-              <Users className="w-3.5 h-3.5" />
-              {members.length}
-            </span>
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="mini-stat px-3 py-3">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Schedule
+            </p>
+            <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>
+              {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Dates flexible'}
+            </p>
           </div>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0" style={{ background: role.bg, color: role.color }}>
-            {role.icon}
-            {role.label}
+          <div className="mini-stat px-3 py-3">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Crew
+            </p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+              <Users className="h-4 w-4" />
+              {members.length} {members.length === 1 ? 'member' : 'members'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-stone-950/[0.03] px-3 py-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Ready to plan
+            </p>
+            <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+              {trip.budget != null
+                ? `${formatCurrency(trip.budget, trip.budget_currency)} target budget`
+                : 'No budget limit set yet'}
+            </p>
+          </div>
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+            <ArrowUpRight className="h-4 w-4" />
           </span>
         </div>
       </div>
@@ -94,48 +138,179 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
   );
 }
 
+function InsightCard({
+  label,
+  value,
+  hint,
+  icon,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="metric-tile px-4 py-4">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+        {icon}
+      </div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+        {label}
+      </p>
+      <p className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+        {value}
+      </p>
+      <p className="mt-1 text-sm leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+        {hint}
+      </p>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
   await requireSession();
   const trips = await getTrips();
+  const activeTrips = trips.filter((trip) => trip.status !== 'archived');
+  const publicTrips = trips.filter((trip) => trip.visibility === 'public');
+  const budgetedTrips = trips.filter((trip) => trip.budget != null);
+  const nextTrip =
+    [...trips]
+      .filter((trip) => trip.start_date)
+      .sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)))[0] ?? null;
+
+  if (trips.length === 0) {
+    return (
+      <div className="animate-in fade-in duration-300">
+        <section className="hero-orb relative overflow-hidden rounded-[2rem] p-6 text-white sm:p-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%)]" />
+          <div className="relative max-w-lg">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              Mobile-first planning
+            </p>
+            <h1 className="text-3xl font-semibold leading-tight section-title sm:text-4xl">
+              Plan your first adventure like a shared cockpit.
+            </h1>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-white/78 sm:text-base">
+              Collect places, vote as a group, track shared spending, and keep the whole trip moving from one calm workspace.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Link href="/trips/new" className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5">
+                Start a new trip
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <InsightCard
+            label="Shared planning"
+            value="Places + votes"
+            hint="Add destinations and build consensus without leaving the same flow."
+            icon={<Compass className="h-4 w-4" />}
+          />
+          <InsightCard
+            label="Money clarity"
+            value="Expenses + debts"
+            hint="Track receipts, balances, and settlements in the same trip workspace."
+            icon={<Wallet className="h-4 w-4" />}
+          />
+          <InsightCard
+            label="Group rhythm"
+            value="Members + activity"
+            hint="Know what changed, who joined, and what still needs attention."
+            icon={<Users className="h-4 w-4" />}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>My Trips</h1>
-          {trips.length > 0 && (
-            <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-              {trips.length} {trips.length === 1 ? 'trip' : 'trips'}
+      <section className="hero-orb relative overflow-hidden rounded-[2rem] p-6 text-white sm:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%)]" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              Travel OS
             </p>
-          )}
+            <h1 className="text-3xl font-semibold leading-tight section-title sm:text-4xl">
+              Your trips, votes, spending, and crew in one calm mobile workspace.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/78 sm:text-base">
+              Jump back into the next plan, check what needs attention, and keep every trip moving without digging through separate pages.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {nextTrip ? (
+              <div className="rounded-[1.4rem] bg-white/12 px-4 py-3 backdrop-blur-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                  Next up
+                </p>
+                <p className="mt-1 text-sm font-semibold text-white">
+                  {nextTrip.title}
+                </p>
+                {nextTrip.start_date && nextTrip.end_date && (
+                  <p className="mt-1 text-xs text-white/70">
+                    {formatDateRange(nextTrip.start_date, nextTrip.end_date)}
+                  </p>
+                )}
+              </div>
+            ) : null}
+            <Link href="/trips/new" className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5">
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New trip
+              </span>
+            </Link>
+          </div>
         </div>
-        <Link href="/trips/new" className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[40px]">
-          <Plus className="w-4 h-4" />
-          New trip
-        </Link>
+      </section>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <InsightCard
+          label="Trips"
+          value={String(trips.length)}
+          hint={`${activeTrips.length} active right now`}
+          icon={<Compass className="h-4 w-4" />}
+        />
+        <InsightCard
+          label="Public"
+          value={String(publicTrips.length)}
+          hint={`${trips.length - publicTrips.length} private plans`}
+          icon={<Globe className="h-4 w-4" />}
+        />
+        <InsightCard
+          label="Budgets"
+          value={String(budgetedTrips.length)}
+          hint={`${trips.length - budgetedTrips.length} still flexible`}
+          icon={<Wallet className="h-4 w-4" />}
+        />
+        <InsightCard
+          label="Timeline"
+          value={nextTrip?.start_date ? formatDateRange(nextTrip.start_date, nextTrip.end_date ?? nextTrip.start_date) : 'Open'}
+          hint={nextTrip ? `${nextTrip.title} is coming up` : 'Add dates to anchor the next plan'}
+          icon={<Calendar className="h-4 w-4" />}
+        />
       </div>
 
-      {trips.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center py-24 text-center" style={{ borderStyle: 'dashed' }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-mid) 100%)' }}>
-            <Compass className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
-          </div>
-          <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Plan your first adventure</h2>
-          <p className="text-sm mb-6 max-w-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            Collect places, vote on destinations, and split expenses — all in one collaborative workspace.
-          </p>
-          <Link href="/trips/new" className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[40px]">
-            <Plus className="w-4 h-4" />
-            New trip
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
-          {trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
-          ))}
-        </div>
-      )}
+      <div className="mb-4 mt-8">
+        <h2 className="text-2xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+          My trips
+        </h2>
+        <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          Active plans first, with the details you need at a glance.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 stagger sm:grid-cols-2 xl:grid-cols-3">
+        {trips.map((trip) => (
+          <TripCard key={trip.id} trip={trip} />
+        ))}
+      </div>
     </div>
   );
 }
