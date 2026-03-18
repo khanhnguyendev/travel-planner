@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, BedDouble } from 'lucide-react';
 import { createCategory } from '@/features/categories/actions';
-import type { Category } from '@/lib/types';
+import type { Category, CategoryType } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
 
 const PRESET_COLORS = [
@@ -31,6 +31,7 @@ export function AddCategoryForm({
   const [name, setName] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [icon, setIcon] = useState('');
+  const [categoryType, setCategoryType] = useState<CategoryType>('general');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const loadingToast = useLoadingToast();
@@ -51,7 +52,9 @@ export function AddCategoryForm({
         projectId,
         name.trim(),
         color,
-        icon.trim() || null
+        icon.trim() || null,
+        null,
+        categoryType
       );
 
       if (!result.ok) {
@@ -127,6 +130,24 @@ export function AddCategoryForm({
           ))}
         </div>
       </div>
+
+      {/* Accommodation toggle */}
+      <button
+        type="button"
+        onClick={() => setCategoryType((t) => t === 'accommodation' ? 'general' : 'accommodation')}
+        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border text-sm transition-colors text-left"
+        style={{
+          borderColor: categoryType === 'accommodation' ? '#0D9488' : 'var(--color-border)',
+          backgroundColor: categoryType === 'accommodation' ? '#F0FDFA' : 'transparent',
+          color: categoryType === 'accommodation' ? '#0F766E' : 'var(--color-text-muted)',
+        }}
+      >
+        <BedDouble className="w-4 h-4 flex-shrink-0" />
+        <span className="font-medium">Accommodation category</span>
+        <span className="ml-auto text-xs opacity-70">
+          {categoryType === 'accommodation' ? 'On' : 'Off'}
+        </span>
+      </button>
 
       {/* Error */}
       {error && (

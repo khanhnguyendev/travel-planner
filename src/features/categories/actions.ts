@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
-import type { Category } from '@/lib/types';
+import type { Category, CategoryType } from '@/lib/types';
 
 // -------------------------------------------------------
 // Schemas
@@ -34,7 +34,8 @@ export async function createCategory(
   name: string,
   color?: string | null,
   icon?: string | null,
-  sortOrder?: number | null
+  sortOrder?: number | null,
+  categoryType?: CategoryType
 ): Promise<ActionResult<{ category: Category }>> {
   const parsed = createCategorySchema.safeParse({ name, color, icon, sortOrder });
   if (!parsed.success) {
@@ -59,6 +60,7 @@ export async function createCategory(
       color: parsed.data.color ?? null,
       icon: parsed.data.icon ?? null,
       sort_order: parsed.data.sortOrder ?? null,
+      category_type: categoryType ?? 'general',
     })
     .select('*')
     .single();
