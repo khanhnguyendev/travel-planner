@@ -89,7 +89,7 @@ export function VoteButtons({
       <button
         onClick={() => handleVote('upvote')}
         disabled={isPending}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
         style={{
           backgroundColor: activeUpvote
             ? 'var(--color-primary)'
@@ -108,7 +108,7 @@ export function VoteButtons({
       <button
         onClick={() => handleVote('downvote')}
         disabled={isPending}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
         style={{
           backgroundColor: activeDownvote
             ? 'var(--color-secondary)'

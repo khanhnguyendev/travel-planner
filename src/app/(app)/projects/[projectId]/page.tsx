@@ -29,8 +29,11 @@ import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/projects/cover-image-upload';
+import { BudgetEditor } from '@/components/projects/budget-editor';
+import { MemberBalances } from '@/components/projects/member-balances';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
+import { AccommodationSection } from '@/components/places/accommodation-section';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -73,14 +76,14 @@ function RoleBadge({ role }: { role: ProjectRole }) {
 }
 
 function VisibilityBadge({ visibility }: { visibility: Visibility }) {
-  const isShared = visibility === 'shared';
+  const isPublic = visibility === 'public';
   return (
     <span
       className="inline-flex items-center gap-1 text-xs"
       style={{ color: 'var(--color-text-subtle)' }}
     >
-      {isShared ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-      {isShared ? 'Shared' : 'Private'}
+      {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+      {isPublic ? 'Public' : 'Private'}
     </span>
   );
 }
@@ -156,9 +159,18 @@ export default async function ProjectDetailPage({
     getExpenses(projectId),
   ]);
 
-  if (!project || !role) {
+  if (!project) {
     notFound();
   }
+
+  // Non-members can view public projects in viewer mode
+  const effectiveRole: ProjectRole | null =
+    role ?? (project.visibility === 'public' ? 'viewer' : null);
+  if (!effectiveRole) {
+    notFound();
+  }
+  // From here effectiveRole is guaranteed non-null
+  const resolvedRole = effectiveRole as ProjectRole;
 
   // Fetch places (needed for Places + Timeline + Map tabs)
   const places = await getPlaces(projectId);
@@ -207,8 +219,8 @@ export default async function ProjectDetailPage({
   }
 
   const isArchived = project.status === 'archived';
-  const canEdit = ['owner', 'admin', 'editor'].includes(role);
-  const canManage = ['owner', 'admin'].includes(role);
+  const canEdit = ['owner', 'admin', 'editor'].includes(resolvedRole);
+  const canManage = ['owner', 'admin'].includes(resolvedRole);
 
   const memberProfiles = members.map((m) => ({
     id: m.profile.id,
@@ -225,7 +237,7 @@ export default async function ProjectDetailPage({
           <CoverImageUpload projectId={projectId} currentCoverUrl={project.cover_image_url} />
         </div>
       ) : project.cover_image_url ? (
-        <div className="mb-6 rounded-2xl overflow-hidden" style={{ height: 200 }}>
+        <div className="mb-6 rounded-2xl overflow-hidden h-32 sm:h-48 md:h-52">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={project.cover_image_url}
@@ -240,11 +252,12 @@ export default async function ProjectDetailPage({
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: project.title }]}
       />
 
-      {/* Project meta card */}
+      {/* Unified project header card */}
       <div className="card p-6 mb-6">
-        <div className="flex items-start justify-between gap-4">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
               {isArchived && (
                 <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -257,45 +270,66 @@ export default async function ProjectDetailPage({
                 </span>
               )}
             </div>
-
             {project.description && (
               <p
-                className="text-sm mb-3 leading-relaxed"
+                className="text-sm leading-relaxed"
                 style={{ color: 'var(--color-text-muted)' }}
               >
                 {project.description}
               </p>
             )}
-
-            <div className="flex items-center gap-4 flex-wrap">
-              {project.start_date && project.end_date && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-sm"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  <Calendar className="w-4 h-4" />
-                  {formatDateRange(project.start_date, project.end_date)}
-                </span>
-              )}
-
-              <span
-                className="inline-flex items-center gap-1.5 text-sm"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                <Users className="w-4 h-4" />
-                {members.length} {members.length === 1 ? 'member' : 'members'}
-              </span>
-
-              <VisibilityBadge visibility={project.visibility} />
-            </div>
           </div>
-
-          <RoleBadge role={role} />
+          <RoleBadge role={resolvedRole} />
         </div>
-      </div>
 
-      {/* Members strip */}
-      <div className="card p-5 mb-6">
+        {/* Meta pills */}
+        <div className="flex items-center gap-4 flex-wrap mb-4">
+          {project.start_date && project.end_date && (
+            <span
+              className="inline-flex items-center gap-1.5 text-sm"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              <Calendar className="w-4 h-4" />
+              {formatDateRange(project.start_date, project.end_date)}
+            </span>
+          )}
+          <span
+            className="inline-flex items-center gap-1.5 text-sm"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <Users className="w-4 h-4" />
+            {members.length} {members.length === 1 ? 'member' : 'members'}
+          </span>
+          <VisibilityBadge visibility={project.visibility} />
+        </div>
+
+        {/* Budget */}
+        {(() => {
+          const totals: Record<string, number> = {};
+          for (const exp of expenses) {
+            totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
+          }
+          const totalSpentInBudgetCurrency = totals[project.budget_currency] ?? 0;
+          return (
+            <BudgetEditor
+              projectId={projectId}
+              budget={project.budget}
+              budgetCurrency={project.budget_currency}
+              budgetPayerUserId={project.budget_payer_user_id}
+              canManage={canManage}
+              totalSpent={totalSpentInBudgetCurrency}
+              members={members}
+            />
+          );
+        })()}
+
+        {/* Divider */}
+        <div
+          className="my-5 border-t"
+          style={{ borderColor: 'var(--color-border)' }}
+        />
+
+        {/* Members */}
         <div className="flex items-center justify-between gap-3 mb-3">
           <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
             Members
@@ -314,7 +348,7 @@ export default async function ProjectDetailPage({
             </Link>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap mb-4">
           {members.map((m) => {
             const name = m.profile.display_name ?? 'Unknown';
             const isCurrentUser = m.user_id === user.id;
@@ -339,7 +373,31 @@ export default async function ProjectDetailPage({
             );
           })}
         </div>
+
+        {/* Member balances */}
+        <MemberBalances
+          expenses={expensesWithSplits}
+          members={members}
+          currentUserId={user.id}
+          budgetAmount={project.budget}
+          budgetCurrency={project.budget_currency}
+          budgetPayerUserId={project.budget_payer_user_id}
+        />
       </div>
+
+      {/* Accommodation — always visible above tabs */}
+      <AccommodationSection
+        places={places}
+        categories={categories}
+        projectId={projectId}
+        currentUserId={user.id}
+        canEdit={canEdit}
+        voteSummaries={voteSummaries}
+        userVotes={userVotes}
+        reviewsByPlaceId={reviewsByPlaceId}
+        commentsByPlaceId={commentsByPlaceId}
+        commentAuthors={commentAuthors}
+      />
 
       {/* Tab bar */}
       <TabBar activeTab={activeTab} projectId={projectId} />
@@ -349,7 +407,7 @@ export default async function ProjectDetailPage({
         <div className="mb-6">
           <PlacesSection
             projectId={projectId}
-            role={role}
+            role={resolvedRole}
             initialPlaces={places}
             initialCategories={categories}
             initialVoteSummaries={voteSummaries}
@@ -358,6 +416,7 @@ export default async function ProjectDetailPage({
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={user.id}
+            members={members}
           />
         </div>
       )}
@@ -365,7 +424,18 @@ export default async function ProjectDetailPage({
       {/* Tab: Timeline */}
       {activeTab === 'timeline' && (
         <div className="card p-6 mb-6">
-          <TripTimeline places={places} categories={categories} />
+          <TripTimeline
+            places={places}
+            categories={categories}
+            projectId={projectId}
+            currentUserId={user.id}
+            canEdit={canEdit}
+            voteSummaries={voteSummaries}
+            userVotes={userVotes}
+            reviewsByPlaceId={reviewsByPlaceId}
+            commentsByPlaceId={commentsByPlaceId}
+            commentAuthors={commentAuthors}
+          />
         </div>
       )}
 
@@ -429,7 +499,7 @@ export default async function ProjectDetailPage({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {canEdit && (
                       <AddExpenseDialog
                         projectId={projectId}
