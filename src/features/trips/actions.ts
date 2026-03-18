@@ -8,6 +8,12 @@ import type { ActionResult } from '@/features/auth/actions';
 import type { Trip } from '@/lib/types';
 import { logActivity } from '@/lib/activity';
 
+function slog(service: string, msg: string, data?: Record<string, unknown>) {
+  const ts = new Date().toISOString();
+  const extra = data ? ' ' + JSON.stringify(data) : '';
+  console.log(`[${ts}][${service}] ${msg}${extra}`);
+}
+
 // -------------------------------------------------------
 // Schemas
 // -------------------------------------------------------
@@ -91,9 +97,11 @@ export async function createTrip(
     .single();
 
   if (tripError || !trip) {
-    console.error('createTrip error:', tripError);
+    slog('trips', 'createTrip failed', { userId: user.id, error: tripError?.message });
     return { ok: false, error: 'Failed to create trip' };
   }
+
+  slog('trips', 'created', { userId: user.id, tripId: trip.id, title: parsed.data.title });
 
   // Add the creator as an accepted owner member.
   const { error: memberError } = await admin.from('trip_members').insert({
@@ -105,8 +113,7 @@ export async function createTrip(
   });
 
   if (memberError) {
-    console.error('trip_members insert error:', memberError);
-    // Trip was created; still return success but log the issue.
+    slog('trips', 'trip_members insert failed', { tripId: trip.id, error: memberError.message });
   }
 
   await logActivity({
