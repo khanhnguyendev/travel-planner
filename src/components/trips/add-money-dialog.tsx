@@ -67,16 +67,16 @@ export function AddMoneyDialog({
           onClose={() => setOpen(false)}
           maxWidth="max-w-xl"
         >
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {canManageBudget && (
               <div
-                className="inline-flex rounded-[1rem] p-1"
+                className="grid w-full grid-cols-2 rounded-[1rem] p-1"
                 style={{ backgroundColor: 'var(--color-bg-subtle)' }}
               >
                 <button
                   type="button"
                   onClick={() => setActiveTab('income')}
-                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[0.85rem] px-3.5 py-2 text-sm font-semibold transition-colors"
+                  className="inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold transition-colors"
                   style={{
                     backgroundColor: activeTab === 'income' ? 'white' : 'transparent',
                     color: activeTab === 'income' ? 'var(--color-primary)' : 'var(--color-text-muted)',
@@ -89,7 +89,7 @@ export function AddMoneyDialog({
                 <button
                   type="button"
                   onClick={() => setActiveTab('expense')}
-                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[0.85rem] px-3.5 py-2 text-sm font-semibold transition-colors"
+                  className="inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold transition-colors"
                   style={{
                     backgroundColor: activeTab === 'expense' ? 'white' : 'transparent',
                     color: activeTab === 'expense' ? 'var(--color-primary)' : 'var(--color-text-muted)',

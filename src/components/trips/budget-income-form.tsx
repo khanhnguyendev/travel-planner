@@ -89,58 +89,63 @@ export function BudgetIncomeForm({
           : 'Set the starting shared budget for this trip before the crew begins logging expenses.'}
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <span
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm"
-            style={{ color: 'var(--color-text-subtle)' }}
-          >
-            {CURRENCY_SYMBOLS[currency] ?? currency}
-          </span>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full rounded-xl border py-2.5 pl-8 pr-3 text-sm outline-none"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'white',
-              color: 'var(--color-text)',
-            }}
-            placeholder="0"
-            autoFocus
-          />
-        </div>
-
-        {hasBudget ? (
-          <div
-            className="inline-flex min-h-[44px] items-center rounded-xl border px-3 text-sm font-medium"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'white',
-              color: 'var(--color-text)',
-            }}
-          >
-            {activeCurrency}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Amount
+        </label>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full flex-1">
+            <span
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+              style={{ color: 'var(--color-text-subtle)' }}
+            >
+              {CURRENCY_SYMBOLS[currency] ?? currency}
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="w-full rounded-xl border py-2.5 pl-8 pr-3 text-sm outline-none"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'white',
+                color: 'var(--color-text)',
+              }}
+              placeholder="0"
+              autoFocus
+            />
           </div>
-        ) : (
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="min-h-[44px] rounded-xl border px-3 py-2.5 text-sm outline-none"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'white',
-              color: 'var(--color-text)',
-            }}
-          >
-            {CURRENCIES.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        )}
+
+          {hasBudget ? (
+            <div
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border px-3 text-sm font-medium sm:w-auto sm:min-w-[96px]"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'white',
+                color: 'var(--color-text)',
+              }}
+            >
+              {activeCurrency}
+            </div>
+          ) : (
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl border px-3 py-2.5 text-sm outline-none sm:w-auto sm:min-w-[96px]"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'white',
+                color: 'var(--color-text)',
+              }}
+            >
+              {CURRENCIES.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {showPayerField && (
@@ -180,7 +185,7 @@ export function BudgetIncomeForm({
         <button
           type="submit"
           disabled={pending}
-          className="btn-primary inline-flex items-center justify-center gap-2 disabled:opacity-60"
+          className="btn-primary inline-flex w-full items-center justify-center gap-2 disabled:opacity-60 sm:w-auto"
         >
           <Check className="h-4 w-4" />
           {pending ? 'Saving…' : hasBudget ? 'Add income' : 'Set budget'}
@@ -188,7 +193,7 @@ export function BudgetIncomeForm({
         <button
           type="button"
           onClick={() => onCancel?.()}
-          className="btn-secondary text-sm"
+          className="btn-secondary w-full text-sm sm:w-auto"
         >
           Cancel
         </button>
