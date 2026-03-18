@@ -125,7 +125,15 @@ export async function retrievePlace(
   }
 
   const props = feature.properties ?? {};
-  console.log('[mapbox] retrieve result', { name: props.name, address: props.full_address });
+  console.log('[mapbox] retrieve result', {
+    name: props.name,
+    address: props.full_address,
+    district: props.context?.district?.name,
+    region: props.context?.region?.name,
+    lat: props.coordinates?.latitude,
+    lng: props.coordinates?.longitude,
+    mapbox_id: props.mapbox_id,
+  });
 
   return {
     mapbox_id: props.mapbox_id ?? mapboxId,
