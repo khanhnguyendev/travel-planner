@@ -15,7 +15,7 @@ import {
   Sparkles,
   Clock3,
 } from 'lucide-react';
-import { requireSession } from '@/features/auth/session';
+import { getSession } from '@/features/auth/session';
 import { getTrips, type TripWithRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
@@ -167,8 +167,61 @@ function InsightCard({
   );
 }
 
+function GuestLanding() {
+  return (
+    <div className="animate-in fade-in duration-300">
+      <section className="hero-orb relative overflow-hidden rounded-[2rem] p-6 text-white sm:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%)]" />
+        <div className="relative max-w-lg">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
+            <Sparkles className="h-3.5 w-3.5" />
+            Mobile-first planning
+          </p>
+          <h1 className="text-3xl font-semibold leading-tight section-title sm:text-4xl">
+            Plan your next adventure together.
+          </h1>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/78 sm:text-base">
+            Collect places, vote as a group, track shared spending, and keep the whole trip moving from one calm workspace.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link href="/sign-up" className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5">
+              Get started free
+            </Link>
+            <Link href="/sign-in" className="rounded-2xl bg-white/14 px-4 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-transform hover:-translate-y-0.5">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <InsightCard
+          label="Shared planning"
+          value="Places + votes"
+          hint="Add destinations and build consensus without leaving the same flow."
+          icon={<Compass className="h-4 w-4" />}
+        />
+        <InsightCard
+          label="Money clarity"
+          value="Expenses + debts"
+          hint="Track receipts, balances, and settlements in the same trip workspace."
+          icon={<Wallet className="h-4 w-4" />}
+        />
+        <InsightCard
+          label="Group rhythm"
+          value="Members + activity"
+          hint="Know what changed, who joined, and what still needs attention."
+          icon={<Users className="h-4 w-4" />}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
-  await requireSession();
+  const user = await getSession();
+  if (!user) return <GuestLanding />;
+
   const trips = await getTrips();
   const activeTrips = trips.filter((trip) => trip.status !== 'archived');
   const publicTrips = trips.filter((trip) => trip.visibility === 'public');

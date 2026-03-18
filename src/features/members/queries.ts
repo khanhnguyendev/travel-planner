@@ -34,6 +34,51 @@ export type MemberWithProfile = TripMember & {
 };
 
 /**
+ * Returns all pending join requests (invite_status = 'requested') for a trip.
+ * Only visible to owners/admins — caller must enforce authorization.
+ */
+export async function getJoinRequests(
+  tripId: string
+): Promise<MemberWithProfile[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('trip_members')
+    .select(`*, profile:profiles(id, display_name, avatar_url)`)
+    .eq('trip_id', tripId)
+    .eq('invite_status', 'requested')
+    .order('joined_at', { ascending: true });
+
+  if (error) {
+    console.error('getJoinRequests error:', error);
+    return [];
+  }
+
+  return (data ?? []) as MemberWithProfile[];
+}
+
+/**
+ * Returns true if the given user has a pending join request for this trip.
+ */
+export async function hasRequestedJoin(
+  tripId: string,
+  userId: string
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('trip_members')
+    .select('id')
+    .eq('trip_id', tripId)
+    .eq('user_id', userId)
+    .eq('invite_status', 'requested')
+    .maybeSingle();
+
+  if (error) return false;
+  return data !== null;
+}
+
+/**
  * Returns all accepted members of a trip with their profile information.
  */
 export async function getMembers(

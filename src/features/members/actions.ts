@@ -345,6 +345,148 @@ export async function removeMember(
 }
 
 // -------------------------------------------------------
+// requestToJoin
+// -------------------------------------------------------
+
+export async function requestToJoin(
+  tripId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  // Verify trip is public
+  const { data: trip } = await supabase
+    .from('trips')
+    .select('visibility')
+    .eq('id', tripId)
+    .single();
+
+  if (!trip || trip.visibility !== 'public') {
+    return { ok: false, error: 'Trip is not public' };
+  }
+
+  // Check if already a member or has a pending request
+  const { data: existing } = await supabase
+    .from('trip_members')
+    .select('id, invite_status')
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existing) {
+    if (existing.invite_status === 'accepted') {
+      return { ok: false, error: 'Already a member' };
+    }
+    if (existing.invite_status === 'requested') {
+      return { ok: false, error: 'Request already pending' };
+    }
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from('trip_members').upsert({
+    trip_id: tripId,
+    user_id: user.id,
+    role: 'viewer',
+    invite_status: 'requested',
+    joined_at: new Date().toISOString(),
+  }, { onConflict: 'trip_id,user_id' });
+
+  if (error) {
+    console.error('requestToJoin error:', error);
+    return { ok: false, error: 'Failed to send join request' };
+  }
+
+  revalidatePath(`/trips/${tripId}/members`);
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
+// approveJoinRequest
+// -------------------------------------------------------
+
+export async function approveJoinRequest(
+  tripId: string,
+  userId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const { data: callerData } = await supabase
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const callerRole = (callerData as { role: string } | null)?.role;
+  if (!callerRole || !['owner', 'admin'].includes(callerRole)) {
+    return { ok: false, error: 'Only owner or admin can approve requests' };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('trip_members')
+    .update({ invite_status: 'accepted', role: 'viewer' })
+    .eq('trip_id', tripId)
+    .eq('user_id', userId)
+    .eq('invite_status', 'requested');
+
+  if (error) {
+    console.error('approveJoinRequest error:', error);
+    return { ok: false, error: 'Failed to approve request' };
+  }
+
+  revalidatePath(`/trips/${tripId}/members`);
+  revalidatePath(`/trips/${tripId}`);
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
+// denyJoinRequest
+// -------------------------------------------------------
+
+export async function denyJoinRequest(
+  tripId: string,
+  userId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const { data: callerData } = await supabase
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const callerRole = (callerData as { role: string } | null)?.role;
+  if (!callerRole || !['owner', 'admin'].includes(callerRole)) {
+    return { ok: false, error: 'Only owner or admin can deny requests' };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('trip_members')
+    .delete()
+    .eq('trip_id', tripId)
+    .eq('user_id', userId)
+    .eq('invite_status', 'requested');
+
+  if (error) {
+    console.error('denyJoinRequest error:', error);
+    return { ok: false, error: 'Failed to deny request' };
+  }
+
+  revalidatePath(`/trips/${tripId}/members`);
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
 // changeMemberRole
 // -------------------------------------------------------
 

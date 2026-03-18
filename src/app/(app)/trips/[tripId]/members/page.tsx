@@ -3,11 +3,12 @@ import Link from 'next/link';
 import { Users, ArrowLeft } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
-import { getMembers, getPendingInvites } from '@/features/members/queries';
+import { getMembers, getPendingInvites, getJoinRequests } from '@/features/members/queries';
 import { PageHeader } from '@/components/ui/page-header';
 import { MemberList } from '@/components/members/member-list';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { PendingInvitesList } from '@/components/members/pending-invites-list';
+import { JoinRequestsList } from '@/components/members/join-requests-list';
 import type { Metadata } from 'next';
 
 // -------------------------------------------------------
@@ -45,11 +46,14 @@ export default async function MembersPage({
     getPendingInvites(tripId),
   ]);
 
+  const canManageCheck = role ? ['owner', 'admin'].includes(role) : false;
+  const joinRequests = canManageCheck ? await getJoinRequests(tripId) : [];
+
   if (!trip || !role) {
     notFound();
   }
 
-  const canManage = ['owner', 'admin'].includes(role);
+  const canManage = canManageCheck;
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -100,6 +104,21 @@ export default async function MembersPage({
             >
               Invite links expire after 7 days. You can create separate links for viewers, editors, or admins.
             </div>
+          </div>
+        )}
+
+        {/* Join requests */}
+        {canManage && (
+          <div className="card p-6">
+            <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
+              Join requests
+              {joinRequests.length > 0 && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                  {joinRequests.length}
+                </span>
+              )}
+            </h2>
+            <JoinRequestsList tripId={tripId} initialRequests={joinRequests} />
           </div>
         )}
 

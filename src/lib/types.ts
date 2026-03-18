@@ -1,7 +1,7 @@
 // Enums
 export type TripRole = 'owner' | 'admin' | 'editor' | 'viewer';
 export type TripStatus = 'active' | 'archived';
-export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired' | 'requested';
 export type Visibility = 'private' | 'public';
 export type VoteType = 'upvote' | 'downvote' | 'score';
 export type SplitStatus = 'pending' | 'settled';

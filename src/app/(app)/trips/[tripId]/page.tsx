@@ -20,11 +20,12 @@ import {
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
-import { getMembers } from '@/features/members/queries';
+import { getMembers, hasRequestedJoin } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
+import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
 import { formatDateRange } from '@/lib/date';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -36,8 +37,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
 import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
-import { MemberBalances } from '@/components/trips/member-balances';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
+import { JoinRequestButton } from '@/components/members/join-request-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
@@ -386,6 +387,9 @@ export default async function TripDetailPage({
   const resolvedRole = effectiveRole as TripRole;
   const currentUserId = user?.id ?? '';
   const isMember = role != null;
+  const joinRequested = !isMember && trip.visibility === 'public' && user
+    ? await hasRequestedJoin(tripId, user.id)
+    : false;
   const visibleTabs: TabValue[] = isMember
     ? ['places', 'timeline', 'map', 'expenses', 'activity']
     : ['places', 'timeline', 'map'];
@@ -462,227 +466,247 @@ export default async function TripDetailPage({
   const spendSummary = Object.entries(totalsByCurrency).length > 0
     ? Object.entries(totalsByCurrency).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
     : 'No expenses yet';
-  const memberPreview = members.slice(0, 4);
-  const remainingMembers = Math.max(0, members.length - memberPreview.length);
   const showCoverMedia = canManage || Boolean(trip.cover_image_url);
+  const recentExpenses = expensesWithSplits.slice(0, 5);
+  const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
+  const memberBalanceMap = new Map(
+    calculateMemberBalances(expensesWithSplits, {
+      budgetAmount: trip.budget,
+      budgetCurrency: trip.budget_currency,
+      budgetPayerUserId: trip.budget_payer_user_id,
+      memberUserIds: members.map((member) => member.user_id),
+    })
+      .filter((balance) => balance.currency === balanceCurrency)
+      .map((balance) => [balance.userId, balance.net])
+  );
+  const sortedCrewMembers = [...members].sort((a, b) => {
+    if (a.user_id === currentUserId) return -1;
+    if (b.user_id === currentUserId) return 1;
+    const roleOrder: Record<TripRole, number> = { owner: 0, admin: 1, editor: 2, viewer: 3 };
+    const roleDiff = roleOrder[a.role] - roleOrder[b.role];
+    if (roleDiff !== 0) return roleDiff;
+    return (a.joined_at ?? '').localeCompare(b.joined_at ?? '');
+  });
 
   return (
     <div className="animate-in fade-in duration-300">
       <section className="section-shell p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] lg:items-start">
           <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5 lg:col-start-1 lg:row-start-1">
-              <div className="flex h-full flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    href={user ? '/dashboard' : '/'}
-                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+            <div className="flex h-full flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={user ? '/dashboard' : '/'}
+                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                  style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                >
+                  {user ? 'Dashboard' : 'Home'}
+                </Link>
+                <span
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {tripPhase}
+                </span>
+                <RoleBadge role={resolvedRole} />
+                <VisibilityBadge visibility={trip.visibility} />
+                {isArchived && (
+                  <span
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
                     style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
                   >
-                    {user ? 'Dashboard' : 'Home'}
-                  </Link>
-                  <span
-                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {tripPhase}
+                    Archived
                   </span>
-                  <RoleBadge role={resolvedRole} />
-                  <VisibilityBadge visibility={trip.visibility} />
-                  {isArchived && (
-                    <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                      style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                    >
-                      Archived
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] xl:items-end">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                      Trip overview
-                    </p>
-                    <h1 className="mt-1 text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
-                      {trip.title}
-                    </h1>
-                    {trip.description && (
-                      <p className="mt-2 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
-                        {trip.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                    <div className="min-w-0">
-                      <SnapshotPill
-                        label="Dates"
-                        value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
-                        icon={<Calendar className="h-4 w-4" />}
-                        className="min-w-0"
-                      />
-                      <TripDatesEditor
-                        tripId={tripId}
-                        startDate={trip.start_date}
-                        endDate={trip.end_date}
-                        canManage={canManage}
-                      />
-                    </div>
-                    <SnapshotPill
-                      label="Places"
-                      value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
-                      icon={<MapPin className="h-4 w-4" />}
-                      className="min-w-0"
-                    />
-                    <SnapshotPill
-                      label="Money"
-                      value={expenses.length > 0 ? spendSummary : 'No spending yet'}
-                      icon={<Receipt className="h-4 w-4" />}
-                      className="min-w-0"
-                    />
-                  </div>
-                </div>
-
-                {!isMember && (
-                  <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
-                    <div className="flex items-start gap-2">
-                      <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <p>
-                        This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
-                      </p>
-                    </div>
-                  </div>
                 )}
-
               </div>
-            </div>
 
-          {showCoverMedia ? (
-              <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3 lg:col-start-2 lg:row-start-1">
-                <div className="mb-3 flex items-center justify-between gap-3 px-1">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                      Cover
-                    </p>
-                    <h2 className="mt-1 text-sm font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                      Trip media
-                    </h2>
-                  </div>
-                </div>
-                <div className="overflow-hidden rounded-[1.25rem]">
-                  {canManage ? (
-                    <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} height={156} />
-                  ) : trip.cover_image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={trip.cover_image_url}
-                      alt={`${trip.title} cover`}
-                      className="h-[156px] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="hero-orb h-[156px] w-full" />
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-1 lg:row-start-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Budget
-              </p>
-              <BudgetEditor
-                tripId={tripId}
-                budget={trip.budget}
-                budgetCurrency={trip.budget_currency}
-                budgetPayerUserId={trip.budget_payer_user_id}
-                canManage={canManage}
-                totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
-                members={members}
-                actionSlot={canEdit ? (
-                  <AddExpenseDialog
-                    tripId={tripId}
-                    members={members}
-                    currentUserId={currentUserId}
-                    trigger={(
-                      <button
-                        type="button"
-                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
-                        style={{ backgroundColor: 'var(--color-primary)' }}
-                      >
-                        <Receipt className="h-3.5 w-3.5" />
-                        Add expense
-                      </button>
-                    )}
-                  />
-                ) : null}
-              />
-            </div>
-
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-2 lg:row-start-2">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] xl:items-end">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                    Crew
+                    Trip overview
                   </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {canManage && <InviteLinkButton tripId={tripId} />}
-                  {isMember && (
-                    <Link
-                      href={`/trips/${tripId}/members`}
-                      className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
-                      style={{ color: 'var(--color-text-muted)' }}
-                    >
-                      <UserCog className="h-4 w-4" />
-                      Manage
-                    </Link>
+                  <h1 className="mt-1 text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
+                    {trip.title}
+                  </h1>
+                  {trip.description && (
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
+                      {trip.description}
+                    </p>
                   )}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                  <div className="min-w-0">
+                    <SnapshotPill
+                      label="Dates"
+                      value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
+                      icon={<Calendar className="h-4 w-4" />}
+                      className="min-w-0"
+                    />
+                    <TripDatesEditor
+                      tripId={tripId}
+                      startDate={trip.start_date}
+                      endDate={trip.end_date}
+                      canManage={canManage}
+                    />
+                  </div>
+                  <SnapshotPill
+                    label="Places"
+                    value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
+                    icon={<MapPin className="h-4 w-4" />}
+                    className="min-w-0"
+                  />
+                  <SnapshotPill
+                    label="Money"
+                    value={expenses.length > 0 ? spendSummary : 'No spending yet'}
+                    icon={<Receipt className="h-4 w-4" />}
+                    className="min-w-0"
+                  />
                 </div>
               </div>
 
-              {isMember ? (
-                <>
-                  <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3">
-                    <div className="flex items-center -space-x-2">
-                      {memberPreview.map((member) => {
-                        const name = member.profile.display_name ?? 'Unknown';
-                        return (
-                          <div key={member.id} className="rounded-full border-2 border-white">
-                            <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
-                          </div>
-                        );
-                      })}
-                      {remainingMembers > 0 && (
-                        <span className="ml-1 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-white px-2 text-xs font-semibold text-stone-600 shadow-sm">
-                          +{remainingMembers}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {members.length} members
-                      </p>
-                      <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                        Roles and invite links live in Crew
-                      </p>
-                    </div>
+              {!isMember && (
+                <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+                  <div className="flex items-start gap-2">
+                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <p>
+                      This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                    </p>
                   </div>
-
-                  <MemberBalances
-                    expenses={expensesWithSplits}
-                    members={members}
-                    currentUserId={currentUserId}
-                    budgetAmount={trip.budget}
-                    budgetCurrency={trip.budget_currency}
-                    budgetPayerUserId={trip.budget_payer_user_id}
+                  <JoinRequestButton
+                    tripId={tripId}
+                    isAuthenticated={!!user}
+                    alreadyRequested={joinRequested}
                   />
-                </>
-              ) : (
-                <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                  Join the trip to vote, comment, add places, manage crew, and track shared spending.
                 </div>
               )}
+
+            </div>
+          </div>
+
+          {showCoverMedia ? (
+            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3 lg:col-start-2 lg:row-start-1">
+              <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Cover
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-[1.25rem]">
+                {canManage ? (
+                  <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} height={156} />
+                ) : trip.cover_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={trip.cover_image_url}
+                    alt={`${trip.title} cover`}
+                    className="h-[156px] w-full object-cover"
+                  />
+                ) : (
+                  <div className="hero-orb h-[156px] w-full" />
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-1 lg:row-start-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Budget
+            </p>
+            <BudgetEditor
+              tripId={tripId}
+              budget={trip.budget}
+              budgetCurrency={trip.budget_currency}
+              budgetPayerUserId={trip.budget_payer_user_id}
+              canManage={canManage}
+              totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
+              members={members}
+              actionSlot={canEdit ? (
+                <AddExpenseDialog
+                  tripId={tripId}
+                  members={members}
+                  currentUserId={currentUserId}
+                  trigger={(
+                    <button
+                      type="button"
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+                      style={{ backgroundColor: 'var(--color-primary)' }}
+                    >
+                      <Receipt className="h-3.5 w-3.5" />
+                      Add expense
+                    </button>
+                  )}
+                />
+              ) : null}
+            />
+          </div>
+
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-2 lg:row-start-2">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Crew
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {canManage && <InviteLinkButton tripId={tripId} />}
+                {isMember && (
+                  <Link
+                    href={`/trips/${tripId}/members`}
+                    className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    <UserCog className="h-4 w-4" />
+                    Manage
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {isMember ? (
+              <>
+                <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3">
+                  <div className="flex items-center -space-x-2">
+                    {memberPreview.map((member) => {
+                      const name = member.profile.display_name ?? 'Unknown';
+                      return (
+                        <div key={member.id} className="rounded-full border-2 border-white">
+                          <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
+                        </div>
+                      );
+                    })}
+                    {remainingMembers > 0 && (
+                      <span className="ml-1 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-white px-2 text-xs font-semibold text-stone-600 shadow-sm">
+                        +{remainingMembers}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                      {members.length} members
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                      Roles and invite links live in Crew
+                    </p>
+                  </div>
+                </div>
+
+                <MemberBalances
+                  expenses={expensesWithSplits}
+                  members={members}
+                  currentUserId={currentUserId}
+                  budgetAmount={trip.budget}
+                  budgetCurrency={trip.budget_currency}
+                  budgetPayerUserId={trip.budget_payer_user_id}
+                />
+              </>
+            ) : (
+              <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                Join the trip to vote, comment, add places, manage crew, and track shared spending.
+              </div>
+            )}
           </div>
         </div>
       </section>
