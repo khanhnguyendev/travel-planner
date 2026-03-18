@@ -25,71 +25,53 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
   return (
     <Link href={`/trips/${trip.id}`} className="card card-hover block group overflow-hidden animate-in slide-up">
 
-      {hasCover ? (
-        <div className="relative h-40">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Header — same structure for both cover and no-cover */}
+      <div className="relative h-40 overflow-hidden rounded-t-[1.25rem]">
+        {hasCover ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={trip.cover_image_url!}
             alt=""
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-          <div className="absolute top-3 right-3 flex items-center gap-1.5">
-            {isArchived && (
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(0,0,0,0.45)', color: 'white' }}>
-                Archived
-              </span>
-            )}
+        ) : (
+          <div
+            className="w-full h-full"
+            style={{ background: 'linear-gradient(135deg, #0D9488 0%, #0891B2 55%, #6366F1 100%)' }}
+          >
+            {/* Decorative circles */}
+            <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-15 bg-white" />
+            <div className="absolute right-4 bottom-0 w-20 h-20 rounded-full opacity-10 bg-white" />
+          </div>
+        )}
+
+        {/* Gradient scrim — same for both */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+        {/* Visibility badge — top right */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          {isArchived && (
             <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(0,0,0,0.45)', color: 'white' }}>
-              {isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
-              {isPublic ? 'Public' : 'Private'}
+              Archived
             </span>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="font-bold text-base leading-snug truncate text-white drop-shadow-sm">{trip.title}</h3>
-          </div>
-        </div>
-      ) : (
-        /* Gradient header with initials when no cover */
-        <div
-          className="relative h-24 flex items-center px-5 rounded-t-[1.25rem] overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #0D9488 0%, #0891B2 60%, #6366F1 100%)' }}
-        >
-          {/* Decorative circle */}
-          <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-20" style={{ background: 'white' }} />
-          <div className="absolute -right-2 bottom-0 w-16 h-16 rounded-full opacity-10" style={{ background: 'white' }} />
-          {/* Initials */}
-          <span className="relative text-3xl font-black tracking-tight text-white/90 leading-none select-none">
-            {trip.title.charAt(0).toUpperCase()}
+          )}
+          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(0,0,0,0.45)', color: 'white' }}>
+            {isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
+            {isPublic ? 'Public' : 'Private'}
           </span>
         </div>
-      )}
 
-      <div className="p-4 space-y-3">
-        {!hasCover && (
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-bold text-base leading-snug line-clamp-2" style={{ color: 'var(--color-text)' }}>
-              {trip.title}
-            </h3>
-            <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-              {isArchived && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
-                  Archived
-                </span>
-              )}
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: isPublic ? '#EFF6FF' : 'var(--color-bg-subtle)', color: isPublic ? '#3B82F6' : 'var(--color-text-muted)' }}>
-                {isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
-                {isPublic ? 'Public' : 'Private'}
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Title — bottom left, always */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="font-bold text-base leading-snug truncate text-white drop-shadow-sm">{trip.title}</h3>
+          {trip.description && (
+            <p className="text-xs text-white/70 truncate mt-0.5">{trip.description}</p>
+          )}
+        </div>
+      </div>
 
-        {trip.description && (
-          <p className="text-sm line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>{trip.description}</p>
-        )}
-
-        <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 text-xs min-w-0" style={{ color: 'var(--color-text-subtle)' }}>
             {trip.start_date && trip.end_date && (
               <span className="flex items-center gap-1 truncate">
