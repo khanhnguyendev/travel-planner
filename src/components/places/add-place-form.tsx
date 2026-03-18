@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
-import { Search, X, Loader2, AlertCircle, MapPin, CalendarDays, Clock } from 'lucide-react';
+import { Search, X, Loader2, AlertCircle, MapPin, CalendarDays, Clock, Plus } from 'lucide-react';
 import type { Category, Place, PlaceReview } from '@/lib/types';
 import type { MapboxSuggestion } from '@/features/places/mapbox';
 import { useLoadingToast } from '@/components/ui/toast';
+import { extractLocationTag } from '@/lib/address';
+import { Dialog } from '@/components/ui/dialog';
+import { AddCategoryForm } from '@/components/categories/add-category-form';
 
 interface AddPlaceFormProps {
   projectId: string;
@@ -17,13 +20,6 @@ function newSessionToken(): string {
   return crypto.randomUUID();
 }
 
-function extractLocationTag(address: string): string | null {
-  const parts = address.split(',').map((p) => p.trim()).filter(Boolean);
-  if (parts.length < 2) return null;
-  const last = parts[parts.length - 1];
-  const isCountry = /^[A-Za-zÀ-ỹ\s.]+$/.test(last) && last.length > 3;
-  return isCountry ? (parts[parts.length - 2] ?? null) : last;
-}
 
 export function AddPlaceForm({ projectId, categories, onAdded, onCancel }: AddPlaceFormProps) {
   const [sessionToken, setSessionToken] = useState<string>(() => newSessionToken());
@@ -33,6 +29,8 @@ export function AddPlaceForm({ projectId, categories, onAdded, onCancel }: AddPl
   const [showDropdown, setShowDropdown] = useState(false);
   const [selected, setSelected] = useState<MapboxSuggestion | null>(null);
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
+  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [visitDate, setVisitDate] = useState('');
   const [visitTimeFrom, setVisitTimeFrom] = useState('');
   const [visitTimeTo, setVisitTimeTo] = useState('');
@@ -45,10 +43,10 @@ export function AddPlaceForm({ projectId, categories, onAdded, onCancel }: AddPl
   const dropdownRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
-    if (!categoryId && categories.length > 0) setCategoryId(categories[0].id);
-  }, [categories]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!categoryId && localCategories.length > 0) setCategoryId(localCategories[0].id);
+  }, [localCategories]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
+useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
       if (!inputRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
@@ -191,32 +189,35 @@ export function AddPlaceForm({ projectId, categories, onAdded, onCancel }: AddPl
               </button>
             )}
           </div>
-
-          {/* Suggestions dropdown */}
-          {showDropdown && suggestions.length > 0 && (
-            <ul ref={dropdownRef} className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }} role="listbox" aria-label="Place suggestions">
-              {suggestions.map((s, i) => (
-                <li key={s.mapbox_id} role="option" aria-selected={i === activeIndex}
-                  onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(s); }}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  className="px-4 py-3 cursor-pointer transition-colors"
-                  style={{ backgroundColor: i === activeIndex ? 'var(--color-bg-subtle)' : undefined }}
-                >
-                  <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>{s.name}</p>
-                  {(s.full_address ?? s.place_formatted) && (
-                    <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-text-subtle)' }}>{s.full_address ?? s.place_formatted}</p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {showNoResults && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border shadow-lg px-4 py-3 text-sm" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text-subtle)' }}>
-              No results found for &ldquo;{query}&rdquo;
-            </div>
-          )}
         </div>
+
+        {/* Suggestions — rendered in flow so the dialog scrolls to show them */}
+        {showDropdown && suggestions.length > 0 && (
+          <ul ref={dropdownRef} className="mt-1 rounded-xl border shadow-sm overflow-hidden" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }} role="listbox" aria-label="Place suggestions">
+            {suggestions.map((s, i) => (
+              <li key={s.mapbox_id} role="option" aria-selected={i === activeIndex}
+                onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(s); }}
+                onMouseEnter={() => setActiveIndex(i)}
+                className="px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0"
+                style={{
+                  backgroundColor: i === activeIndex ? 'var(--color-bg-subtle)' : undefined,
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>{s.name}</p>
+                {(s.full_address ?? s.place_formatted) && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>{s.full_address ?? s.place_formatted}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {showNoResults && (
+          <div className="mt-1 rounded-xl border px-4 py-3 text-sm" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text-subtle)' }}>
+            No results found for &ldquo;{query}&rdquo;
+          </div>
+        )}
       </div>
 
       {/* Preview + form fields — shown after selection */}
@@ -243,22 +244,49 @@ export function AddPlaceForm({ projectId, categories, onAdded, onCancel }: AddPl
 
           {/* Category */}
           <div>
-            <label htmlFor="category-select" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text)' }}>
-              Category
-            </label>
-            {categories.length === 0 ? (
-              <p className="text-sm text-stone-400">No categories yet — add one first.</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="category-select" className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                Category
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowCategoryDialog(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium transition-colors"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                <Plus className="w-3 h-3" />
+                New category
+              </button>
+            </div>
+
+            {localCategories.length === 0 ? (
+              <p className="text-sm text-stone-400">No categories yet — create one first.</p>
             ) : (
               <select id="category-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required disabled={isPending}
                 className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 disabled:opacity-50 bg-white"
                 style={{ borderColor: 'var(--color-border)', '--tw-ring-color': '#0D9488' } as React.CSSProperties}
               >
-                {categories.map((cat) => (
+                {localCategories.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.icon ? `${cat.icon} ` : ''}{cat.name}</option>
                 ))}
               </select>
             )}
           </div>
+
+          {/* New category dialog */}
+          {showCategoryDialog && (
+            <Dialog title="New category" onClose={() => setShowCategoryDialog(false)}>
+              <AddCategoryForm
+                projectId={projectId}
+                onCreated={(cat) => {
+                  setLocalCategories((prev) => [...prev, cat]);
+                  setCategoryId(cat.id);
+                  setShowCategoryDialog(false);
+                }}
+                onCancel={() => setShowCategoryDialog(false)}
+              />
+            </Dialog>
+          )}
 
           {/* Schedule (optional) */}
           <div>
