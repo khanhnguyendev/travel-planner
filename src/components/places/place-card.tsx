@@ -13,6 +13,7 @@ interface PlaceCardProps {
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
   comments?: PlaceComment[];
+  canVote?: boolean;
   isNext?: boolean;
   onClick?: () => void;
   onLocationTagClick?: (tag: string) => void;
@@ -75,6 +76,7 @@ export function PlaceCard({
   voteSummary,
   userVote,
   comments = [],
+  canVote = true,
   isNext = false,
   onClick,
   onLocationTagClick,
@@ -260,6 +262,7 @@ export function PlaceCard({
             upvotes={voteSummary?.upvotes ?? 0}
             downvotes={voteSummary?.downvotes ?? 0}
             userVote={userVote}
+            canVote={canVote}
           />
         </div>
       </div>

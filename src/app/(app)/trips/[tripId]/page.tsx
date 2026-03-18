@@ -11,8 +11,9 @@ import {
   ShieldCheck,
   Pencil,
   Eye,
+  Info,
 } from 'lucide-react';
-import { requireSession } from '@/features/auth/session';
+import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
@@ -95,11 +96,13 @@ type TabValue = 'places' | 'timeline' | 'map' | 'expenses' | 'activity';
 function TabBar({
   activeTab,
   tripId,
+  tabs,
 }: {
   activeTab: TabValue;
   tripId: string;
+  tabs: TabValue[];
 }) {
-  const tabs: { label: string; value: TabValue }[] = [
+  const tabItems: { label: string; value: TabValue }[] = [
     { label: 'Places', value: 'places' },
     { label: 'Timeline', value: 'timeline' },
     { label: 'Map', value: 'map' },
@@ -112,7 +115,9 @@ function TabBar({
       className="flex items-center gap-1 p-1 rounded-2xl mb-6"
       style={{ backgroundColor: 'var(--color-bg-subtle)' }}
     >
-      {tabs.map((tab) => {
+      {tabItems
+        .filter((tab) => tabs.includes(tab.value))
+        .map((tab) => {
         const isActive = tab.value === activeTab;
         return (
           <Link
@@ -146,13 +151,7 @@ export default async function TripDetailPage({
 }) {
   const { tripId } = await params;
   const { tab: tabParam } = await searchParams;
-  const user = await requireSession();
-
-  const validTabs: TabValue[] = ['places', 'timeline', 'map', 'expenses', 'activity'];
-  const activeTab: TabValue =
-    tabParam && validTabs.includes(tabParam as TabValue)
-      ? (tabParam as TabValue)
-      : 'places';
+  const user = await getSession();
 
   const [trip, role, members, categories, expenses] = await Promise.all([
     getTrip(tripId),
@@ -174,6 +173,20 @@ export default async function TripDetailPage({
   }
   // From here effectiveRole is guaranteed non-null
   const resolvedRole = effectiveRole as TripRole;
+  const currentUserId = user?.id ?? '';
+  const isMember = role != null;
+  const visibleTabs: TabValue[] = isMember
+    ? ['places', 'timeline', 'map', 'expenses', 'activity']
+    : ['places', 'timeline', 'map'];
+  const activeTab: TabValue =
+    tabParam && visibleTabs.includes(tabParam as TabValue)
+      ? (tabParam as TabValue)
+      : 'places';
+  const isArchived = trip.status === 'archived';
+  const canEdit = isMember && ['owner', 'admin', 'editor'].includes(resolvedRole);
+  const canManage = isMember && ['owner', 'admin'].includes(resolvedRole);
+  const canVote = isMember && !isArchived;
+  const canComment = isMember;
 
   // Fetch places (needed for Places + Timeline + Map tabs)
   const places = await getPlaces(tripId);
@@ -181,7 +194,7 @@ export default async function TripDetailPage({
   const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries] =
     await Promise.all([
       getVoteSummary(tripId),
-      Promise.all(places.map((p) => getUserVote(p.id, user.id))),
+      user && isMember ? Promise.all(places.map((p) => getUserVote(p.id, user.id))) : [],
       (async () => {
         if (places.length === 0) return [];
         const supabase = await createClient();
@@ -195,8 +208,8 @@ export default async function TripDetailPage({
         return data ?? [];
       })(),
       getCommentsByTripId(tripId),
-      getExpensesWithSplits(tripId),
-      getTripActivity(tripId),
+      isMember ? getExpensesWithSplits(tripId) : [],
+      isMember ? getTripActivity(tripId) : [],
     ]);
 
   const userVotes = userVotesRaw.filter(Boolean) as PlaceVote[];
@@ -221,10 +234,6 @@ export default async function TripDetailPage({
   for (const m of members) {
     commentAuthors[m.user_id] = m.profile.display_name ?? 'Member';
   }
-
-  const isArchived = trip.status === 'archived';
-  const canEdit = ['owner', 'admin', 'editor'].includes(resolvedRole);
-  const canManage = ['owner', 'admin'].includes(resolvedRole);
 
   const memberProfiles = members.map((m) => ({
     id: m.profile.id,
@@ -253,7 +262,10 @@ export default async function TripDetailPage({
 
       <PageHeader
         title={trip.title}
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: trip.title }]}
+        breadcrumbs={[
+          { label: user ? 'Dashboard' : 'Home', href: user ? '/dashboard' : '/' },
+          { label: trip.title },
+        ]}
       />
 
       {/* Unified trip header card */}
@@ -297,15 +309,34 @@ export default async function TripDetailPage({
               {formatDateRange(trip.start_date, trip.end_date)}
             </span>
           )}
-          <span
-            className="inline-flex items-center gap-1.5 text-sm"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            <Users className="w-4 h-4" />
-            {members.length} {members.length === 1 ? 'member' : 'members'}
-          </span>
+          {isMember && (
+            <span
+              className="inline-flex items-center gap-1.5 text-sm"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              <Users className="w-4 h-4" />
+              {members.length} {members.length === 1 ? 'member' : 'members'}
+            </span>
+          )}
           <VisibilityBadge visibility={trip.visibility} />
         </div>
+
+        {!isMember && (
+          <div
+            className="mb-4 flex items-start gap-2 rounded-xl border px-4 py-3"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-bg-subtle)',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div className="text-sm leading-relaxed">
+              This is a public trip preview. Places, map, and timeline are visible here, while
+              collaboration features stay available to invited members.
+            </div>
+          </div>
+        )}
 
         {/* Budget */}
         {(() => {
@@ -327,66 +358,70 @@ export default async function TripDetailPage({
           );
         })()}
 
-        {/* Divider */}
-        <div
-          className="my-5 border-t"
-          style={{ borderColor: 'var(--color-border)' }}
-        />
+        {isMember && (
+          <>
+            {/* Divider */}
+            <div
+              className="my-5 border-t"
+              style={{ borderColor: 'var(--color-border)' }}
+            />
 
-        {/* Members */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-            Members
-          </h2>
-          <div className="flex items-center gap-2">
-            {canManage && (
-              <InviteLinkButton tripId={tripId} />
-            )}
-            <Link
-              href={`/trips/${tripId}/members`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
-              style={{ color: 'var(--color-text-subtle)' }}
-            >
-              <UserCog className="w-3.5 h-3.5" />
-              Manage
-            </Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap mb-4">
-          {members.map((m) => {
-            const name = m.profile.display_name ?? 'Unknown';
-            const isCurrentUser = m.user_id === user.id;
-            const roleConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; border: string }> = {
-              owner:  { icon: <Crown className="w-3 h-3" />,       bg: '#FEF9C3', text: '#854D0E', border: '#FDE047' },
-              admin:  { icon: <ShieldCheck className="w-3 h-3" />, bg: '#EDE9FE', text: '#5B21B6', border: '#C4B5FD' },
-              editor: { icon: <Pencil className="w-3 h-3" />,      bg: '#CCFBF1', text: '#0F766E', border: '#5EEAD4' },
-              viewer: { icon: <Eye className="w-3 h-3" />,         bg: '#F1F5F9', text: '#64748B', border: '#CBD5E1' },
-            };
-            const rc = roleConfig[m.role] ?? roleConfig.viewer;
-            return (
-              <div
-                key={m.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border"
-                style={{ backgroundColor: rc.bg, color: rc.text, borderColor: rc.border }}
-                title={`${name} — ${m.role}${isCurrentUser ? ' (you)' : ''}`}
-              >
-                <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="sm" />
-                <span className="font-medium">{name}{isCurrentUser ? ' (you)' : ''}</span>
-                <span className="flex items-center gap-0.5 opacity-75">{rc.icon}{m.role}</span>
+            {/* Members */}
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                Members
+              </h2>
+              <div className="flex items-center gap-2">
+                {canManage && (
+                  <InviteLinkButton tripId={tripId} />
+                )}
+                <Link
+                  href={`/trips/${tripId}/members`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-teal-600 min-h-[36px] px-2"
+                  style={{ color: 'var(--color-text-subtle)' }}
+                >
+                  <UserCog className="w-3.5 h-3.5" />
+                  Manage
+                </Link>
               </div>
-            );
-          })}
-        </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap mb-4">
+              {members.map((m) => {
+                const name = m.profile.display_name ?? 'Unknown';
+                const isCurrentUser = m.user_id === currentUserId;
+                const roleConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; border: string }> = {
+                  owner:  { icon: <Crown className="w-3 h-3" />,       bg: '#FEF9C3', text: '#854D0E', border: '#FDE047' },
+                  admin:  { icon: <ShieldCheck className="w-3 h-3" />, bg: '#EDE9FE', text: '#5B21B6', border: '#C4B5FD' },
+                  editor: { icon: <Pencil className="w-3 h-3" />,      bg: '#CCFBF1', text: '#0F766E', border: '#5EEAD4' },
+                  viewer: { icon: <Eye className="w-3 h-3" />,         bg: '#F1F5F9', text: '#64748B', border: '#CBD5E1' },
+                };
+                const rc = roleConfig[m.role] ?? roleConfig.viewer;
+                return (
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border"
+                    style={{ backgroundColor: rc.bg, color: rc.text, borderColor: rc.border }}
+                    title={`${name} — ${m.role}${isCurrentUser ? ' (you)' : ''}`}
+                  >
+                    <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="sm" />
+                    <span className="font-medium">{name}{isCurrentUser ? ' (you)' : ''}</span>
+                    <span className="flex items-center gap-0.5 opacity-75">{rc.icon}{m.role}</span>
+                  </div>
+                );
+              })}
+            </div>
 
-        {/* Member balances */}
-        <MemberBalances
-          expenses={expensesWithSplits}
-          members={members}
-          currentUserId={user.id}
-          budgetAmount={trip.budget}
-          budgetCurrency={trip.budget_currency}
-          budgetPayerUserId={trip.budget_payer_user_id}
-        />
+            {/* Member balances */}
+            <MemberBalances
+              expenses={expensesWithSplits}
+              members={members}
+              currentUserId={currentUserId}
+              budgetAmount={trip.budget}
+              budgetCurrency={trip.budget_currency}
+              budgetPayerUserId={trip.budget_payer_user_id}
+            />
+          </>
+        )}
       </div>
 
       {/* Accommodation — always visible above tabs */}
@@ -394,8 +429,10 @@ export default async function TripDetailPage({
         places={places}
         categories={categories}
         tripId={tripId}
-        currentUserId={user.id}
+        currentUserId={currentUserId}
         canEdit={canEdit}
+        canVote={canVote}
+        canComment={canComment}
         voteSummaries={voteSummaries}
         userVotes={userVotes}
         reviewsByPlaceId={reviewsByPlaceId}
@@ -404,7 +441,7 @@ export default async function TripDetailPage({
       />
 
       {/* Tab bar */}
-      <TabBar activeTab={activeTab} tripId={tripId} />
+      <TabBar activeTab={activeTab} tripId={tripId} tabs={visibleTabs} />
 
       {/* Tab: Places */}
       {activeTab === 'places' && (
@@ -419,7 +456,9 @@ export default async function TripDetailPage({
             reviewsByPlaceId={reviewsByPlaceId}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
-            currentUserId={user.id}
+            currentUserId={currentUserId}
+            canVote={canVote}
+            canComment={canComment}
             members={members}
           />
         </div>
@@ -432,8 +471,10 @@ export default async function TripDetailPage({
             places={places}
             categories={categories}
             tripId={tripId}
-            currentUserId={user.id}
+            currentUserId={currentUserId}
             canEdit={canEdit}
+            canVote={canVote}
+            canComment={canComment}
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
@@ -450,12 +491,14 @@ export default async function TripDetailPage({
             tripId={tripId}
             places={places}
             categories={categories}
+            canVote={canVote}
+            canComment={canComment}
             voteSummaries={voteSummaries}
             userVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
-            currentUserId={user.id}
+            currentUserId={currentUserId}
           />
         </div>
       )}
@@ -464,12 +507,12 @@ export default async function TripDetailPage({
       {activeTab === 'expenses' && (
         <div className="mb-6">
           {expensesWithSplits.length > 0 && (
-            <DebtSummary
-              expenses={expensesWithSplits}
-              members={memberProfiles}
-              currentUserId={user.id}
-            />
-          )}
+              <DebtSummary
+                expenses={expensesWithSplits}
+                members={memberProfiles}
+                currentUserId={currentUserId}
+              />
+            )}
 
           {(() => {
             const totals: Record<string, number> = {};
@@ -508,7 +551,7 @@ export default async function TripDetailPage({
                       <AddExpenseDialog
                         tripId={tripId}
                         members={members}
-                        currentUserId={user.id}
+                        currentUserId={currentUserId}
                       />
                     )}
                     <Link

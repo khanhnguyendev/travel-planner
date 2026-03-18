@@ -14,6 +14,8 @@ interface AccommodationSectionProps {
   tripId: string;
   currentUserId: string;
   canEdit: boolean;
+  canVote: boolean;
+  canComment: boolean;
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -193,6 +195,8 @@ export function AccommodationSection({
   tripId,
   currentUserId,
   canEdit,
+  canVote,
+  canComment,
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
@@ -258,6 +262,8 @@ export function AccommodationSection({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          canVote={canVote}
+          canComment={canComment}
           allPlaces={places}
           canEdit={canEdit}
           onClose={() => setOpenPlaceId(null)}

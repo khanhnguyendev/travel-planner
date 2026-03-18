@@ -25,6 +25,8 @@ interface PlacesSectionProps {
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
+  canVote: boolean;
+  canComment: boolean;
   members: MemberWithProfile[];
 }
 
@@ -51,6 +53,8 @@ export function PlacesSection({
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
+  canVote,
+  canComment,
   members,
 }: PlacesSectionProps) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
@@ -273,6 +277,8 @@ export function PlacesSection({
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}
+            canVote={canVote}
+            canComment={canComment}
             canEdit={editor}
             onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
           />

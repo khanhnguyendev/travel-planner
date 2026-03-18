@@ -22,6 +22,8 @@ interface PlaceGridProps {
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
+  canVote: boolean;
+  canComment: boolean;
   canEdit?: boolean;
   onAddPlace?: () => void;
 }
@@ -40,6 +42,8 @@ export function PlaceGrid({
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
+  canVote,
+  canComment,
   canEdit = false,
   onAddPlace,
 }: PlaceGridProps) {
@@ -147,6 +151,7 @@ export function PlaceGrid({
                     voteSummary={voteSummaryMap[place.id] ?? null}
                     userVote={userVoteMap[place.id] ?? null}
                     comments={commentsByPlaceId[place.id] ?? []}
+                    canVote={canVote}
                     isNext={place.id === nextPlaceId}
                     onClick={() => setOpenPlaceId(place.id)}
                     onLocationTagClick={onLocationTagClick}
@@ -170,6 +175,8 @@ export function PlaceGrid({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          canVote={canVote}
+          canComment={canComment}
           allPlaces={places}
           canEdit={canEdit}
           onClose={() => setOpenPlaceId(null)}

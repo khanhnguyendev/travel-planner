@@ -19,6 +19,8 @@ interface PlaceDetailDrawerProps {
   tripId: string;
   voteSummary: VoteSummaryEntry | null;
   userVote: PlaceVote | null;
+  canVote?: boolean;
+  canComment?: boolean;
   allPlaces?: Place[];
   canEdit?: boolean;
   onClose: () => void;
@@ -86,7 +88,15 @@ function ReviewCard({ review }: { review: PlaceReview }) {
   );
 }
 
-function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[] }) {
+function ScheduleEditor({
+  place,
+  allPlaces,
+  canEdit,
+}: {
+  place: Place;
+  allPlaces: Place[];
+  canEdit: boolean;
+}) {
   const [editing, setEditing] = useState(false);
   const [date, setDate] = useState(place.visit_date ?? '');
   const [from, setFrom] = useState(place.visit_time_from ?? '');
@@ -146,17 +156,19 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
           </div>
         )}
 
-        <button
-          onClick={() => setEditing(true)}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1 cursor-pointer"
-          style={{
-            backgroundColor: hasSchedule || backupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
-            color: hasSchedule || backupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
-          }}
-        >
-          <Pencil className="w-3 h-3" />
-          {hasSchedule || backupPlace ? 'Edit schedule' : 'Add schedule'}
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1 cursor-pointer"
+            style={{
+              backgroundColor: hasSchedule || backupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
+              color: hasSchedule || backupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
+            }}
+          >
+            <Pencil className="w-3 h-3" />
+            {hasSchedule || backupPlace ? 'Edit schedule' : 'Add schedule'}
+          </button>
+        )}
       </div>
     );
   }
@@ -324,12 +336,14 @@ function CommentsSection({
   initialComments,
   commentAuthors,
   currentUserId,
+  canComment,
 }: {
   placeId: string;
   tripId: string;
   initialComments: PlaceComment[];
   commentAuthors: Record<string, string>;
   currentUserId: string;
+  canComment: boolean;
 }) {
   const [comments, setComments] = useState<PlaceComment[]>(initialComments);
   const [body, setBody] = useState('');
@@ -397,26 +411,32 @@ function CommentsSection({
       )}
 
       {/* Add comment form */}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Add a comment…"
-          rows={2}
-          maxLength={1000}
-          disabled={pending}
-          className="flex-1 text-sm px-3 py-2 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={pending || !body.trim()}
-          className="self-end inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:w-9 sm:h-9 sm:px-0 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors flex-shrink-0 text-sm sm:text-base"
-          aria-label="Post comment"
-        >
-          <Send className="w-4 h-4" />
-          <span className="sm:hidden">Send</span>
-        </button>
-      </form>
+      {canComment ? (
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Add a comment…"
+            rows={2}
+            maxLength={1000}
+            disabled={pending}
+            className="flex-1 text-sm px-3 py-2 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={pending || !body.trim()}
+            className="self-end inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:w-9 sm:h-9 sm:px-0 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors flex-shrink-0 text-sm sm:text-base"
+            aria-label="Post comment"
+          >
+            <Send className="w-4 h-4" />
+            <span className="sm:hidden">Send</span>
+          </button>
+        </form>
+      ) : (
+        <p className="text-xs text-stone-400">
+          Comments are available to trip members.
+        </p>
+      )}
     </div>
   );
 }
@@ -445,6 +465,8 @@ export function PlaceDetailDrawer({
   tripId,
   voteSummary,
   userVote,
+  canVote = true,
+  canComment = true,
   allPlaces = [],
   canEdit = false,
   onClose,
@@ -570,7 +592,7 @@ export function PlaceDetailDrawer({
           {/* Schedule + backup */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
-            <ScheduleEditor place={place} allPlaces={allPlaces} />
+            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} />
           </div>
 
           {/* Votes */}
@@ -582,7 +604,13 @@ export function PlaceDetailDrawer({
               upvotes={voteSummary?.upvotes ?? 0}
               downvotes={voteSummary?.downvotes ?? 0}
               userVote={userVote}
+              canVote={canVote}
             />
+            {!canVote && (
+              <p className="mt-2 text-xs text-stone-400">
+                Voting is available to trip members while the trip is active.
+              </p>
+            )}
           </div>
 
           {/* Comments */}
@@ -597,6 +625,7 @@ export function PlaceDetailDrawer({
               initialComments={comments}
               commentAuthors={commentAuthors}
               currentUserId={currentUserId}
+              canComment={canComment}
             />
           </div>
 

@@ -10,6 +10,8 @@ interface MapTabClientProps {
   tripId: string;
   places: Place[];
   categories: Category[];
+  canVote: boolean;
+  canComment: boolean;
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -22,6 +24,8 @@ export function MapTabClient({
   tripId,
   places,
   categories,
+  canVote,
+  canComment,
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
@@ -53,6 +57,8 @@ export function MapTabClient({
           tripId={tripId}
           voteSummary={voteSummaryMap[openPlace.id] ?? null}
           userVote={userVoteMap[openPlace.id] ?? null}
+          canVote={canVote}
+          canComment={canComment}
           allPlaces={places}
           onClose={() => setOpenPlace(null)}
         />

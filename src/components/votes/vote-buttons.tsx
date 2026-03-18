@@ -11,6 +11,7 @@ interface VoteButtonsProps {
   upvotes: number;
   downvotes: number;
   userVote: PlaceVote | null;
+  canVote?: boolean;
 }
 
 export function VoteButtons({
@@ -19,6 +20,7 @@ export function VoteButtons({
   upvotes: initialUpvotes,
   downvotes: initialDownvotes,
   userVote: initialUserVote,
+  canVote = true,
 }: VoteButtonsProps) {
   const [userVote, setUserVote] = useState<PlaceVote | null>(initialUserVote);
   const [upvotes, setUpvotes] = useState(initialUpvotes);
@@ -88,7 +90,7 @@ export function VoteButtons({
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => handleVote('upvote')}
-        disabled={isPending}
+        disabled={isPending || !canVote}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
         style={{
           backgroundColor: activeUpvote
@@ -97,9 +99,11 @@ export function VoteButtons({
           color: activeUpvote
             ? 'var(--color-primary-foreground)'
             : 'var(--color-text-muted)',
+          opacity: canVote ? 1 : 0.55,
         }}
         aria-label="Upvote"
         aria-pressed={activeUpvote}
+        title={canVote ? undefined : 'Voting is available to trip members while the trip is active.'}
       >
         <ThumbsUp className="w-3.5 h-3.5" />
         <span>{upvotes}</span>
@@ -107,7 +111,7 @@ export function VoteButtons({
 
       <button
         onClick={() => handleVote('downvote')}
-        disabled={isPending}
+        disabled={isPending || !canVote}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
         style={{
           backgroundColor: activeDownvote
@@ -116,9 +120,11 @@ export function VoteButtons({
           color: activeDownvote
             ? 'var(--color-secondary-foreground)'
             : 'var(--color-text-muted)',
+          opacity: canVote ? 1 : 0.55,
         }}
         aria-label="Downvote"
         aria-pressed={activeDownvote}
+        title={canVote ? undefined : 'Voting is available to trip members while the trip is active.'}
       >
         <ThumbsDown className="w-3.5 h-3.5" />
         <span>{downvotes}</span>
