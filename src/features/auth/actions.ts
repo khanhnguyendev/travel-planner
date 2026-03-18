@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { normalizeNextPath } from '@/features/auth/redirects';
 
 // -------------------------------------------------------
 // Schemas
@@ -35,7 +36,8 @@ export type ActionResult<T = void> =
 
 export async function signIn(
   email: string,
-  password: string
+  password: string,
+  nextPath?: string | null
 ): Promise<ActionResult> {
   const parsed = signInSchema.safeParse({ email, password });
   if (!parsed.success) {
@@ -53,7 +55,7 @@ export async function signIn(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  redirect(normalizeNextPath(nextPath));
 }
 
 // -------------------------------------------------------
@@ -63,7 +65,8 @@ export async function signIn(
 export async function signUp(
   email: string,
   password: string,
-  displayName: string
+  displayName: string,
+  nextPath?: string | null
 ): Promise<ActionResult> {
   const parsed = signUpSchema.safeParse({ email, password, displayName });
   if (!parsed.success) {
@@ -94,7 +97,7 @@ export async function signUp(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  redirect(normalizeNextPath(nextPath));
 }
 
 // -------------------------------------------------------

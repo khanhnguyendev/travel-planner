@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
-import { requireSession } from '@/features/auth/session';
+import { getSession } from '@/features/auth/session';
+import { buildSignInPath } from '@/features/auth/redirects';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { TripInvite, TripRole } from '@/lib/types';
 
@@ -17,12 +18,14 @@ export default async function AcceptInvitePage({
 }) {
   const { token } = await searchParams;
 
-  // requireSession redirects to /sign-in if not authenticated
-  const user = await requireSession();
-
   // Validate token param
   if (!token) {
     return <ErrorView message="Missing invite token. Please use the full invite link." />;
+  }
+
+  const user = await getSession();
+  if (!user) {
+    redirect(buildSignInPath(`/invites/accept?token=${token}`));
   }
 
   const admin = createAdminClient();

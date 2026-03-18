@@ -146,7 +146,7 @@ export async function generateInviteLink(
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const inviteUrl = `${siteUrl}/invite/accept?token=${token}`;
+  const inviteUrl = `${siteUrl}/invites/accept?token=${token}`;
 
   revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: { inviteUrl } };

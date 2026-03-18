@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { signUp } from '@/features/auth/actions';
 import { signInWithGoogle } from '@/features/auth/oauth';
 import { useLoadingToast } from '@/components/ui/toast';
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -20,7 +23,7 @@ export default function SignUpPage() {
     setError(null);
 
     const resolve = loadingToast('Creating account…');
-    const result = await signUp(email, password, displayName);
+    const result = await signUp(email, password, displayName, nextPath);
 
     if (!result.ok) {
       resolve(result.error, 'error');
@@ -146,6 +149,7 @@ export default function SignUpPage() {
       </div>
 
       <form action={signInWithGoogle} className="mt-4">
+        <input type="hidden" name="next" value={nextPath ?? ''} />
         <button
           type="submit"
           className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-sm font-medium text-stone-700 transition-colors"
@@ -158,7 +162,7 @@ export default function SignUpPage() {
       <p className="mt-6 text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
         Already have an account?{' '}
         <Link
-          href="/sign-in"
+          href={nextPath ? `/sign-in?next=${encodeURIComponent(nextPath)}` : '/sign-in'}
           className="font-medium"
           style={{ color: 'var(--color-primary)' }}
         >
