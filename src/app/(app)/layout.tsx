@@ -6,6 +6,7 @@ import { signOut } from '@/features/auth/actions';
 import { ToastProvider } from '@/components/ui/toast';
 import { MobileNav } from '@/components/ui/mobile-nav';
 import { Avatar } from '@/components/ui/avatar';
+import { NavClock } from '@/components/ui/nav-clock';
 import type { Profile } from '@/lib/types';
 
 async function UserMenu({ userId }: { userId: string }) {
@@ -57,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         {/* Top nav — glassmorphism */}
         <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'rgba(229,231,235,0.6)' }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center">
 
             {/* Logo */}
             <div className="flex items-center gap-6">
@@ -86,8 +87,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </nav>
             </div>
 
+            {/* Center clock */}
+            <NavClock />
+
             {/* User menu */}
-            <UserMenu userId={user.id} />
+            <div className="flex justify-end">
+              <UserMenu userId={user.id} />
+            </div>
           </div>
         </header>
 
