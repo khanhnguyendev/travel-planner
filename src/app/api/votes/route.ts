@@ -97,7 +97,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const { data: projectData } = await supabase
-    .from('projects')
+    .from('trips')
     .select('*')
     .eq('id', tripId)
     .single();
@@ -187,7 +187,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       .eq('user_id', user.id)
       .eq('invite_status', 'accepted')
       .single(),
-    supabase.from('projects').select('*').eq('id', tripId).single(),
+    supabase.from('trips').select('*').eq('id', tripId).single(),
   ]);
 
   const membership = membershipData as TripMember | null;

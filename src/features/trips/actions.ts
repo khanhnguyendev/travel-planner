@@ -75,7 +75,7 @@ export async function createTrip(
   }
 
   const { data: trip, error: projectError } = await admin
-    .from('projects')
+    .from('trips')
     .insert({
       owner_user_id: user.id,
       title: parsed.data.title,
@@ -152,7 +152,7 @@ export async function updateTrip(
   if ('description' in fields) updatePayload.description = fields.description;
 
   const { error } = await admin
-    .from('projects')
+    .from('trips')
     .update(updatePayload)
     .eq('id', tripId);
 
@@ -202,7 +202,7 @@ export async function updateProjectBudget(
   }
 
   const { error } = await admin
-    .from('projects')
+    .from('trips')
     .update({ budget, budget_currency: budgetCurrency, budget_payer_user_id: payerUserId })
     .eq('id', tripId);
 
@@ -248,7 +248,7 @@ export async function archiveProject(
   }
 
   const { error } = await admin
-    .from('projects')
+    .from('trips')
     .update({ status: 'archived' })
     .eq('id', tripId);
 
