@@ -531,88 +531,74 @@ export default async function TripDetailPage({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                   Trip overview
                 </p>
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.9fr)] lg:items-start">
-                <div>
-                  <h1 className="text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
-                    {trip.title}
-                  </h1>
-                  {trip.description && (
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
-                      {trip.description}
-                    </p>
-                  )}
-
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <Link
-                      href={user ? '/dashboard' : '/'}
-                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Link
+                    href={user ? '/dashboard' : '/'}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                  >
+                    {user ? 'Dashboard' : 'Home'}
+                  </Link>
+                  <span
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {tripPhase}
+                  </span>
+                  <RoleBadge role={resolvedRole} />
+                  <VisibilityBadge visibility={trip.visibility} />
+                  {isArchived && (
+                    <span
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
                       style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
                     >
-                      {user ? 'Dashboard' : 'Home'}
-                    </Link>
-                    <span
-                      className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                      style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      {tripPhase}
+                      Archived
                     </span>
-                    <RoleBadge role={resolvedRole} />
-                    <VisibilityBadge visibility={trip.visibility} />
-                    {isArchived && (
-                      <span
-                        className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                        style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                      >
-                        Archived
-                      </span>
-                    )}
-                  </div>
-
-                  {!isMember && (
-                    <div className="mt-4 max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
-                      <div className="flex items-start gap-2">
-                        <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                        <p>
-                          This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
-                        </p>
-                      </div>
-                      <JoinRequestButton
-                        tripId={tripId}
-                        isAuthenticated={!!user}
-                        alreadyRequested={joinRequested}
-                      />
-                    </div>
                   )}
                 </div>
+              </div>
 
-                <div className="space-y-3">
-                  <div className="min-w-0">
-                    <SnapshotPill
-                      label="Planning dates"
-                      value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
-                      icon={<Calendar className="h-4 w-4" />}
-                      className="min-w-0"
-                      action={(
-                        <TripDatesEditor
-                          tripId={tripId}
-                          startDate={trip.start_date}
-                          endDate={trip.end_date}
-                          canManage={canManage}
-                        />
-                      )}
-                    />
-                  </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <div className="min-w-0">
                   <SnapshotPill
-                    label="Places"
-                    value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
-                    icon={<MapPin className="h-4 w-4" />}
+                    label="Planning dates"
+                    value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
+                    icon={<Calendar className="h-4 w-4" />}
                     className="min-w-0"
+                    action={(
+                      <TripDatesEditor
+                        tripId={tripId}
+                        startDate={trip.start_date}
+                        endDate={trip.end_date}
+                        canManage={canManage}
+                      />
+                    )}
                   />
                 </div>
+                <SnapshotPill
+                  label="Places"
+                  value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
+                  icon={<MapPin className="h-4 w-4" />}
+                  className="min-w-0"
+                />
               </div>
+
+              {!isMember && (
+                <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+                  <div className="flex items-start gap-2">
+                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <p>
+                      This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                    </p>
+                  </div>
+                  <JoinRequestButton
+                    tripId={tripId}
+                    isAuthenticated={!!user}
+                    alreadyRequested={joinRequested}
+                  />
+                </div>
+              )}
 
               {showCoverMedia ? (
                 <div className="rounded-[1.25rem] bg-white/70 p-3">
