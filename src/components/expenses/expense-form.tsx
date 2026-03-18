@@ -29,6 +29,10 @@ interface ExpenseFormProps {
   projectId: string;
   members: MemberWithProfile[];
   currentUserId: string;
+  /** Called on successful save (dialog mode). Uses router if not provided. */
+  onSuccess?: () => void;
+  /** Called on cancel (dialog mode). Uses router.back() if not provided. */
+  onCancel?: () => void;
 }
 
 // -------------------------------------------------------
@@ -116,7 +120,7 @@ function InputField({
 // Main component
 // -------------------------------------------------------
 
-export function ExpenseForm({ projectId, members, currentUserId }: ExpenseFormProps) {
+export function ExpenseForm({ projectId, members, currentUserId, onSuccess, onCancel }: ExpenseFormProps) {
   const router = useRouter();
 
   // Form fields
@@ -324,7 +328,7 @@ export function ExpenseForm({ projectId, members, currentUserId }: ExpenseFormPr
       const result = await createExpense(input);
       if (result.ok) {
         resolve('Expense added!', 'success');
-        router.push(`/projects/${projectId}/expenses`);
+        if (onSuccess) { onSuccess(); } else { router.push(`/projects/${projectId}/expenses`); }
       } else {
         const msg = result.error ?? 'Failed to create expense';
         resolve(msg, 'error');
@@ -643,7 +647,7 @@ export function ExpenseForm({ projectId, members, currentUserId }: ExpenseFormPr
         </button>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => onCancel ? onCancel() : router.back()}
           className="btn-secondary text-sm"
         >
           Cancel

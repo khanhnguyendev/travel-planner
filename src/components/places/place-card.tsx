@@ -165,8 +165,8 @@ export function PlaceCard({
         {/* Schedule */}
         {hasSchedule && (
           <div
-            className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-xl"
-            style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+            className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-xl border-l-2"
+            style={{ backgroundColor: '#F0FDFA', borderLeftColor: '#0D9488' }}
           >
             {place.visit_date && (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700">

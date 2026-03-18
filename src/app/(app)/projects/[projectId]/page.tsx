@@ -6,7 +6,6 @@ import {
   Receipt,
   Globe,
   Lock,
-  Plus,
   UserCog,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
@@ -27,6 +26,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/projects/cover-image-upload';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
+import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import type { ProjectRole, Visibility, PlaceVote, PlaceReview, PlaceComment } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -234,17 +234,6 @@ export default async function ProjectDetailPage({
       <PageHeader
         title={project.title}
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: project.title }]}
-        action={
-          isArchived ? null : canEdit ? (
-            <Link
-              href={`/projects/${projectId}/expenses/new`}
-              className="btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
-            >
-              <Plus className="w-4 h-4" />
-              Add expense
-            </Link>
-          ) : null
-        }
       />
 
       {/* Project meta card */}
@@ -441,13 +430,11 @@ export default async function ProjectDetailPage({
 
                   <div className="flex items-center gap-2">
                     {canEdit && (
-                      <Link
-                        href={`/projects/${projectId}/expenses/new`}
-                        className="inline-flex items-center gap-1.5 btn-primary text-sm min-h-[44px]"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add
-                      </Link>
+                      <AddExpenseDialog
+                        projectId={projectId}
+                        members={members}
+                        currentUserId={user.id}
+                      />
                     )}
                     <Link
                       href={`/projects/${projectId}/expenses`}
@@ -473,13 +460,13 @@ export default async function ProjectDetailPage({
                       Add expenses to keep everyone on the same page about shared costs.
                     </p>
                     {canEdit && (
-                      <Link
-                        href={`/projects/${projectId}/expenses/new`}
-                        className="mt-4 btn-primary inline-flex items-center gap-1.5 text-sm min-h-[44px]"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add expense
-                      </Link>
+                      <div className="mt-4">
+                        <AddExpenseDialog
+                          projectId={projectId}
+                          members={members}
+                          currentUserId={user.id}
+                        />
+                      </div>
                     )}
                   </div>
                 ) : (

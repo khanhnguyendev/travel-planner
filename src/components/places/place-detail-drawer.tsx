@@ -147,10 +147,14 @@ function ScheduleEditor({ place, allPlaces }: { place: Place; allPlaces: Place[]
 
         <button
           onClick={() => setEditing(true)}
-          className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-teal-600 transition-colors mt-1"
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1"
+          style={{
+            backgroundColor: hasSchedule || backupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
+            color: hasSchedule || backupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
+          }}
         >
           <Pencil className="w-3 h-3" />
-          {hasSchedule || backupPlace ? 'Edit' : 'Add schedule'}
+          {hasSchedule || backupPlace ? 'Edit schedule' : 'Add schedule'}
         </button>
       </div>
     );
