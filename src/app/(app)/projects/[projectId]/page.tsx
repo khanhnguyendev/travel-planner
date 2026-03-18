@@ -7,6 +7,10 @@ import {
   Globe,
   Lock,
   UserCog,
+  Crown,
+  ShieldCheck,
+  Pencil,
+  Eye,
 } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getProject, getUserRole } from '@/features/projects/queries';
@@ -314,26 +318,23 @@ export default async function ProjectDetailPage({
           {members.map((m) => {
             const name = m.profile.display_name ?? 'Unknown';
             const isCurrentUser = m.user_id === user.id;
+            const roleConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; border: string }> = {
+              owner:  { icon: <Crown className="w-3 h-3" />,       bg: '#FEF9C3', text: '#854D0E', border: '#FDE047' },
+              admin:  { icon: <ShieldCheck className="w-3 h-3" />, bg: '#EDE9FE', text: '#5B21B6', border: '#C4B5FD' },
+              editor: { icon: <Pencil className="w-3 h-3" />,      bg: '#CCFBF1', text: '#0F766E', border: '#5EEAD4' },
+              viewer: { icon: <Eye className="w-3 h-3" />,         bg: '#F1F5F9', text: '#64748B', border: '#CBD5E1' },
+            };
+            const rc = roleConfig[m.role] ?? roleConfig.viewer;
             return (
               <div
                 key={m.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs min-h-[36px]"
-                style={{
-                  backgroundColor: isCurrentUser
-                    ? 'var(--color-primary-light)'
-                    : 'var(--color-bg-subtle)',
-                  color: isCurrentUser
-                    ? 'var(--color-primary)'
-                    : 'var(--color-text-muted)',
-                }}
-                title={`${name} — ${m.role}`}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border"
+                style={{ backgroundColor: rc.bg, color: rc.text, borderColor: rc.border }}
+                title={`${name} — ${m.role}${isCurrentUser ? ' (you)' : ''}`}
               >
-                <Avatar
-                  user={{ display_name: name, avatar_url: m.profile.avatar_url }}
-                  size="sm"
-                />
-                <span>{name}</span>
-                <span className="opacity-60 capitalize">{m.role}</span>
+                <Avatar user={{ display_name: name, avatar_url: m.profile.avatar_url }} size="sm" />
+                <span className="font-medium">{name}{isCurrentUser ? ' (you)' : ''}</span>
+                <span className="flex items-center gap-0.5 opacity-75">{rc.icon}{m.role}</span>
               </div>
             );
           })}

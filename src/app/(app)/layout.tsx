@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/features/auth/actions';
 import { ToastProvider } from '@/components/ui/toast';
 import { MobileNav } from '@/components/ui/mobile-nav';
+import { Avatar } from '@/components/ui/avatar';
 import type { Profile } from '@/lib/types';
 
 async function UserMenu({ userId }: { userId: string }) {
@@ -22,12 +23,7 @@ async function UserMenu({ userId }: { userId: string }) {
     <>
       {/* Desktop user menu */}
       <div className="hidden md:flex items-center gap-3">
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        >
-          {displayName.charAt(0).toUpperCase()}
-        </div>
+        <Avatar user={{ display_name: displayName, avatar_url: profile?.avatar_url ?? null }} size="md" />
         <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
           {displayName}
         </span>
