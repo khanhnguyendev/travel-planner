@@ -57,7 +57,7 @@ export async function createTrip(
     return { ok: false, error: 'Not authenticated' };
   }
 
-  // Use admin client to bypass RLS on insert (projects insert is service-role only).
+  // Use admin client to bypass RLS on insert (trips insert is service-role only).
   const admin = createAdminClient();
 
   // Ensure profile exists before creating the trip (FK constraint).

@@ -148,7 +148,7 @@ async function ProjectCard({ trip }: { trip: TripWithRole }) {
 
 export default async function DashboardPage() {
   await requireSession();
-  const projects = await getTrips();
+  const trips = await getTrips();
 
   const newTripButton = (
     <Link
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
       />
 
       {/* Projects grid */}
-      {projects.length === 0 ? (
+      {trips.length === 0 ? (
         <div
           className="card flex flex-col items-center justify-center py-20 text-center"
           style={{ borderStyle: 'dashed' }}
@@ -196,7 +196,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects.map((trip) => (
+          {trips.map((trip) => (
             <ProjectCard key={trip.id} trip={trip} />
           ))}
         </div>

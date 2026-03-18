@@ -166,7 +166,7 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
-  // Non-members can view public projects in viewer mode
+  // Non-members can view public trips in viewer mode
   const effectiveRole: TripRole | null =
     role ?? (trip.visibility === 'public' ? 'viewer' : null);
   if (!effectiveRole) {

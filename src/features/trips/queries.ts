@@ -6,7 +6,7 @@ export interface TripWithRole extends Trip {
 }
 
 /**
- * Returns all projects the current user is an accepted member of,
+ * Returns all trips the current user is an accepted member of,
  * including their role, ordered by most recently updated.
  */
 export async function getTrips(): Promise<TripWithRole[]> {
@@ -18,7 +18,7 @@ export async function getTrips(): Promise<TripWithRole[]> {
 
   if (!user) return [];
 
-  // Fetch projects where the user is an accepted member
+  // Fetch trips where the user is an accepted member
   const { data, error } = await supabase
     .from('trips')
     .select(
