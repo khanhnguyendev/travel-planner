@@ -1,4 +1,4 @@
-import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass, CalendarDays } from 'lucide-react';
+import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass, CalendarDays, LogIn, LogOut } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import type { ActivityEntry } from '@/features/activity/queries';
 
@@ -81,6 +81,18 @@ const ACTION_CONFIG: Record<string, {
     color: '#3B82F6',
     bg: '#EFF6FF',
     label: () => 'joined the trip',
+  },
+  'place.checkin': {
+    icon: LogIn,
+    color: '#0D9488',
+    bg: '#F0FDFA',
+    label: (m) => `checked in at ${m?.placeName ? `"${m.placeName}"` : 'a place'}`,
+  },
+  'place.checkout': {
+    icon: LogOut,
+    color: '#6B7280',
+    bg: '#F9FAFB',
+    label: (m) => `checked out of ${m?.placeName ? `"${m.placeName}"` : 'a place'}`,
   },
 };
 

@@ -15,7 +15,9 @@ export type ActivityAction =
   | 'expense.add'
   | 'expense.delete'
   | 'category.add'
-  | 'member.join';
+  | 'member.join'
+  | 'place.checkin'
+  | 'place.checkout';
 
 export async function logActivity(params: {
   tripId: string;

@@ -15,8 +15,6 @@ import {
   Activity,
   Sparkles,
   Coins,
-  LogIn,
-  LogOut,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
@@ -42,6 +40,7 @@ import { JoinRequestButton } from '@/components/members/join-request-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
+import { CheckInOutButton } from '@/components/places/check-in-out-button';
 import { ActivityFeed } from '@/components/activity/activity-feed';
 import { getTripActivity } from '@/features/activity/queries';
 import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment, Place } from '@/lib/types';
@@ -205,6 +204,30 @@ function SnapshotPill({
   );
 }
 
+function getBalancePresentation(net: number, currency: string) {
+  if (Math.abs(net) < 0.01) {
+    return {
+      label: 'Settled',
+      value: `0 ${currency}`,
+      color: 'var(--color-text-subtle)',
+    };
+  }
+
+  if (net > 0) {
+    return {
+      label: 'Gets back',
+      value: formatCurrency(net, currency),
+      color: '#0F766E',
+    };
+  }
+
+  return {
+    label: 'Owes',
+    value: formatCurrency(Math.abs(net), currency),
+    color: '#B45309',
+  };
+}
+
 function formatStopPlan(place: Place): string {
   const parts: string[] = [];
   if (place.visit_date) {
@@ -230,11 +253,17 @@ function StopSpotlightCard({
   place,
   emptyLabel,
   tone,
+  canEdit,
+  allDayPlaces,
+  tripId,
 }: {
   label: string;
   place: Place | null;
   emptyLabel: string;
   tone: 'previous' | 'current' | 'next';
+  canEdit: boolean;
+  allDayPlaces: Place[];
+  tripId: string;
 }) {
   const toneStyles: Record<'previous' | 'current' | 'next', { chipBg: string; chipText: string; panelBg: string }> = {
     previous: { chipBg: '#E2E8F0', chipText: '#475569', panelBg: 'rgba(255,255,255,0.72)' },
@@ -288,24 +317,15 @@ function StopSpotlightCard({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[0.03]"
-          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-        >
-          <LogIn className="h-4 w-4" />
-          Check in
-        </button>
-        <button
-          type="button"
-          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[0.03]"
-          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-        >
-          <LogOut className="h-4 w-4" />
-          Check out
-        </button>
-      </div>
+      {canEdit && place && (
+        <div className="mt-4">
+          <CheckInOutButton
+            place={place}
+            allDayPlaces={allDayPlaces}
+            tripId={tripId}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -463,9 +483,6 @@ export default async function TripDetailPage({
   for (const expense of expenses) {
     totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
   }
-  const spendSummary = Object.entries(totalsByCurrency).length > 0
-    ? Object.entries(totalsByCurrency).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
-    : 'No expenses yet';
   const showCoverMedia = canManage || Boolean(trip.cover_image_url);
   const recentExpenses = expensesWithSplits.slice(0, 5);
   const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
@@ -491,8 +508,8 @@ export default async function TripDetailPage({
   return (
     <div className="animate-in fade-in duration-300">
       <section className="section-shell p-4 sm:p-5">
-        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] lg:items-start">
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5 lg:col-start-1 lg:row-start-1">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.92fr)_minmax(320px,0.92fr)] xl:items-start">
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
             <div className="flex h-full flex-col gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Link
@@ -521,7 +538,7 @@ export default async function TripDetailPage({
                 )}
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] xl:items-end">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.9fr)] lg:items-start">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                     Trip overview
@@ -534,12 +551,28 @@ export default async function TripDetailPage({
                       {trip.description}
                     </p>
                   )}
+
+                  {!isMember && (
+                    <div className="mt-4 max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+                      <div className="flex items-start gap-2">
+                        <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <p>
+                          This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                        </p>
+                      </div>
+                      <JoinRequestButton
+                        tripId={tripId}
+                        isAuthenticated={!!user}
+                        alreadyRequested={joinRequested}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <div className="space-y-3">
                   <div className="min-w-0">
                     <SnapshotPill
-                      label="Dates"
+                      label="Planning dates"
                       value={trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Flexible'}
                       icon={<Calendar className="h-4 w-4" />}
                       className="min-w-0"
@@ -557,64 +590,48 @@ export default async function TripDetailPage({
                     icon={<MapPin className="h-4 w-4" />}
                     className="min-w-0"
                   />
-                  <SnapshotPill
-                    label="Money"
-                    value={expenses.length > 0 ? spendSummary : 'No spending yet'}
-                    icon={<Receipt className="h-4 w-4" />}
-                    className="min-w-0"
-                  />
                 </div>
               </div>
 
-              {!isMember && (
-                <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
-                  <div className="flex items-start gap-2">
-                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <p>
-                      This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+              {showCoverMedia ? (
+                <div className="rounded-[1.25rem] bg-white/70 p-3">
+                  <div className="mb-3 px-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                      Cover setting
+                    </p>
+                    <p className="mt-1 text-sm font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                      Trip media
                     </p>
                   </div>
-                  <JoinRequestButton
-                    tripId={tripId}
-                    isAuthenticated={!!user}
-                    alreadyRequested={joinRequested}
-                  />
+                  <div className="overflow-hidden rounded-[1.25rem]">
+                    {canManage ? (
+                      <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} height={180} />
+                    ) : trip.cover_image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={trip.cover_image_url}
+                        alt={`${trip.title} cover`}
+                        className="h-[180px] w-full object-cover"
+                      />
+                    ) : (
+                      <div className="hero-orb h-[180px] w-full" />
+                    )}
+                  </div>
                 </div>
-              )}
-
+              ) : null}
             </div>
           </div>
 
-          {showCoverMedia ? (
-            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3 lg:col-start-2 lg:row-start-1">
-              <div className="mb-3 flex items-center justify-between gap-3 px-1">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                    Cover
-                  </p>
-                </div>
-              </div>
-              <div className="overflow-hidden rounded-[1.25rem]">
-                {canManage ? (
-                  <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} height={156} />
-                ) : trip.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={trip.cover_image_url}
-                    alt={`${trip.title} cover`}
-                    className="h-[156px] w-full object-cover"
-                  />
-                ) : (
-                  <div className="hero-orb h-[156px] w-full" />
-                )}
-              </div>
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+            <div className="mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Budget
+              </p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                Shared budget, recent funding, and the latest spend.
+              </p>
             </div>
-          ) : null}
 
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-1 lg:row-start-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Budget
-            </p>
             <BudgetEditor
               tripId={tripId}
               budget={trip.budget}
@@ -641,9 +658,61 @@ export default async function TripDetailPage({
                 />
               ) : null}
             />
+
+            <div className="mt-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Recent transactions
+                </p>
+                {isMember && recentExpenses.length > 0 && (
+                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                    Last {Math.min(recentExpenses.length, 5)}
+                  </span>
+                )}
+              </div>
+
+              {!isMember ? (
+                <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  Spending stays inside the crew workspace. Join the trip to review recent transactions and balances.
+                </div>
+              ) : recentExpenses.length === 0 ? (
+                <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  No transactions yet. Add income or log the first shared expense to start the trip ledger.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {recentExpenses.map((expense, index) => (
+                    <Link
+                      key={expense.id}
+                      href={`/trips/${tripId}/expenses/${expense.id}`}
+                      className={`${index >= 3 ? 'hidden lg:flex' : 'flex'} items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 transition-transform hover:-translate-y-0.5`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                          {expense.title}
+                        </p>
+                        <p className="mt-1 truncate text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                          {expense.paid_by_profile.display_name ?? 'Member'}
+                          {expense.category ? ` · ${expense.category}` : ''}
+                          {expense.expense_date ? ` · ${formatDate(expense.expense_date)}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+                          {formatCurrency(expense.amount, expense.currency)}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                          {expense.splits.length} split{expense.splits.length === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 lg:col-start-2 lg:row-start-2">
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -666,42 +735,40 @@ export default async function TripDetailPage({
             </div>
 
             {isMember ? (
-              <>
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3">
-                  <div className="flex items-center -space-x-2">
-                    {memberPreview.map((member) => {
-                      const name = member.profile.display_name ?? 'Unknown';
-                      return (
-                        <div key={member.id} className="rounded-full border-2 border-white">
-                          <Avatar user={{ display_name: name, avatar_url: member.profile.avatar_url }} size="sm" />
-                        </div>
-                      );
-                    })}
-                    {remainingMembers > 0 && (
-                      <span className="ml-1 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-white px-2 text-xs font-semibold text-stone-600 shadow-sm">
-                        +{remainingMembers}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                      {members.length} members
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                      Roles and invite links live in Crew
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                {sortedCrewMembers.map((member) => {
+                  const balanceNet = memberBalanceMap.get(member.user_id) ?? 0;
+                  const balanceInfo = getBalancePresentation(balanceNet, balanceCurrency);
+                  const name = member.profile.display_name ?? 'Unknown member';
 
-                <MemberBalances
-                  expenses={expensesWithSplits}
-                  members={members}
-                  currentUserId={currentUserId}
-                  budgetAmount={trip.budget}
-                  budgetCurrency={trip.budget_currency}
-                  budgetPayerUserId={trip.budget_payer_user_id}
-                />
-              </>
+                  return (
+                    <div key={member.id} className="flex items-center justify-between gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar
+                          user={{ display_name: name, avatar_url: member.profile.avatar_url }}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                            {name}{member.user_id === currentUserId ? ' (you)' : ''}
+                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <RoleBadge role={member.role} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--color-text-subtle)' }}>
+                          {balanceInfo.label}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold" style={{ color: balanceInfo.color }}>
+                          {balanceInfo.value}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                 Join the trip to vote, comment, add places, manage crew, and track shared spending.
@@ -730,18 +797,27 @@ export default async function TripDetailPage({
               place={stopPointers.previous}
               emptyLabel="None yet"
               tone="previous"
+              canEdit={canEdit}
+              allDayPlaces={stopPointers.previous?.visit_date ? places.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
+              tripId={tripId}
             />
             <StopSpotlightCard
               label="Current"
               place={stopPointers.current}
               emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
               tone="current"
+              canEdit={canEdit}
+              allDayPlaces={stopPointers.current?.visit_date ? places.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
+              tripId={tripId}
             />
             <StopSpotlightCard
               label="Next stop"
               place={stopPointers.next}
               emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
               tone="next"
+              canEdit={canEdit}
+              allDayPlaces={stopPointers.next?.visit_date ? places.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
+              tripId={tripId}
             />
           </div>
         </div>

@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Map, Navigation, Send, Trash2, MessageCircle, NotebookPen } from 'lucide-react';
+import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Map, Navigation, Send, Trash2, MessageCircle, NotebookPen, AlertTriangle } from 'lucide-react';
 import type { Place, PlaceReview, Category, PlaceVote, PlaceComment } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComment, deletePlace } from '@/features/places/actions';
+import type { ConflictingPlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { CheckInOutButton } from '@/components/places/check-in-out-button';
 
 interface PlaceDetailDrawerProps {
   place: Place;
@@ -116,6 +118,7 @@ function ScheduleEditor({
   const [to, setTo] = useState(savedTo);
   const [backupId, setBackupId] = useState(savedBackupId);
   const [pending, setPending] = useState(false);
+  const [conflicts, setConflicts] = useState<ConflictingPlace[]>([]);
   const loadingToast = useLoadingToast();
 
   const otherPlaces = allPlaces.filter((p) => p.id !== place.id);
@@ -145,6 +148,7 @@ function ScheduleEditor({
       setSavedFrom(from);
       setSavedTo(to);
       setSavedBackupId(backupId);
+      setConflicts(result.conflicts ?? []);
       setEditing(false);
     } else {
       resolve(result.error, 'error');
@@ -178,6 +182,20 @@ function ScheduleEditor({
           <div className="flex items-center gap-1.5 text-xs text-orange-600 bg-orange-50 px-2.5 py-1.5 rounded-lg">
             <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
             <span>Backup: <span className="font-medium">{savedBackupPlace.name}</span></span>
+          </div>
+        )}
+
+        {conflicts.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+              Time overlap with:
+            </div>
+            {conflicts.map((c) => (
+              <p key={c.id} className="text-xs text-amber-700 pl-5">
+                {c.name} ({c.visit_time_from}{c.visit_time_to ? ` – ${c.visit_time_to}` : ''})
+              </p>
+            ))}
           </div>
         )}
 
@@ -656,6 +674,18 @@ export function PlaceDetailDrawer({
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
             <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripStartDate={tripStartDate} tripEndDate={tripEndDate} />
           </div>
+
+          {/* Check-in / Check-out (editors only, only if place has a visit date) */}
+          {canEdit && place.visit_date && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Check-in / Check-out</h3>
+              <CheckInOutButton
+                place={place}
+                allDayPlaces={allPlaces.filter((p) => p.visit_date === place.visit_date)}
+                tripId={tripId}
+              />
+            </div>
+          )}
 
           {/* Note (editors write, viewers read) */}
           {(canEdit || place.note) && (

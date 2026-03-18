@@ -94,6 +94,8 @@ export interface Place {
   backup_place_id: string | null;  // FK → places.id
   note: string | null;             // editor-only trip note
   checkout_date: string | null;    // accommodation check-out date (YYYY-MM-DD)
+  actual_checkin_at: string | null;  // ISO timestamp of actual check-in
+  actual_checkout_at: string | null; // ISO timestamp of actual check-out
   created_at: string;
 }
 

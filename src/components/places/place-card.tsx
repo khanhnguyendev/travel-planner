@@ -6,6 +6,7 @@ import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { cn } from '@/lib/utils';
 import { extractLocationTag } from '@/lib/address';
 import { PlaceMapLinks } from './place-map-links';
+import { CheckInStatusBadge } from './check-in-out-button';
 
 interface PlaceCardProps {
   place: Place;
@@ -213,6 +214,7 @@ export function PlaceCard({
                 Backup set
               </span>
             )}
+            <CheckInStatusBadge place={place} />
           </div>
         )}
 
