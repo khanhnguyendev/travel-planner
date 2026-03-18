@@ -15,7 +15,9 @@ import {
   Activity,
   Sparkles,
   Coins,
-  Clock3,
+  ExternalLink,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
@@ -26,7 +28,7 @@ import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { createClient } from '@/lib/supabase/server';
 import { formatDateRange } from '@/lib/date';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
 import { TripTimeline } from '@/components/places/trip-timeline';
 import { MapTabClient } from '@/components/places/map-tab-client';
@@ -196,6 +198,166 @@ function SnapshotPill({
         <p className="mt-1 text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
           {value}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function googleMapsUrl(place: Place): string {
+  if (place.lat != null && place.lng != null) {
+    return `https://www.google.com/maps?q=${place.lat},${place.lng}`;
+  }
+  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`;
+}
+
+function vietmapUrl(place: Place): string {
+  if (place.lat != null && place.lng != null) {
+    return `https://maps.vietmap.vn/?q=${place.lat},${place.lng}`;
+  }
+  return `https://maps.vietmap.vn/?q=${encodeURIComponent(place.name)}`;
+}
+
+function formatStopPlan(place: Place): string {
+  const parts: string[] = [];
+  if (place.visit_date) {
+    parts.push(
+      new Date(`${place.visit_date}T00:00:00`).toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+    );
+  }
+  if (place.visit_time_from || place.visit_time_to) {
+    parts.push(`${place.visit_time_from ?? '?'} - ${place.visit_time_to ?? '?'}`);
+  }
+  return parts.length > 0 ? parts.join(' • ') : 'No schedule yet';
+}
+
+function StopSpotlightCard({
+  label,
+  place,
+  emptyLabel,
+  tone,
+}: {
+  label: string;
+  place: Place | null;
+  emptyLabel: string;
+  tone: 'previous' | 'current' | 'next';
+}) {
+  const toneStyles: Record<'previous' | 'current' | 'next', { chipBg: string; chipText: string; panelBg: string }> = {
+    previous: { chipBg: '#E2E8F0', chipText: '#475569', panelBg: 'rgba(255,255,255,0.72)' },
+    current: { chipBg: '#CCFBF1', chipText: '#0F766E', panelBg: '#ECFDF5' },
+    next: { chipBg: '#DBEAFE', chipText: '#1D4ED8', panelBg: '#EFF6FF' },
+  };
+  const styles = toneStyles[tone];
+
+  return (
+    <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Stop
+          </p>
+          <div
+            className="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold"
+            style={{ backgroundColor: styles.chipBg, color: styles.chipText }}
+          >
+            {label}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <h3 className="text-lg font-semibold leading-tight section-title" style={{ color: 'var(--color-text)' }}>
+          {place?.name ?? emptyLabel}
+        </h3>
+        <p className="mt-1 min-h-[2.75rem] text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
+          {place?.address ?? (place ? 'Address not available yet.' : 'No scheduled place is mapped to this slot yet.')}
+        </p>
+      </div>
+
+      <div className="mt-4 rounded-[1.2rem] px-3 py-3" style={{ backgroundColor: styles.panelBg }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+          Schedule plan
+        </p>
+        <p className="mt-2 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+          {place ? formatStopPlan(place) : 'No plan yet'}
+        </p>
+        {place?.visit_date && (
+          <p className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            Planned for {formatDate(place.visit_date)}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {place ? (
+          <>
+            <a
+              href={googleMapsUrl(place)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Google Maps
+            </a>
+            <a
+              href={vietmapUrl(place)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              VietMap
+            </a>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Google Maps
+            </button>
+            <button
+              type="button"
+              disabled
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              VietMap
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled
+          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+        >
+          <LogIn className="h-4 w-4" />
+          Check in
+        </button>
+        <button
+          type="button"
+          disabled
+          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+        >
+          <LogOut className="h-4 w-4" />
+          Check out
+        </button>
       </div>
     </div>
   );
@@ -440,41 +602,6 @@ export default async function TripDetailPage({
                   </div>
                 )}
 
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <div className="mini-stat flex min-w-0 items-center gap-2 px-3 py-3 text-sm">
-                    <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                        Previous stop
-                      </p>
-                      <p className="mt-1 truncate font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {stopPointers.previous?.name ?? 'None yet'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mini-stat flex min-w-0 items-center gap-2 px-3 py-3 text-sm">
-                    <Clock3 className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                        Current
-                      </p>
-                      <p className="mt-1 truncate font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {stopPointers.current?.name ?? (scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mini-stat flex min-w-0 items-center gap-2 px-3 py-3 text-sm">
-                    <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                        Next stop
-                      </p>
-                      <p className="mt-1 truncate font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {stopPointers.next?.name ?? (scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -506,6 +633,43 @@ export default async function TripDetailPage({
                 </div>
               </div>
             ) : null}
+          </div>
+
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Trip stops
+                </p>
+                <h2 className="mt-1 text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                  Previous, current, and next
+                </h2>
+              </div>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                Keep the crew aligned on what just happened, what is active now, and where the trip moves next.
+              </p>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <StopSpotlightCard
+                label="Previous stop"
+                place={stopPointers.previous}
+                emptyLabel="None yet"
+                tone="previous"
+              />
+              <StopSpotlightCard
+                label="Current"
+                place={stopPointers.current}
+                emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
+                tone="current"
+              />
+              <StopSpotlightCard
+                label="Next stop"
+                place={stopPointers.next}
+                emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
+                tone="next"
+              />
+            </div>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
