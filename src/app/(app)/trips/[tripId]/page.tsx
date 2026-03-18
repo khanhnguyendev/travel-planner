@@ -80,7 +80,11 @@ function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const isPublic = visibility === 'public';
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+      style={{
+        backgroundColor: isPublic ? '#DBEAFE' : '#E2E8F0',
+        color: isPublic ? '#1D4ED8' : '#475569',
+      }}
     >
       {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
       {isPublic ? 'Public trip' : 'Private trip'}
@@ -311,141 +315,108 @@ export default async function TripDetailPage({
     : 'No expenses yet';
   const memberPreview = members.slice(0, 4);
   const remainingMembers = Math.max(0, members.length - memberPreview.length);
+  const showCoverMedia = canManage || Boolean(trip.cover_image_url);
 
   return (
     <div className="animate-in fade-in duration-300">
-      {canManage && (
-        <>
-          <details className="section-shell mb-3 overflow-hidden sm:hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+      <section className="section-shell p-4 sm:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_280px] lg:items-start">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={user ? '/dashboard' : '/'}
+                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                  style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                >
+                  {user ? 'Dashboard' : 'Home'}
+                </Link>
+                <span
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {tripPhase}
+                </span>
+                <RoleBadge role={resolvedRole} />
+                <VisibilityBadge visibility={trip.visibility} />
+                {isArchived && (
+                  <span
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+                  >
+                    Archived
+                  </span>
+                )}
+              </div>
+
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Cover
+                  Trip overview
                 </p>
-                <h2 className="mt-1 text-sm font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                  Manage trip media
-                </h2>
-              </div>
-              <span className="rounded-full bg-stone-950/[0.04] px-3 py-1 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-                Edit
-              </span>
-            </summary>
-            <div className="border-t soft-divider">
-              <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
-            </div>
-          </details>
-
-          <div className="section-shell mb-4 hidden p-3 sm:block">
-            <div className="mb-3 px-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Cover
-              </p>
-              <h2 className="mt-1 text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                Trip media
-              </h2>
-            </div>
-            <div className="overflow-hidden rounded-[1.5rem]">
-              <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} />
-            </div>
-          </div>
-        </>
-      )}
-
-      <section className="relative overflow-hidden rounded-[2rem]">
-        {trip.cover_image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={trip.cover_image_url}
-            alt={`${trip.title} cover`}
-            className="h-[230px] w-full object-cover sm:h-[340px]"
-          />
-        ) : (
-          <div className="hero-orb h-[230px] w-full sm:h-[340px]" />
-        )}
-
-        <div className="trip-hero-overlay absolute inset-0" />
-
-        <div className="absolute inset-0 flex flex-col justify-between p-4 sm:p-7">
-          <div className="flex items-start justify-between gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-black/22 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
-              <Sparkles className="h-3 w-3" />
-              {tripPhase}
-            </div>
-
-            <div className="hidden sm:flex">
-              <VisibilityBadge visibility={trip.visibility} />
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Link
-                href={user ? '/dashboard' : '/'}
-                className="inline-flex items-center rounded-full bg-white/12 px-3 py-1 text-xs font-medium text-white/78 backdrop-blur-sm transition-colors hover:bg-white/18"
-              >
-                {user ? 'Dashboard' : 'Home'}
-              </Link>
-              <RoleBadge role={resolvedRole} />
-              <div className="sm:hidden">
-                <VisibilityBadge visibility={trip.visibility} />
-              </div>
-              {isArchived && (
-                <span className="inline-flex items-center rounded-full bg-white/12 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
-                  Archived
-                </span>
-              )}
-            </div>
-
-            <h1 className="max-w-3xl text-[1.8rem] font-semibold leading-tight text-white section-title sm:text-4xl">
-              {trip.title}
-            </h1>
-            {trip.description && (
-              <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-relaxed text-white/78 sm:mt-3 sm:text-base">
-                {trip.description}
-              </p>
-            )}
-
-            {!isMember && (
-              <div className="mt-4 max-w-xl rounded-[1.4rem] border border-white/18 bg-white/10 px-4 py-3 text-sm leading-relaxed text-white/84 backdrop-blur-sm">
-                <div className="flex items-start gap-2">
-                  <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <p>
-                    This is a public trip preview. Places, the map, and the timeline are visible here, while invites, comments, votes, and spending stay available to members.
+                <h1 className="mt-1 text-3xl font-semibold leading-tight section-title sm:text-[2.25rem]" style={{ color: 'var(--color-text)' }}>
+                  {trip.title}
+                </h1>
+                {trip.description && (
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
+                    {trip.description}
                   </p>
+                )}
+              </div>
+
+              {!isMember && (
+                <div className="max-w-xl rounded-[1.2rem] border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+                  <div className="flex items-start gap-2">
+                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <p>
+                      This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                {canManage && <InviteLinkButton tripId={tripId} />}
+                {canEdit && <AddExpenseDialog tripId={tripId} members={members} currentUserId={currentUserId} />}
+                {isMember && (
+                  <Link href={`/trips/${tripId}/members`} className="btn-secondary min-h-[40px] text-sm">
+                    <span className="inline-flex items-center gap-2">
+                      <UserCog className="h-4 w-4" />
+                      Crew
+                    </span>
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {showCoverMedia ? (
+              <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3">
+                <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                      Cover
+                    </p>
+                    <h2 className="mt-1 text-sm font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                      Trip media
+                    </h2>
+                  </div>
+                </div>
+                <div className="overflow-hidden rounded-[1.25rem]">
+                  {canManage ? (
+                    <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} height={156} />
+                  ) : trip.cover_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={trip.cover_image_url}
+                      alt={`${trip.title} cover`}
+                      className="h-[156px] w-full object-cover"
+                    />
+                  ) : (
+                    <div className="hero-orb h-[156px] w-full" />
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="-mt-8 relative z-10 section-shell p-4 sm:-mt-12 sm:p-5">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Trip overview
-              </p>
-              <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                Planning, crew, and money in one place
-              </h2>
-              <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                Keep the essentials close, then jump straight into places, map, timeline, or expenses.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {canManage && <InviteLinkButton tripId={tripId} />}
-              {canEdit && <AddExpenseDialog tripId={tripId} members={members} currentUserId={currentUserId} />}
-              {isMember && (
-                <Link href={`/trips/${tripId}/members`} className="btn-secondary min-h-[40px] text-sm">
-                  <span className="inline-flex items-center gap-2">
-                    <UserCog className="h-4 w-4" />
-                    Crew
-                  </span>
-                </Link>
-              )}
-            </div>
+            ) : null}
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1">

@@ -8,9 +8,14 @@ import { useLoadingToast } from '@/components/ui/toast';
 interface CoverImageUploadProps {
   tripId: string;
   currentCoverUrl?: string | null;
+  height?: number;
 }
 
-export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadProps) {
+export function CoverImageUpload({
+  tripId,
+  currentCoverUrl,
+  height = 200,
+}: CoverImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -94,7 +99,7 @@ export function CoverImageUpload({ tripId, currentCoverUrl }: CoverImageUploadPr
     <div className="relative">
       <div
         className="w-full flex items-center justify-center cursor-pointer group"
-        style={{ height: 200, backgroundColor: previewUrl ? undefined : 'var(--color-bg-subtle)' }}
+        style={{ height, backgroundColor: previewUrl ? undefined : 'var(--color-bg-subtle)' }}
         onClick={() => !busy && inputRef.current?.click()}
         role="button"
         tabIndex={0}
