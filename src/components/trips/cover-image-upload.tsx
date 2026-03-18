@@ -4,17 +4,20 @@ import { useRef, useState } from 'react';
 import { Camera, Loader2, X } from 'lucide-react';
 import { updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 
 interface CoverImageUploadProps {
   tripId: string;
   currentCoverUrl?: string | null;
   height?: number;
+  variant?: 'panel' | 'identity';
 }
 
 export function CoverImageUpload({
   tripId,
   currentCoverUrl,
   height = 200,
+  variant = 'panel',
 }: CoverImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -94,12 +97,16 @@ export function CoverImageUpload({
   }
 
   const busy = uploading || removing;
+  const identityMode = variant === 'identity';
 
   return (
-    <div className="relative">
+    <div className={cn('relative group', identityMode ? 'h-full w-full' : '')}>
       <div
-        className="w-full flex items-center justify-center cursor-pointer group"
-        style={{ height, backgroundColor: previewUrl ? undefined : 'var(--color-bg-subtle)' }}
+        className={cn(
+          'w-full cursor-pointer',
+          identityMode ? 'absolute inset-0 overflow-hidden' : 'flex items-center justify-center'
+        )}
+        style={{ height: identityMode ? undefined : height, backgroundColor: previewUrl || identityMode ? undefined : 'var(--color-bg-subtle)' }}
         onClick={() => !busy && inputRef.current?.click()}
         role="button"
         tabIndex={0}
@@ -108,19 +115,29 @@ export function CoverImageUpload({
         }}
         aria-label="Upload cover image"
       >
-        {previewUrl && (
+        {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={previewUrl} alt="Cover" className="w-full h-full object-cover" />
-        )}
+          <img src={previewUrl} alt="Cover" className="h-full w-full object-cover" />
+        ) : identityMode ? (
+          <div className="hero-orb h-full w-full" />
+        ) : null}
 
         {/* Hover overlay */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center transition-opacity"
-          style={{ backgroundColor: previewUrl ? 'rgba(0,0,0,0.35)' : 'transparent', opacity: busy ? 1 : undefined }}
+          className={cn(
+            'absolute inset-0 transition-opacity',
+            identityMode ? 'flex items-center justify-center' : 'flex flex-col items-center justify-center'
+          )}
+          style={{
+            backgroundColor: previewUrl
+              ? (identityMode ? 'rgba(10,12,17,0.22)' : 'rgba(0,0,0,0.35)')
+              : 'transparent',
+            opacity: busy ? 1 : undefined,
+          }}
         >
           {busy ? (
             <Loader2 className="w-8 h-8 text-white animate-spin" />
-          ) : (
+          ) : !identityMode ? (
             <div
               className="flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
               style={{ opacity: previewUrl ? undefined : 1 }}
@@ -130,21 +147,45 @@ export function CoverImageUpload({
                 {previewUrl ? 'Change cover' : 'Add cover image'}
               </span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!busy) inputRef.current?.click();
+        }}
+        className={cn(
+          'absolute z-10 inline-flex items-center justify-center rounded-full shadow-sm transition-all',
+          identityMode
+            ? 'right-4 top-4 h-11 w-11 bg-white/90 text-stone-700 backdrop-blur-sm hover:bg-white'
+            : 'left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 bg-white/90 text-stone-700 opacity-0 group-hover:opacity-100'
+        )}
+        aria-label={previewUrl ? 'Change cover image' : 'Add cover image'}
+        title={previewUrl ? 'Change cover image' : 'Add cover image'}
+      >
+        <Camera className={identityMode ? 'h-5 w-5' : 'h-4 w-4'} />
+      </button>
 
       {/* Remove button — only shown when a cover exists */}
       {previewUrl && !busy && (
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-red-600 opacity-0 group-hover:opacity-100"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)', color: 'white' }}
+          className={cn(
+            'absolute z-10 transition-all',
+            identityMode
+              ? 'right-[4.25rem] top-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-stone-950/60 text-white backdrop-blur-sm hover:bg-red-600'
+              : 'top-3 right-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium opacity-0 group-hover:opacity-100 hover:bg-red-600'
+          )}
+          style={identityMode ? undefined : { backgroundColor: 'rgba(0,0,0,0.55)', color: 'white' }}
           aria-label="Remove cover image"
+          title="Remove cover image"
         >
           <X className="w-3.5 h-3.5" />
-          Remove
+          {!identityMode && 'Remove'}
         </button>
       )}
 

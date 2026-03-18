@@ -522,7 +522,6 @@ export default async function TripDetailPage({
   for (const expense of expenses) {
     totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
   }
-  const showCoverMedia = canManage || Boolean(trip.cover_image_url);
   const recentExpenses = expensesWithSplits.slice(0, 5);
   const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
   const memberBalanceMap = new Map(
@@ -550,29 +549,44 @@ export default async function TripDetailPage({
   return (
     <div className="animate-in fade-in overflow-x-hidden duration-300">
       <div className="px-4 pb-2 pt-2 sm:px-6">
-        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[1.9rem] border px-5 py-5 text-center shadow-[0_18px_42px_rgba(87,67,40,0.08)] sm:px-8 sm:py-6" style={{ borderColor: 'rgba(255,255,255,0.82)', background: 'linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.76) 100%)' }}>
-          <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
-          <div className="pointer-events-none absolute -left-10 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-teal-200/35 blur-3xl" />
-          <div className="pointer-events-none absolute -right-12 top-0 h-28 w-28 rounded-full bg-indigo-200/35 blur-3xl" />
+        <div className="relative mx-auto min-h-[176px] max-w-4xl overflow-hidden rounded-[1.9rem] border text-center shadow-[0_18px_42px_rgba(87,67,40,0.08)] sm:min-h-[212px]" style={{ borderColor: 'rgba(255,255,255,0.42)' }}>
+          {canManage ? (
+            <CoverImageUpload
+              tripId={tripId}
+              currentCoverUrl={trip.cover_image_url}
+              variant="identity"
+            />
+          ) : trip.cover_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={trip.cover_image_url}
+              alt={`${trip.title} cover`}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div className="hero-orb absolute inset-0" />
+          )}
 
-          <div className="relative">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(10,12,17,0.14)_0%,rgba(10,12,17,0.28)_42%,rgba(10,12,17,0.58)_100%)]" />
+          <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+          <div className="relative z-10 flex min-h-[176px] flex-col items-center justify-center px-5 py-6 sm:min-h-[212px] sm:px-8 sm:py-7">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-sm">
               <MapPin className="h-3.5 w-3.5" />
               Trip identity
             </span>
 
-            <h1 className="mt-3 text-[2rem] font-semibold leading-[1.02] section-title sm:text-[2.9rem]" style={{ color: 'var(--color-text)' }}>
+            <h1 className="mt-3 text-[2rem] font-semibold leading-[1.02] section-title text-white sm:text-[2.9rem]" style={{ textShadow: '0 12px 28px rgba(10,12,17,0.30)' }}>
               {trip.title}
             </h1>
 
             {trip.description && (
-              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/78 sm:text-base">
                 {trip.description}
               </p>
             )}
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/16 px-3 py-1.5 text-xs font-medium text-white/86 backdrop-blur-sm">
                 <Users className="h-3.5 w-3.5" />
                 {crewIdentityLabel}
               </span>
@@ -694,32 +708,6 @@ export default async function TripDetailPage({
                 </div>
               )}
 
-              {showCoverMedia ? (
-                <div className="min-w-0 overflow-hidden rounded-[1.25rem] bg-white/70 p-3">
-                  <div className="mb-3 px-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                      Cover setting
-                    </p>
-                    <p className="mt-1 text-sm font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                      Trip media
-                    </p>
-                  </div>
-                  <div className="overflow-hidden rounded-[1.25rem]">
-                    {canManage ? (
-                      <CoverImageUpload tripId={tripId} currentCoverUrl={trip.cover_image_url} height={180} />
-                    ) : trip.cover_image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={trip.cover_image_url}
-                        alt={`${trip.title} cover`}
-                        className="h-[180px] w-full object-cover"
-                      />
-                    ) : (
-                      <div className="hero-orb h-[180px] w-full" />
-                    )}
-                  </div>
-                </div>
-              ) : null}
             </div>
           </div>
 
