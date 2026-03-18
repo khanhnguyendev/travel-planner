@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   Calendar,
-  Users,
   Receipt,
   Globe,
   Lock,
@@ -175,7 +174,7 @@ function TabBar({
   ];
 
   return (
-    <div className="sticky-tabs mb-5">
+    <div className="sticky-tabs mt-4 mb-5">
       <div className="section-shell overflow-x-auto p-2">
         <div className="flex min-w-max items-center gap-2">
           {tabItems
@@ -414,11 +413,6 @@ export default async function TripDetailPage({
               icon={<Calendar className="h-4 w-4" />}
             />
             <SnapshotPill
-              label="Crew"
-              value={`${members.length} ${members.length === 1 ? 'member' : 'members'}`}
-              icon={<Users className="h-4 w-4" />}
-            />
-            <SnapshotPill
               label="Places"
               value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
               icon={<MapPin className="h-4 w-4" />}
@@ -493,9 +487,6 @@ export default async function TripDetailPage({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                     Crew
                   </p>
-                  <h3 className="mt-1 text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                    Shared visibility
-                  </h3>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {canManage && <InviteLinkButton tripId={tripId} />}
