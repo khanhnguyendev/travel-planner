@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { FileText, Receipt } from 'lucide-react';
 import type { PlaceExpenseHistoryEntry } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { Avatar } from '@/components/ui/avatar';
 
 export function PlaceExpenseHistory({
   tripId,
@@ -63,9 +64,44 @@ export function PlaceExpenseHistory({
             </div>
           </div>
 
-          <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-stone-500">
-            <FileText className="h-3.5 w-3.5" />
-            Open expense detail
+          <div className="mt-3 flex flex-col gap-3 border-t border-stone-200/80 pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+                Split with
+              </p>
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="flex items-center -space-x-2">
+                  {expense.split_participants.slice(0, 4).map((participant) => (
+                    <div
+                      key={participant.user_id}
+                      className="rounded-full border-2 border-white bg-white"
+                      title={participant.display_name ?? 'Member'}
+                    >
+                      <Avatar
+                        user={{
+                          display_name: participant.display_name,
+                          avatar_url: participant.avatar_url,
+                        }}
+                        size="sm"
+                      />
+                    </div>
+                  ))}
+                  {expense.split_participants.length > 4 && (
+                    <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full border-2 border-white bg-stone-200 px-1 text-[10px] font-semibold text-stone-600">
+                      +{expense.split_participants.length - 4}
+                    </span>
+                  )}
+                </div>
+                <span className="truncate text-xs text-stone-500">
+                  {expense.splits_count} member{expense.splits_count === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500">
+              <FileText className="h-3.5 w-3.5" />
+              Open expense detail
+            </div>
           </div>
         </Link>
       ))}

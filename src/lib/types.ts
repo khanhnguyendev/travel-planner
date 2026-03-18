@@ -162,6 +162,11 @@ export interface PlaceExpenseHistoryEntry {
   created_at: string;
   paid_by_name: string | null;
   splits_count: number;
+  split_participants: Array<{
+    user_id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  }>;
 }
 
 export interface TripActivity {

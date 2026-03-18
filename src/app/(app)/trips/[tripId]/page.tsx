@@ -511,6 +511,11 @@ export default async function TripDetailPage({
       created_at: expense.created_at,
       paid_by_name: expense.paid_by_profile.display_name,
       splits_count: expense.splits.length,
+      split_participants: expense.splits.map((split) => ({
+        user_id: split.user_id,
+        display_name: split.profile.display_name,
+        avatar_url: split.profile.avatar_url,
+      })),
     });
   }
   const totalsByCurrency: Record<string, number> = {};
