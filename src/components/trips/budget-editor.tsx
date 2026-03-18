@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Pencil, Plus } from 'lucide-react';
 import { updateTripBudget } from '@/features/trips/actions';
 import { formatCurrency } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
@@ -19,6 +20,7 @@ interface BudgetEditorProps {
   canManage: boolean;
   totalSpent: number;
   members: MemberWithProfile[];
+  actionSlot?: ReactNode;
 }
 
 export function BudgetEditor({
@@ -29,139 +31,200 @@ export function BudgetEditor({
   canManage,
   totalSpent,
   members,
+  actionSlot,
 }: BudgetEditorProps) {
-  const [editing, setEditing] = useState(false);
+  const [mode, setMode] = useState<'idle' | 'set' | 'edit' | 'income'>('idle');
   const [value, setValue] = useState(budget != null ? String(budget) : '');
   const [currency, setCurrency] = useState(budgetCurrency || 'VND');
   const [payerUserId, setPayerUserId] = useState<string>(budgetPayerUserId ?? members[0]?.user_id ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasBudget = budget != null;
+  const activeCurrency = budgetCurrency || 'VND';
+  const resolvedPayerUserId = budgetPayerUserId ?? members[0]?.user_id ?? '';
+  const payerName = members.find((m) => m.user_id === budgetPayerUserId)?.profile.display_name ?? 'Someone';
+
+  function resetDraft(nextValue?: string) {
+    setValue(nextValue ?? (budget != null ? String(budget) : ''));
+    setCurrency(activeCurrency);
+    setPayerUserId(resolvedPayerUserId);
+    setError(null);
+  }
+
+  function openEditor(nextMode: 'set' | 'edit' | 'income') {
+    resetDraft(nextMode === 'income' ? '' : undefined);
+    setMode(nextMode);
+  }
 
   async function handleSave() {
     const parsed = value ? parseFloat(value) : null;
-    if (value && (isNaN(parsed!) || parsed! <= 0)) {
+    if ((mode === 'set' || mode === 'income') && (!value || isNaN(parsed!) || parsed! <= 0)) {
       setError('Please enter a valid positive number');
       return;
     }
-    if (parsed && !payerUserId) {
+    if (mode === 'edit' && value && (isNaN(parsed!) || parsed! <= 0)) {
+      setError('Please enter a valid positive number');
+      return;
+    }
+    const nextPayerUserId =
+      mode === 'income' && hasBudget
+        ? (budgetPayerUserId ?? payerUserId)
+        : payerUserId;
+    if ((parsed || mode === 'income') && !nextPayerUserId) {
       setError('Please select who funded the budget');
       return;
     }
+
+    const nextBudget = mode === 'income'
+      ? (budget ?? 0) + (parsed ?? 0)
+      : (parsed ?? null);
+    const nextCurrency = mode === 'income' && hasBudget ? activeCurrency : currency;
+
     setPending(true);
     setError(null);
-    const result = await updateTripBudget(tripId, parsed ?? null, currency, parsed ? payerUserId : null);
+    const result = await updateTripBudget(
+      tripId,
+      nextBudget,
+      nextCurrency,
+      nextBudget ? nextPayerUserId : null
+    );
     setPending(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setEditing(false);
+    resetDraft();
+    setMode('idle');
   }
 
   function handleCancel() {
-    setValue(budget != null ? String(budget) : '');
-    setCurrency(budgetCurrency || 'VND');
-    setPayerUserId(budgetPayerUserId ?? members[0]?.user_id ?? '');
-    setError(null);
-    setEditing(false);
+    resetDraft();
+    setMode('idle');
   }
 
-  // Display mode — no budget set
-  if (!editing && budget == null) {
-    if (!canManage) return null;
-    return (
-      <button
-        onClick={() => setEditing(true)}
-        className="text-xs font-medium transition-colors hover:text-teal-700 cursor-pointer"
-        style={{ color: 'var(--color-primary)' }}
-      >
-        + Set budget
-      </button>
-    );
-  }
-
-  const payerName = members.find((m) => m.user_id === budgetPayerUserId)?.profile.display_name ?? 'Someone';
-
-  // Display mode — budget is set
-  if (!editing && budget != null) {
+  if (mode === 'idle') {
+    const budgetAmount = budget ?? 0;
     const spent = totalSpent;
-    const pct = Math.min((spent / budget) * 100, 100);
-    const remaining = budget - spent;
-    const overBudget = spent > budget;
+    const pct = hasBudget ? Math.min((spent / budgetAmount) * 100, 100) : 0;
+    const remaining = hasBudget ? budgetAmount - spent : 0;
+    const overBudget = hasBudget ? spent > budgetAmount : false;
     const barColor =
       pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#14B8A6';
 
     return (
       <div
-        className="rounded-xl px-4 py-3 mt-4"
+        className="mt-4 rounded-xl px-4 py-4"
         style={{ backgroundColor: 'var(--color-bg-subtle)' }}
       >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-              Budget: {formatCurrency(budget, budgetCurrency)}
-            </span>
-            {canManage && (
-              <button
-                onClick={() => setEditing(true)}
-                className="p-1 rounded transition-colors hover:bg-black/5 cursor-pointer"
-                title="Edit budget"
-              >
-                <Pencil className="w-3 h-3" style={{ color: 'var(--color-text-subtle)' }} />
-              </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                {hasBudget ? `Budget: ${formatCurrency(budgetAmount, budgetCurrency)}` : 'No budget set yet'}
+              </span>
+              {canManage && hasBudget && (
+                <button
+                  type="button"
+                  onClick={() => openEditor('edit')}
+                  className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
+                  title="Edit budget"
+                >
+                  <Pencil className="h-3 w-3" style={{ color: 'var(--color-text-subtle)' }} />
+                </button>
+              )}
+            </div>
+            {hasBudget ? (
+              <p className="mt-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                {budgetPayerUserId ? (
+                  <>
+                    Funded by <span className="font-medium">{payerName}</span>
+                  </>
+                ) : (
+                  'Track incoming funds and outgoing shared costs here.'
+                )}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
+                Add income to create the trip budget, then log outgoing shared costs with Add expense.
+              </p>
             )}
           </div>
-          <span className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
-            {formatCurrency(spent, budgetCurrency)} spent
-          </span>
+
+          {(canManage || actionSlot) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => openEditor(hasBudget ? 'income' : 'set')}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold shadow-sm transition-transform hover:-translate-y-0.5 cursor-pointer"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {hasBudget ? 'Add income' : 'Set budget'}
+                </button>
+              )}
+              {actionSlot}
+            </div>
+          )}
         </div>
 
-        {budgetPayerUserId && (
-          <p className="text-xs mb-2" style={{ color: 'var(--color-text-subtle)' }}>
-            Funded by <span className="font-medium">{payerName}</span>
-          </p>
+        {hasBudget && (
+          <>
+            <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${pct}%`, backgroundColor: barColor }}
+              />
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                {Math.round(pct)}% used
+              </span>
+              <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                {formatCurrency(spent, budgetCurrency)} spent
+              </span>
+              <span
+                className="text-xs font-medium"
+                style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
+              >
+                {overBudget
+                  ? `${formatCurrency(Math.abs(remaining), budgetCurrency)} over budget`
+                  : `${formatCurrency(remaining, budgetCurrency)} remaining`}
+              </span>
+            </div>
+          </>
         )}
-
-        {/* Progress bar */}
-        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${pct}%`, backgroundColor: barColor }}
-          />
-        </div>
-
-        <div className="flex items-center justify-between mt-1.5">
-          <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-            {Math.round(pct)}% used
-          </span>
-          <span
-            className="text-xs font-medium"
-            style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
-          >
-            {overBudget
-              ? `${formatCurrency(Math.abs(remaining), budgetCurrency)} over budget`
-              : `${formatCurrency(remaining, budgetCurrency)} remaining`}
-          </span>
-        </div>
       </div>
     );
   }
 
-  // Edit mode
+  const isIncomeMode = mode === 'income';
+  const showPayerField = !isIncomeMode || !hasBudget || !budgetPayerUserId;
+  const editorTitle =
+    mode === 'income'
+      ? (hasBudget ? 'Add income' : 'Set budget')
+      : (hasBudget ? 'Edit budget' : 'Set budget');
+
   return (
     <div
-      className="rounded-xl px-4 py-3 mt-4"
+      className="mt-4 rounded-xl px-4 py-3"
       style={{ backgroundColor: 'var(--color-bg-subtle)' }}
     >
-      <p className="text-xs font-medium mb-3" style={{ color: 'var(--color-text-muted)' }}>
-        {budget == null ? 'Set budget' : 'Edit budget'}
+      <p className="mb-3 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+        {editorTitle}
       </p>
 
-      {/* Amount + currency row */}
-      <div className="flex gap-2 items-center mb-3">
+      {isIncomeMode && hasBudget && (
+        <p className="mb-3 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
+          This adds directly to the shared budget total in {activeCurrency}. Existing expenses stay unchanged.
+        </p>
+      )}
+
+      <div className="mb-3 flex items-center gap-2">
         <div className="relative flex-1">
           <span
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm"
             style={{ color: 'var(--color-text-subtle)' }}
           >
             {CURRENCY_SYMBOLS[currency] ?? currency}
@@ -172,7 +235,7 @@ export function BudgetEditor({
             step="any"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 rounded-lg border text-sm outline-none"
+            className="w-full rounded-lg border py-2 pl-8 pr-3 text-sm outline-none"
             style={{
               borderColor: 'var(--color-border)',
               backgroundColor: 'white',
@@ -182,59 +245,75 @@ export function BudgetEditor({
             autoFocus
           />
         </div>
-        <select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          className="px-2.5 py-2 rounded-lg border text-sm outline-none cursor-pointer"
-          style={{
-            borderColor: 'var(--color-border)',
-            backgroundColor: 'white',
-            color: 'var(--color-text)',
-          }}
-        >
-          {CURRENCIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        {isIncomeMode && hasBudget ? (
+          <div
+            className="inline-flex min-h-[40px] items-center rounded-lg border px-3 text-sm font-medium"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'white',
+              color: 'var(--color-text)',
+            }}
+          >
+            {activeCurrency}
+          </div>
+        ) : (
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="cursor-pointer rounded-lg border px-2.5 py-2 text-sm outline-none"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'white',
+              color: 'var(--color-text)',
+            }}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Funded by */}
-      <div className="mb-3">
-        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-muted)' }}>
-          Funded by
-        </label>
-        <select
-          value={payerUserId}
-          onChange={(e) => setPayerUserId(e.target.value)}
-          className="w-full px-2.5 py-2 rounded-lg border text-sm outline-none cursor-pointer"
-          style={{
-            borderColor: 'var(--color-border)',
-            backgroundColor: 'white',
-            color: 'var(--color-text)',
-          }}
-        >
-          {members.map((m) => (
-            <option key={m.user_id} value={m.user_id}>
-              {m.profile.display_name ?? m.user_id}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-          The person who put in the money for this trip.
-        </p>
-      </div>
+      {showPayerField && (
+        <div className="mb-3">
+          <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+            Funded by
+          </label>
+          <select
+            value={payerUserId}
+            onChange={(e) => setPayerUserId(e.target.value)}
+            className="w-full cursor-pointer rounded-lg border px-2.5 py-2 text-sm outline-none"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'white',
+              color: 'var(--color-text)',
+            }}
+          >
+            {members.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.profile.display_name ?? m.user_id}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+            The person who put in the money for this trip.
+          </p>
+        </div>
+      )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
+          type="button"
           onClick={handleSave}
           disabled={pending}
-          className="btn-primary text-xs py-2 px-3 disabled:opacity-60 cursor-pointer"
+          className="btn-primary cursor-pointer px-3 py-2 text-xs disabled:opacity-60"
         >
-          {pending ? 'Saving…' : 'Save'}
+          {pending ? 'Saving…' : isIncomeMode ? 'Add income' : 'Save'}
         </button>
         <button
+          type="button"
           onClick={handleCancel}
-          className="btn-secondary text-xs py-2 px-3 cursor-pointer"
+          className="btn-secondary cursor-pointer px-3 py-2 text-xs"
         >
           Cancel
         </button>

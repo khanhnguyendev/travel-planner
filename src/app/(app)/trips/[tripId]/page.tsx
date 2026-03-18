@@ -375,18 +375,6 @@ export default async function TripDetailPage({
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-2">
-                {canManage && <InviteLinkButton tripId={tripId} />}
-                {canEdit && <AddExpenseDialog tripId={tripId} members={members} currentUserId={currentUserId} />}
-                {isMember && (
-                  <Link href={`/trips/${tripId}/members`} className="btn-secondary min-h-[40px] text-sm">
-                    <span className="inline-flex items-center gap-2">
-                      <UserCog className="h-4 w-4" />
-                      Crew
-                    </span>
-                  </Link>
-                )}
-              </div>
             </div>
 
             {showCoverMedia ? (
@@ -479,6 +467,23 @@ export default async function TripDetailPage({
                 canManage={canManage}
                 totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
                 members={members}
+                actionSlot={canEdit ? (
+                  <AddExpenseDialog
+                    tripId={tripId}
+                    members={members}
+                    currentUserId={currentUserId}
+                    trigger={(
+                      <button
+                        type="button"
+                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+                        style={{ backgroundColor: 'var(--color-primary)' }}
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                        Add expense
+                      </button>
+                    )}
+                  />
+                ) : null}
               />
             </div>
 
@@ -492,16 +497,19 @@ export default async function TripDetailPage({
                     Shared visibility
                   </h3>
                 </div>
-                {isMember && (
-                  <Link
-                    href={`/trips/${tripId}/members`}
-                    className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    <UserCog className="h-4 w-4" />
-                    Manage
-                  </Link>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {canManage && <InviteLinkButton tripId={tripId} />}
+                  {isMember && (
+                    <Link
+                      href={`/trips/${tripId}/members`}
+                      className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-sm"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
+                      <UserCog className="h-4 w-4" />
+                      Manage
+                    </Link>
+                  )}
+                </div>
               </div>
 
               {isMember ? (
