@@ -24,15 +24,15 @@ import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
-import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
 import { TripMobileActionDock } from '@/components/trips/trip-mobile-action-dock';
 import { TripTabsShell, type TripTabValue as TabValue } from '@/components/trips/trip-tabs-shell';
 import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
+import { CrewCardList } from '@/components/trips/crew-card-list';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
@@ -225,29 +225,6 @@ function getTripDurationLabel(startDate: string | null, endDate: string | null) 
   return `${dayLabel} · ${nightLabel}`;
 }
 
-function getBalancePresentation(net: number, currency: string) {
-  if (Math.abs(net) < 0.01) {
-    return {
-      label: 'Settled',
-      value: `0 ${currency}`,
-      color: 'var(--color-text-subtle)',
-    };
-  }
-
-  if (net > 0) {
-    return {
-      label: 'Gets back',
-      value: formatCurrency(net, currency),
-      color: '#0F766E',
-    };
-  }
-
-  return {
-    label: 'Owes',
-    value: formatCurrency(Math.abs(net), currency),
-    color: '#B45309',
-  };
-}
 
 function formatStopPlan(place: Place): string {
   const parts: string[] = [];
@@ -515,6 +492,19 @@ export default async function TripDetailPage({
       memberBalanceMap.set(c.user_id, (memberBalanceMap.get(c.user_id) ?? 0) + c.amount);
     }
   }
+  const memberContributionMap = new Map<string, number>();
+  for (const c of contributions) {
+    if (c.currency === balanceCurrency) {
+      memberContributionMap.set(c.user_id, (memberContributionMap.get(c.user_id) ?? 0) + c.amount);
+    }
+  }
+  const memberPaidMap = new Map<string, number>();
+  for (const expense of expensesWithSplits) {
+    if (expense.currency === balanceCurrency) {
+      memberPaidMap.set(expense.paid_by_user_id, (memberPaidMap.get(expense.paid_by_user_id) ?? 0) + expense.amount);
+    }
+  }
+
   const sortedCrewMembers = [...members].sort((a, b) => {
     if (a.user_id === currentUserId) return -1;
     if (b.user_id === currentUserId) return 1;
@@ -523,6 +513,17 @@ export default async function TripDetailPage({
     if (roleDiff !== 0) return roleDiff;
     return (a.joined_at ?? '').localeCompare(b.joined_at ?? '');
   });
+  const crewWithStats = sortedCrewMembers.map((m) => ({
+    id: m.id,
+    user_id: m.user_id,
+    role: m.role,
+    joined_at: m.joined_at,
+    profile: { display_name: m.profile.display_name, avatar_url: m.profile.avatar_url },
+    balanceNet: memberBalanceMap.get(m.user_id) ?? 0,
+    contributions: memberContributionMap.get(m.user_id) ?? 0,
+    paid: memberPaidMap.get(m.user_id) ?? 0,
+  }));
+
   const crewIdentityLabel = joinRequests.length > 0
     ? `${members.length} joined · ${joinRequests.length} requested`
     : `${members.length} crew joined`;
@@ -855,40 +856,11 @@ export default async function TripDetailPage({
             </div>
 
             {isMember ? (
-              <div className="space-y-2">
-                {sortedCrewMembers.map((member) => {
-                  const balanceNet = memberBalanceMap.get(member.user_id) ?? 0;
-                  const balanceInfo = getBalancePresentation(balanceNet, balanceCurrency);
-                  const name = member.profile.display_name ?? 'Unknown member';
-
-                  return (
-                    <div key={member.id} className="flex flex-col gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Avatar
-                          user={{ display_name: name, avatar_url: member.profile.avatar_url }}
-                          size="sm"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                            {name}{member.user_id === currentUserId ? ' (you)' : ''}
-                          </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <RoleBadge role={member.role} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="w-full text-left sm:w-auto sm:text-right">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--color-text-subtle)' }}>
-                          {balanceInfo.label}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold" style={{ color: balanceInfo.color }}>
-                          {balanceInfo.value}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <CrewCardList
+                members={crewWithStats}
+                currentUserId={currentUserId}
+                currency={balanceCurrency}
+              />
             ) : (
               <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                 Join the trip to vote, comment, add places, manage crew, and track shared spending.
