@@ -4,13 +4,14 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Car, Bus, Plane, Plus, X, Check, Trash2, ChevronDown, ChevronUp,
-  MapPin, CalendarDays, Clock, Tag, Hash, AlignLeft,
+  CalendarDays, Hash, AlignLeft, ArrowRight,
 } from 'lucide-react';
 import type { TransportBooking, TransportType } from '@/lib/types';
 import { addTransportBooking, deleteTransportBooking } from '@/features/transport/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
+import { Dialog } from '@/components/ui/dialog';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,7 +90,6 @@ function TransportCard({
 
   return (
     <div className="section-shell flex flex-col gap-0 overflow-hidden">
-      {/* Header row */}
       <div
         className="flex items-center gap-3 p-4 cursor-pointer"
         onClick={() => setExpanded((v) => !v)}
@@ -97,7 +97,6 @@ function TransportCard({
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } }}
       >
-        {/* Type badge */}
         <div
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
           style={{ backgroundColor: colors.bg, color: colors.text }}
@@ -116,7 +115,9 @@ function TransportCard({
           </div>
           {(booking.from_location || booking.to_location) && (
             <p className="text-xs text-stone-500 mt-0.5 truncate">
-              {[booking.from_location, booking.to_location].filter(Boolean).join(' → ')}
+              {booking.from_location && booking.to_location
+                ? `${booking.from_location} → ${booking.to_location}`
+                : booking.from_location ?? booking.to_location}
             </p>
           )}
           {booking.departure_date && (
@@ -137,7 +138,6 @@ function TransportCard({
         </div>
       </div>
 
-      {/* Expanded detail */}
       {expanded && (
         <div className="border-t px-4 pb-4 pt-3 space-y-2" style={{ borderColor: 'var(--color-border-muted)' }}>
           {booking.arrival_date && (
@@ -181,27 +181,27 @@ function TransportCard({
 }
 
 // ---------------------------------------------------------------------------
-// AddTransportForm (inline)
+// AddTransportDialog
 // ---------------------------------------------------------------------------
 
 const TRANSPORT_TYPES: TransportType[] = ['rent', 'bus', 'plane'];
 
 const TYPE_PLACEHOLDERS: Record<TransportType, { provider: string; from: string; to: string; ref: string }> = {
-  rent: { provider: 'e.g. Hertz, local agency', from: 'Pick-up location', to: 'Drop-off location', ref: 'Booking ref' },
-  bus: { provider: 'e.g. Phuong Trang', from: 'Departure city/station', to: 'Arrival city/station', ref: 'Booking code' },
-  plane: { provider: 'e.g. VietJet, Vietnam Airlines', from: 'Origin airport', to: 'Destination airport', ref: 'Flight number / PNR' },
+  rent: { provider: 'e.g. Hertz, local agency', from: 'Pick-up location', to: 'Drop-off location', ref: 'e.g. ABC123' },
+  bus: { provider: 'e.g. Phuong Trang', from: 'Departure city / station', to: 'Arrival city / station', ref: 'e.g. BK-9921' },
+  plane: { provider: 'e.g. VietJet, Vietnam Airlines', from: 'Origin airport', to: 'Destination airport', ref: 'e.g. VJ123 / PNR' },
 };
 
-function AddTransportForm({
+function AddTransportDialog({
   tripId,
   currency,
   onSaved,
-  onCancel,
+  onClose,
 }: {
   tripId: string;
   currency: string;
   onSaved: () => void;
-  onCancel: () => void;
+  onClose: () => void;
 }) {
   const router = useRouter();
   const [type, setType] = useState<TransportType>('plane');
@@ -250,138 +250,149 @@ function AddTransportForm({
     }
   }
 
-  const inputCls = 'w-full rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white';
+  const inputCls = 'w-full rounded-lg border px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white';
   const inputStyle = { borderColor: 'var(--color-border)', color: 'var(--color-text)' };
+  const labelCls = 'block text-xs font-medium text-stone-500 mb-1';
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-4">
-      {/* Type selector */}
-      <div className="flex gap-2">
-        {TRANSPORT_TYPES.map((t) => {
-          const c = TYPE_COLORS[t];
-          const active = type === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setType(t)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
-              style={active
-                ? { backgroundColor: c.bg, color: c.text, boxShadow: '0 0 0 2px currentColor' }
-                : { backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }
-              }
-            >
-              {transportIcon(t, 'w-3.5 h-3.5')}
-              {transportLabel(t)}
-            </button>
-          );
-        })}
-      </div>
+    <Dialog title="Add transport booking" onClose={onClose} maxWidth="max-w-lg">
+      <div className="space-y-5">
+        {/* Type selector */}
+        <div className="flex gap-2">
+          {TRANSPORT_TYPES.map((t) => {
+            const c = TYPE_COLORS[t];
+            const active = type === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setType(t)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+                style={active
+                  ? { backgroundColor: c.bg, color: c.text, boxShadow: '0 0 0 2px currentColor' }
+                  : { backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }
+                }
+              >
+                {transportIcon(t, 'w-4 h-4')}
+                {transportLabel(t)}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Provider + ref */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">Provider</label>
-          <input className={inputCls} style={inputStyle} value={provider} onChange={(e) => setProvider(e.target.value)} placeholder={ph.provider} />
+        {/* From / To */}
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>From</label>
+            <input className={inputCls} style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value)} placeholder={ph.from} />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className={labelCls + ' mb-0'}>To</label>
+              {from.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setTo(from)}
+                  className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:text-teal-700 font-medium"
+                >
+                  <ArrowRight className="w-3 h-3" />
+                  Same as From
+                </button>
+              )}
+            </div>
+            <input className={inputCls} style={inputStyle} value={to} onChange={(e) => setTo(e.target.value)} placeholder={ph.to} />
+          </div>
         </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">Reference / Code</label>
-          <input className={inputCls} style={inputStyle} value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder={ph.ref} />
-        </div>
-      </div>
 
-      {/* From / To */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">From</label>
-          <input className={inputCls} style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value)} placeholder={ph.from} />
+        {/* Departure */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>{type === 'rent' ? 'Pick-up date' : 'Departure date'}</label>
+            <input type="date" className={inputCls} style={inputStyle} value={depDate} onChange={(e) => setDepDate(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelCls}>Time</label>
+            <input type="time" className={inputCls} style={inputStyle} value={depTime} onChange={(e) => setDepTime(e.target.value)} />
+          </div>
         </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">To</label>
-          <input className={inputCls} style={inputStyle} value={to} onChange={(e) => setTo(e.target.value)} placeholder={ph.to} />
-        </div>
-      </div>
 
-      {/* Departure */}
-      <div className="grid grid-cols-2 gap-2">
+        {/* Arrival */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>{type === 'rent' ? 'Return date' : 'Arrival date'}</label>
+            <input type="date" className={inputCls} style={inputStyle} value={arrDate} onChange={(e) => setArrDate(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelCls}>Time</label>
+            <input type="time" className={inputCls} style={inputStyle} value={arrTime} onChange={(e) => setArrTime(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Provider + ref — optional */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Provider <span className="text-stone-400 font-normal">(optional)</span></label>
+            <input className={inputCls} style={inputStyle} value={provider} onChange={(e) => setProvider(e.target.value)} placeholder={ph.provider} />
+          </div>
+          <div>
+            <label className={labelCls}>Reference / Code <span className="text-stone-400 font-normal">(optional)</span></label>
+            <input className={inputCls} style={inputStyle} value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder={ph.ref} />
+          </div>
+        </div>
+
+        {/* Cost */}
         <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">
-            {type === 'rent' ? 'Pick-up date' : 'Departure date'}
+          <label className={labelCls}>
+            Cost ({currency})
+            <span className="text-stone-400 font-normal ml-1">— creates an expense entry</span>
           </label>
-          <input type="date" className={inputCls} style={inputStyle} value={depDate} onChange={(e) => setDepDate(e.target.value)} />
+          <input
+            type="number"
+            min="0"
+            step="any"
+            className={inputCls}
+            style={inputStyle}
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="0"
+          />
         </div>
+
+        {/* Note */}
         <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">Time</label>
-          <input type="time" className={inputCls} style={inputStyle} value={depTime} onChange={(e) => setDepTime(e.target.value)} />
+          <label className={labelCls}>Note <span className="text-stone-400 font-normal">(optional)</span></label>
+          <textarea
+            rows={2}
+            className={inputCls + ' resize-none'}
+            style={inputStyle}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Seat numbers, luggage allowance, pickup instructions…"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="inline-flex items-center gap-1 text-sm px-4 py-2 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors font-medium"
+          >
+            <Check className="w-3.5 h-3.5" />
+            Save booking
+          </button>
         </div>
       </div>
-
-      {/* Arrival */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">
-            {type === 'rent' ? 'Return date' : 'Arrival date'}
-          </label>
-          <input type="date" className={inputCls} style={inputStyle} value={arrDate} onChange={(e) => setArrDate(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">Time</label>
-          <input type="time" className={inputCls} style={inputStyle} value={arrTime} onChange={(e) => setArrTime(e.target.value)} />
-        </div>
-      </div>
-
-      {/* Cost */}
-      <div>
-        <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">
-          Cost ({currency}) — creates an expense entry
-        </label>
-        <input
-          type="number"
-          min="0"
-          step="any"
-          className={inputCls}
-          style={inputStyle}
-          value={cost}
-          onChange={(e) => setCost(e.target.value)}
-          placeholder="0"
-        />
-      </div>
-
-      {/* Note */}
-      <div>
-        <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">Note</label>
-        <textarea
-          rows={2}
-          className={inputCls + ' resize-none'}
-          style={inputStyle}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Optional notes…"
-        />
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2 justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
-        >
-          <X className="w-3 h-3" />
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
-        >
-          <Check className="w-3 h-3" />
-          Save
-        </button>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -398,72 +409,63 @@ interface TransportSectionProps {
 
 export function TransportSection({ bookings: initialBookings, tripId, currency, canEdit }: TransportSectionProps) {
   const [bookings, setBookings] = useState(initialBookings);
-  const [adding, setAdding] = useState(false);
-
-  if (bookings.length === 0 && !canEdit) return null;
-  if (bookings.length === 0 && !adding && canEdit) {
-    // Render minimal "add" trigger when no bookings yet and section is mounted from outside
-    return null; // section is controlled externally; see trip detail page
-  }
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
-    <div className="section-shell mt-4 mb-6 p-5">
-      {/* Section header */}
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm text-blue-600">
-            <Plane className="w-4 h-4" />
+    <>
+      {dialogOpen && (
+        <AddTransportDialog
+          tripId={tripId}
+          currency={currency}
+          onSaved={() => setDialogOpen(false)}
+          onClose={() => setDialogOpen(false)}
+        />
+      )}
+
+      <div className="section-shell mt-4 mb-6 p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm text-blue-600">
+              <Plane className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Getting around
+              </p>
+              <h2 className="text-lg font-semibold section-title text-stone-800">Transport</h2>
+              <p className="text-xs text-stone-400">
+                {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Getting around
-            </p>
-            <h2 className="text-lg font-semibold section-title text-stone-800">Transport</h2>
-            <p className="text-xs text-stone-400">
-              {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'}
-            </p>
-          </div>
+
+          {canEdit && (
+            <button
+              onClick={() => setDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors"
+              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add
+            </button>
+          )}
         </div>
 
-        {canEdit && !adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors"
-            style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add
-          </button>
+        {bookings.length > 0 && (
+          <div className="space-y-3">
+            {bookings.map((b) => (
+              <TransportCard
+                key={b.id}
+                booking={b}
+                canEdit={canEdit}
+                tripId={tripId}
+                onDeleted={() => setBookings((prev) => prev.filter((x) => x.id !== b.id))}
+              />
+            ))}
+          </div>
         )}
       </div>
-
-      {/* Inline add form */}
-      {adding && (
-        <div className="mb-4">
-          <AddTransportForm
-            tripId={tripId}
-            currency={currency}
-            onSaved={() => setAdding(false)}
-            onCancel={() => setAdding(false)}
-          />
-        </div>
-      )}
-
-      {/* Booking cards */}
-      {bookings.length > 0 && (
-        <div className="space-y-3">
-          {bookings.map((b) => (
-            <TransportCard
-              key={b.id}
-              booking={b}
-              canEdit={canEdit}
-              tripId={tripId}
-              onDeleted={() => setBookings((prev) => prev.filter((x) => x.id !== b.id))}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
@@ -471,41 +473,27 @@ export function TransportSection({ bookings: initialBookings, tripId, currency, 
 // TransportSectionTrigger — shown when no bookings but canEdit
 // ---------------------------------------------------------------------------
 export function TransportSectionTrigger({ tripId, currency }: { tripId: string; currency: string }) {
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  if (!open) {
-    return (
+  return (
+    <>
+      {dialogOpen && (
+        <AddTransportDialog
+          tripId={tripId}
+          currency={currency}
+          onSaved={() => setDialogOpen(false)}
+          onClose={() => setDialogOpen(false)}
+        />
+      )}
       <div className="mt-2 mb-6">
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => setDialogOpen(true)}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border border-dashed border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-500 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add transport booking (flight, bus, car rental)
         </button>
       </div>
-    );
-  }
-
-  return (
-    <div className="section-shell mt-4 mb-6 p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm text-blue-600">
-          <Plane className="w-4 h-4" />
-        </div>
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-            Getting around
-          </p>
-          <h2 className="text-lg font-semibold section-title text-stone-800">Transport</h2>
-        </div>
-      </div>
-      <AddTransportForm
-        tripId={tripId}
-        currency={currency}
-        onSaved={() => setOpen(false)}
-        onCancel={() => setOpen(false)}
-      />
-    </div>
+    </>
   );
 }
