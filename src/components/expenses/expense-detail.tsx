@@ -26,14 +26,14 @@ function StatusBadge({ status }: { status: string }) {
   const isPending = status === 'pending';
   return (
     <span
-      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
+      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
       style={{
-        backgroundColor: isPending ? 'var(--color-secondary-light)' : 'var(--color-primary-light)',
-        color: isPending ? 'var(--color-secondary)' : 'var(--color-primary)',
+        backgroundColor: isPending ? '#FEF3C7' : 'var(--color-primary-light)',
+        color: isPending ? '#92400E' : 'var(--color-primary)',
       }}
     >
       {!isPending && <CheckCircle2 className="w-3 h-3" />}
-      {status}
+      {isPending ? 'Unpaid' : 'Paid'}
     </span>
   );
 }
@@ -110,10 +110,10 @@ function SplitRow({
             'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
-          title="Mark as settled"
+          title="Mark as paid"
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
-          {isSettling ? 'Saving…' : 'Settle'}
+          {isSettling ? 'Saving…' : 'Mark as paid'}
         </button>
       )}
 
