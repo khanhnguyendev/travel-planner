@@ -7,6 +7,7 @@ import { updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
 import { cn } from '@/lib/utils';
+import { buildPublicStorageUrl, normalizePublicStorageUrl } from '@/lib/storage';
 
 interface CoverImageUploadProps {
   tripId: string;
@@ -31,7 +32,7 @@ export function CoverImageUpload({
   const loadingToast = useLoadingToast();
 
   useEffect(() => {
-    setPreviewUrl(currentCoverUrl ?? null);
+    setPreviewUrl(normalizePublicStorageUrl(currentCoverUrl) ?? null);
     setImageFailed(false);
   }, [currentCoverUrl, tripId]);
 
@@ -70,11 +71,11 @@ export function CoverImageUpload({
 
       if (!uploadRes.ok) { resolve('Upload failed', 'error'); return; }
 
-      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/covers/${coverPath}`;
+      const publicUrl = buildPublicStorageUrl('covers', coverPath);
       const result = await updateTrip(tripId, { cover_image_url: publicUrl });
 
       if (result.ok) {
-        setPreviewUrl(`${publicUrl}?v=${Date.now()}`);
+        setPreviewUrl(`${normalizePublicStorageUrl(publicUrl) ?? publicUrl}?v=${Date.now()}`);
         setImageFailed(false);
         resolve('Cover image updated!', 'success');
         startRefreshTransition(() => {
@@ -117,7 +118,7 @@ export function CoverImageUpload({
   const mutationPending = uploading || removing;
   const busy = mutationPending || isRefreshing;
   const identityMode = variant === 'identity';
-  const displayUrl = imageFailed ? null : previewUrl;
+  const displayUrl = imageFailed ? null : (normalizePublicStorageUrl(previewUrl) ?? previewUrl);
 
   return (
     <div className={cn('relative group', identityMode ? 'h-full w-full' : '')}>
@@ -138,6 +139,7 @@ export function CoverImageUpload({
         {displayUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
+            key={displayUrl}
             src={displayUrl}
             alt="Cover"
             className="h-full w-full object-cover"

@@ -25,6 +25,7 @@ import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '@/lib/format';
+import { normalizePublicStorageUrl } from '@/lib/storage';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
@@ -358,6 +359,8 @@ export default async function TripDetailPage({
     notFound();
   }
 
+  const coverUrl = normalizePublicStorageUrl(trip.cover_image_url);
+
   const effectiveRole: TripRole | null =
     role ?? (trip.visibility === 'public' ? 'viewer' : null);
   if (!effectiveRole) {
@@ -596,13 +599,13 @@ export default async function TripDetailPage({
           {canManage ? (
             <CoverImageUpload
               tripId={tripId}
-              currentCoverUrl={trip.cover_image_url}
+              currentCoverUrl={coverUrl}
               variant="identity"
             />
-          ) : trip.cover_image_url ? (
+          ) : coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={trip.cover_image_url}
+              src={coverUrl}
               alt={`${trip.title} cover`}
               className="absolute inset-0 h-full w-full object-cover"
             />

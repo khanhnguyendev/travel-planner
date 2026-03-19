@@ -20,6 +20,7 @@ import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
 import { formatCurrency, formatDateTime } from '@/lib/format';
 import type { Trip } from '@/lib/types';
+import { normalizePublicStorageUrl } from '@/lib/storage';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Trang chu' };
@@ -44,14 +45,15 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
   const isPublic = trip.visibility === 'public';
   const visibility = isPublic ? VISIBILITY_CONFIG.public : VISIBILITY_CONFIG.private;
   const updatedLabel = formatDateTime(trip.updated_at, { includeYear: false });
+  const coverUrl = normalizePublicStorageUrl(trip.cover_image_url);
 
   return (
     <Link href={`/trips/${trip.id}`} className="group block overflow-hidden rounded-[1.75rem] section-shell animate-in slide-up">
       <div className="relative h-48 overflow-hidden rounded-t-[1.75rem]">
-        {hasCover ? (
+        {hasCover && coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={trip.cover_image_url!}
+            src={coverUrl}
             alt=""
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -173,7 +175,8 @@ function InsightCard({
 }
 
 function PublicPreviewCard({ trip }: { trip: Trip }) {
-  const hasCover = !!trip.cover_image_url;
+  const coverUrl = normalizePublicStorageUrl(trip.cover_image_url);
+  const hasCover = !!coverUrl;
 
   return (
     <Link href={`/trips/${trip.id}`} className="group block overflow-hidden rounded-[1.75rem] section-shell animate-in slide-up">
@@ -181,7 +184,7 @@ function PublicPreviewCard({ trip }: { trip: Trip }) {
         {hasCover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={trip.cover_image_url!}
+            src={coverUrl!}
             alt=""
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

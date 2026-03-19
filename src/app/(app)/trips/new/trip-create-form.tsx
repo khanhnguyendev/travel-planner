@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, X } from 'lucide-react';
 import { createTrip, updateTrip } from '@/features/trips/actions';
+import { buildPublicStorageUrl } from '@/lib/storage';
 import { useLoadingToast } from '@/components/ui/toast';
 import { formatNumericInput, parseNumericInput } from '@/lib/format';
 
@@ -73,7 +74,7 @@ export default function TripCreateForm() {
         const json = await res.json() as { ok: boolean; data?: { uploadUrl: string; coverPath: string } };
         if (json.ok && json.data) {
           await fetch(json.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': coverFile.type }, body: coverFile });
-          const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/covers/${json.data.coverPath}`;
+          const publicUrl = buildPublicStorageUrl('covers', json.data.coverPath);
           await updateTrip(tripId, { cover_image_url: publicUrl });
         }
       } catch { /* non-fatal — trip is already created */ }
