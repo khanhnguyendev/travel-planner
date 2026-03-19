@@ -7,6 +7,23 @@ export interface TripWithRole extends Trip {
   myRole: TripRole;
 }
 
+export async function getPublicTrips(): Promise<Trip[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('trips')
+    .select('*')
+    .eq('visibility', 'public')
+    .eq('status', 'active')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('getPublicTrips error:', error);
+    return [];
+  }
+
+  return (data ?? []) as unknown as Trip[];
+}
+
 /**
  * Returns all trips the current user is an accepted member of,
  * including their role, ordered by most recently updated.

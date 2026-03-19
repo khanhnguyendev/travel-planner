@@ -14,6 +14,13 @@ export default function LandingPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link
+            href="/dashboard"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            Public trips
+          </Link>
+          <Link
             href="/sign-in"
             className="inline-flex min-h-[40px] items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors"
             style={{ color: 'var(--color-text-muted)' }}
@@ -57,10 +64,10 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <Link
-              href="/sign-up"
+              href="/dashboard"
               className="btn-primary inline-flex min-h-[46px] items-center gap-2 px-5 py-3 text-sm sm:text-base"
             >
-              Start planning
+              Browse public trips
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link

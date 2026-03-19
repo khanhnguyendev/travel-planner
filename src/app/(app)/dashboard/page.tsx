@@ -15,10 +15,11 @@ import {
   Clock3,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
-import { getTrips, type TripWithRole } from '@/features/trips/queries';
+import { getPublicTrips, getTrips, type TripWithRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
 import { formatCurrency, formatDateTime } from '@/lib/format';
+import type { Trip } from '@/lib/types';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Trang chu' };
@@ -171,7 +172,84 @@ function InsightCard({
   );
 }
 
-function GuestLanding() {
+function PublicPreviewCard({ trip }: { trip: Trip }) {
+  const hasCover = !!trip.cover_image_url;
+
+  return (
+    <Link href={`/trips/${trip.id}`} className="group block overflow-hidden rounded-[1.75rem] section-shell animate-in slide-up">
+      <div className="relative h-44 overflow-hidden rounded-t-[1.75rem]">
+        {hasCover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={trip.cover_image_url!}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="hero-orb h-full w-full">
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/15" />
+            <div className="absolute left-6 top-10 h-16 w-16 rounded-full bg-white/12" />
+          </div>
+        )}
+
+        <div className="trip-hero-overlay absolute inset-0" />
+
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-3">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm"
+            style={{ backgroundColor: VISIBILITY_CONFIG.public.bg, color: VISIBILITY_CONFIG.public.color }}
+          >
+            {VISIBILITY_CONFIG.public.icon}
+            {VISIBILITY_CONFIG.public.label}
+          </span>
+
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">
+            <Clock3 className="h-3 w-3" />
+            Updated {formatDateTime(trip.updated_at, { includeYear: false })}
+          </span>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="line-clamp-2 text-lg font-semibold leading-snug text-white section-title">
+            {trip.title}
+          </h3>
+          {trip.description && (
+            <p className="mt-1 line-clamp-2 text-sm text-white/74">
+              {trip.description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3 p-4">
+        <div className="mini-stat px-3 py-3">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Schedule
+          </p>
+          <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>
+            {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Dates flexible'}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-stone-950/[0.03] px-3 py-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Public preview
+            </p>
+            <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+              Explore itinerary, places, and map
+            </p>
+          </div>
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+            <ArrowUpRight className="h-4 w-4" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function GuestLanding({ publicTrips }: { publicTrips: Trip[] }) {
   return (
     <div className="animate-in fade-in duration-300">
       <section className="hero-orb relative overflow-hidden rounded-[2rem] p-6 text-white sm:p-8">
@@ -189,7 +267,7 @@ function GuestLanding() {
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link href="/sign-up" className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5">
-              Get started free
+              Create your own trip
             </Link>
             <Link href="/sign-in" className="rounded-2xl bg-white/14 px-4 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-transform hover:-translate-y-0.5">
               Sign in
@@ -218,13 +296,49 @@ function GuestLanding() {
           icon={<Users className="h-4 w-4" />}
         />
       </div>
+
+      <section className="mt-8">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Public trips
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+              Explore trips anyone can preview
+            </h2>
+          </div>
+          <Link href="/sign-up" className="hidden rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 sm:inline-flex">
+            Create your own
+          </Link>
+        </div>
+
+        {publicTrips.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+            {publicTrips.map((trip) => (
+              <PublicPreviewCard key={trip.id} trip={trip} />
+            ))}
+          </div>
+        ) : (
+          <div className="section-shell rounded-[1.75rem] p-8 text-center">
+            <p className="text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+              No public trips yet
+            </p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              Public trip previews will show up here as soon as someone shares one.
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
 
 export default async function DashboardPage() {
   const user = await getSession();
-  if (!user) return <GuestLanding />;
+  if (!user) {
+    const publicTrips = await getPublicTrips();
+    return <GuestLanding publicTrips={publicTrips} />;
+  }
 
   const trips = await getTrips();
   const tripMembers = await Promise.all(trips.map(async (trip) => getMembers(trip.id)));
