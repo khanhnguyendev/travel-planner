@@ -142,7 +142,7 @@ function CrewCard({
           ) : (
             <div className="space-y-1">
               <StatRow label="Income put in" value={formatCurrency(member.contributions, currency)} />
-              <StatRow label="Paid expenses" value={formatCurrency(member.paid, currency)} />
+              <StatRow label="Split portion" value={formatCurrency(member.paid, currency)} />
               <StatRow
                 label="Remaining"
                 value={formatCurrency(Math.max(0, remain), currency)}

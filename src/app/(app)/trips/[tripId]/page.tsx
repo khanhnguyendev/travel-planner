@@ -499,10 +499,13 @@ export default async function TripDetailPage({
       memberContributionMap.set(c.user_id, (memberContributionMap.get(c.user_id) ?? 0) + c.amount);
     }
   }
-  const memberPaidMap = new Map<string, number>();
+  // Sum each member's split portions (what they owe) across all expenses
+  const memberSplitMap = new Map<string, number>();
   for (const expense of expensesWithSplits) {
     if (expense.currency === balanceCurrency) {
-      memberPaidMap.set(expense.paid_by_user_id, (memberPaidMap.get(expense.paid_by_user_id) ?? 0) + expense.amount);
+      for (const split of expense.splits) {
+        memberSplitMap.set(split.user_id, (memberSplitMap.get(split.user_id) ?? 0) + split.amount_owed);
+      }
     }
   }
 
@@ -522,7 +525,7 @@ export default async function TripDetailPage({
     profile: { display_name: m.profile.display_name, avatar_url: m.profile.avatar_url },
     balanceNet: memberBalanceMap.get(m.user_id) ?? 0,
     contributions: memberContributionMap.get(m.user_id) ?? 0,
-    paid: memberPaidMap.get(m.user_id) ?? 0,
+    paid: memberSplitMap.get(m.user_id) ?? 0,
   }));
 
   const crewIdentityLabel = joinRequests.length > 0
