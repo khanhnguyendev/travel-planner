@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   Calendar,
-  Receipt,
   Globe,
   Lock,
   UserCog,
@@ -12,9 +11,7 @@ import {
   Eye,
   Info,
   MapPin,
-  Activity,
   Sparkles,
-  Coins,
   Users,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
@@ -27,10 +24,6 @@ import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
 import { formatCurrency, formatDate } from '@/lib/format';
-import { PlacesSection } from '@/components/places/places-section';
-import { TripTimeline } from '@/components/places/trip-timeline';
-import { MapTabClient } from '@/components/places/map-tab-client';
-import { DebtSummary } from '@/components/expenses/debt-summary';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
@@ -38,15 +31,14 @@ import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
 import { TripMobileActionDock } from '@/components/trips/trip-mobile-action-dock';
 import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
+import { TripTabsShell, type TripTabValue as TabValue } from '@/components/trips/trip-tabs-shell';
 import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
-import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import { AccommodationSection } from '@/components/places/accommodation-section';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
-import { ActivityFeed } from '@/components/activity/activity-feed';
 import { getTripActivity } from '@/features/activity/queries';
 import type { TripRole, Visibility, PlaceVote, PlaceReview, PlaceComment, Place, PlaceExpenseHistoryEntry } from '@/lib/types';
 import type { Metadata } from 'next';
@@ -356,52 +348,6 @@ function StopSpotlightCard({
           />
         </div>
       )}
-    </div>
-  );
-}
-
-type TabValue = 'places' | 'timeline' | 'map' | 'expenses' | 'activity';
-
-function TabBar({
-  activeTab,
-  tripId,
-  tabs,
-}: {
-  activeTab: TabValue;
-  tripId: string;
-  tabs: TabValue[];
-}) {
-  const tabItems: { label: string; value: TabValue; icon: React.ReactNode }[] = [
-    { label: 'Places', value: 'places', icon: <MapPin className="h-3.5 w-3.5" /> },
-    { label: 'Plan', value: 'timeline', icon: <Calendar className="h-3.5 w-3.5" /> },
-    { label: 'Map', value: 'map', icon: <Globe className="h-3.5 w-3.5" /> },
-    { label: 'Money', value: 'expenses', icon: <Coins className="h-3.5 w-3.5" /> },
-    { label: 'Activity', value: 'activity', icon: <Activity className="h-3.5 w-3.5" /> },
-  ];
-
-  return (
-    <div className="sticky-tabs mt-4 mb-5">
-      <div className="section-shell overflow-x-auto p-1.5 scrollbar-hide sm:p-2">
-        <div className="flex min-w-max items-center gap-1.5 sm:gap-2">
-          {tabItems
-            .filter((tab) => tabs.includes(tab.value))
-            .map((tab) => {
-              const isActive = tab.value === activeTab;
-              return (
-                <Link
-                  key={tab.value}
-                  href={`/trips/${tripId}?tab=${tab.value}`}
-                  scroll={false}
-                  className={`pill-tab flex min-h-[40px] items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold sm:min-h-[44px] sm:gap-2 sm:px-4 sm:text-sm ${isActive ? 'pill-tab-active' : ''}`}
-                  style={{ color: isActive ? 'var(--color-text)' : 'var(--color-text-muted)' }}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </Link>
-              );
-            })}
-        </div>
-      </div>
     </div>
   );
 }
@@ -1045,184 +991,34 @@ export default async function TripDetailPage({
         canManageBudget={canManage}
       />
 
-      <TabBar activeTab={activeTab} tripId={tripId} tabs={visibleTabs} />
-
-      {activeTab === 'places' && (
-        <div className="mb-6">
-          <TripSectionRefreshBoundary
-            tripId={tripId}
-            sections={TRIP_REFRESH_SECTIONS.places}
-            signature={placesSurfaceSignature}
-            label="Refreshing places"
-          >
-            <PlacesSection
-              tripId={tripId}
-              role={resolvedRole}
-              initialPlaces={places}
-              initialCategories={categories}
-              initialVoteSummaries={voteSummaries}
-              initialUserVotes={userVotes}
-              reviewsByPlaceId={reviewsByPlaceId}
-              placeExpensesByPlaceId={placeExpensesByPlaceId}
-              commentsByPlaceId={commentsByPlaceId}
-              commentAuthors={commentAuthors}
-              currentUserId={currentUserId}
-              canVote={canVote}
-              canComment={canComment}
-              tripStartDate={trip.start_date}
-              tripEndDate={trip.end_date}
-            />
-          </TripSectionRefreshBoundary>
-        </div>
-      )}
-
-      {activeTab === 'timeline' && (
-        <TripSectionRefreshBoundary
-          tripId={tripId}
-          sections={TRIP_REFRESH_SECTIONS.timeline}
-          signature={placesSurfaceSignature}
-          label="Refreshing timeline"
-        >
-          <div className="section-shell mb-5 overflow-hidden p-4 sm:p-6">
-            <TripTimeline
-              places={places}
-              categories={categories}
-              tripId={tripId}
-              currentUserId={currentUserId}
-              canEdit={canEdit}
-              canVote={canVote}
-              canComment={canComment}
-              voteSummaries={voteSummaries}
-              userVotes={userVotes}
-              reviewsByPlaceId={reviewsByPlaceId}
-              placeExpensesByPlaceId={placeExpensesByPlaceId}
-              commentsByPlaceId={commentsByPlaceId}
-              commentAuthors={commentAuthors}
-              tripStartDate={trip.start_date}
-              tripEndDate={trip.end_date}
-            />
-          </div>
-        </TripSectionRefreshBoundary>
-      )}
-
-      {activeTab === 'map' && (
-        <TripSectionRefreshBoundary
-          tripId={tripId}
-          sections={TRIP_REFRESH_SECTIONS.map}
-          signature={placesSurfaceSignature}
-          label="Refreshing map"
-        >
-          <div className="section-shell mb-5 overflow-hidden p-3 sm:p-4">
-            <MapTabClient
-              tripId={tripId}
-              places={places}
-              categories={categories}
-              canVote={canVote}
-              canComment={canComment}
-              voteSummaries={voteSummaries}
-              userVotes={userVotes}
-              reviewsByPlaceId={reviewsByPlaceId}
-              placeExpensesByPlaceId={placeExpensesByPlaceId}
-              commentsByPlaceId={commentsByPlaceId}
-              commentAuthors={commentAuthors}
-              currentUserId={currentUserId}
-              tripStartDate={trip.start_date}
-              tripEndDate={trip.end_date}
-            />
-          </div>
-        </TripSectionRefreshBoundary>
-      )}
-
-      {activeTab === 'expenses' && (
-        <TripSectionRefreshBoundary
-          tripId={tripId}
-          sections={TRIP_REFRESH_SECTIONS.expenses}
-          signature={expensesSignature}
-          label="Updating money"
-        >
-          <div className="mb-5 space-y-3 sm:space-y-4">
-            {expensesWithSplits.length > 0 && (
-              <DebtSummary
-                expenses={expensesWithSplits}
-                members={memberProfiles}
-                currentUserId={currentUserId}
-              />
-            )}
-
-            <div className="section-shell overflow-hidden p-4 sm:p-6">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                    Money
-                  </p>
-                  <h2 className="mt-1 text-lg font-semibold section-title sm:text-xl" style={{ color: 'var(--color-text)' }}>
-                    Shared expenses
-                  </h2>
-                  <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    {expensesWithSplits.length > 0
-                      ? `${expensesWithSplits.length} expense entries with payer, split crew, place, and time details`
-                      : 'No expenses added yet'}
-                  </p>
-                </div>
-
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-                  {canEdit && (
-                    <AddExpenseDialog
-                      tripId={tripId}
-                      members={members}
-                      currentUserId={currentUserId}
-                      places={places}
-                      triggerClassName="w-full justify-center sm:w-auto"
-                    />
-                  )}
-                  <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] w-full justify-center text-sm sm:w-auto">
-                    View all
-                  </Link>
-                </div>
-              </div>
-
-              {expensesWithSplits.length === 0 ? (
-                <div className="rounded-[1.5rem] bg-stone-950/[0.03] px-4 py-8 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                    <Receipt className="h-6 w-6" style={{ color: 'var(--color-text-subtle)' }} />
-                  </div>
-                  <p className="text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                    Track your first shared expense
-                  </p>
-                  <p className="mx-auto mt-2 max-w-xs text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    Add transport, food, tickets, and receipts here so balances stay clear for everyone.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {expensesWithSplits.slice(0, 4).map((expense) => (
-                    <ExpenseSummaryCard
-                      key={expense.id}
-                      expense={expense}
-                      linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
-                      href={`/trips/${tripId}/expenses/${expense.id}`}
-                      compact
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </TripSectionRefreshBoundary>
-      )}
-
-      {activeTab === 'activity' && (
-        <TripSectionRefreshBoundary
-          tripId={tripId}
-          sections={TRIP_REFRESH_SECTIONS.activity}
-          signature={activitySignature}
-          label="Refreshing activity"
-        >
-          <div className="mb-5">
-            <ActivityFeed activities={activityEntries} />
-          </div>
-        </TripSectionRefreshBoundary>
-      )}
+      <TripTabsShell
+        tripId={tripId}
+        initialActiveTab={activeTab}
+        tabs={visibleTabs}
+        resolvedRole={resolvedRole}
+        canEdit={canEdit}
+        canVote={canVote}
+        canComment={canComment}
+        currentUserId={currentUserId}
+        tripStartDate={trip.start_date}
+        tripEndDate={trip.end_date}
+        places={places}
+        categories={categories}
+        voteSummaries={voteSummaries}
+        userVotes={userVotes}
+        reviewsByPlaceId={reviewsByPlaceId}
+        placeExpensesByPlaceId={placeExpensesByPlaceId}
+        commentsByPlaceId={commentsByPlaceId}
+        commentAuthors={commentAuthors}
+        placesSurfaceSignature={placesSurfaceSignature}
+        expensesSignature={expensesSignature}
+        activitySignature={activitySignature}
+        expenses={expensesWithSplits}
+        placeNameById={placeNameById}
+        memberProfiles={memberProfiles}
+        members={members}
+        activityEntries={activityEntries}
+      />
     </div>
   );
 }
