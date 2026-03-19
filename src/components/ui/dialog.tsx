@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DialogProps {
   title: string;
@@ -36,19 +37,18 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
   return createPortal(
     <>
       <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 sm:pt-16">
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 sm:pt-16">
         <div
-          className={`relative w-full ${maxWidth} rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[90dvh] sm:max-h-[92dvh]`}
+          className={cn(
+            'relative flex w-full flex-col overflow-hidden rounded-[1.5rem] max-h-[88dvh] overflow-x-hidden sm:max-h-[92dvh]',
+            maxWidth
+          )}
           style={{ backgroundColor: 'var(--color-bg)' }}
           role="dialog"
           aria-modal="true"
           aria-label={title}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Mobile drag handle */}
-          <div className="flex justify-center pt-2.5 pb-1 sm:hidden">
-            <div className="w-10 h-1 rounded-full bg-stone-200" />
-          </div>
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3.5 sm:px-5 sm:py-4" style={{ borderColor: 'var(--color-border)' }}>
             <h2 className="font-semibold text-base text-stone-800">{title}</h2>
@@ -57,7 +57,7 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
             </button>
           </div>
           {/* Scrollable body */}
-          <div className="overflow-y-auto p-4 sm:p-5">
+          <div className="overflow-y-auto overflow-x-hidden p-4 sm:p-5">
             {children}
           </div>
         </div>
