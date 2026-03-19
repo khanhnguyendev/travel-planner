@@ -493,3 +493,82 @@ export async function deletePlaceComment(
   revalidatePath(`/trips/${tripId}`);
   return { ok: true, data: undefined };
 }
+
+// -------------------------------------------------------
+// swapPlaceSchedules
+// -------------------------------------------------------
+
+export async function swapPlaceSchedules(
+  placeAId: string,
+  placeBId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const admin = createAdminClient();
+
+  // Fetch both places
+  const { data: placesData } = await admin
+    .from('places')
+    .select('id, trip_id, name, visit_date, visit_date_end, visit_time_from, visit_time_to, actual_checkin_at')
+    .in('id', [placeAId, placeBId]);
+
+  const places = (placesData ?? []) as Array<{
+    id: string;
+    trip_id: string;
+    name: string;
+    visit_date: string | null;
+    visit_date_end: string | null;
+    visit_time_from: string | null;
+    visit_time_to: string | null;
+    actual_checkin_at: string | null;
+  }>;
+
+  if (places.length !== 2) return { ok: false, error: 'One or both places not found' };
+
+  const placeA = places.find((p) => p.id === placeAId)!;
+  const placeB = places.find((p) => p.id === placeBId)!;
+
+  if (placeA.trip_id !== placeB.trip_id) return { ok: false, error: 'Places must belong to the same trip' };
+
+  const tripId = placeA.trip_id;
+
+  // Verify editor+ role
+  const role = await requireEditor(tripId, user.id);
+  if (!role) return { ok: false, error: 'Insufficient permissions' };
+
+  // Block if Place A is checked in
+  if (placeA.actual_checkin_at) return { ok: false, error: 'Cannot swap a place that is already checked in' };
+
+  // Swap schedule fields
+  const [updateA, updateB] = await Promise.all([
+    admin.from('places').update({
+      visit_date: placeB.visit_date,
+      visit_date_end: placeB.visit_date_end,
+      visit_time_from: placeB.visit_time_from,
+      visit_time_to: placeB.visit_time_to,
+    }).eq('id', placeAId),
+    admin.from('places').update({
+      visit_date: placeA.visit_date,
+      visit_date_end: placeA.visit_date_end,
+      visit_time_from: placeA.visit_time_from,
+      visit_time_to: placeA.visit_time_to,
+    }).eq('id', placeBId),
+  ]);
+
+  if (updateA.error || updateB.error) {
+    console.error('swapPlaceSchedules error:', updateA.error ?? updateB.error);
+    return { ok: false, error: 'Failed to swap schedules' };
+  }
+
+  void logActivity({
+    tripId,
+    userId: user.id,
+    action: 'place.schedule_swap',
+    meta: { placeAId, placeBId, placeAName: placeA.name, placeBName: placeB.name },
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  return { ok: true, data: undefined };
+}

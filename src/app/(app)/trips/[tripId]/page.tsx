@@ -33,6 +33,7 @@ import { TripMobileActionDock } from '@/components/trips/trip-mobile-action-dock
 import { TripTabsShell, type TripTabValue as TabValue } from '@/components/trips/trip-tabs-shell';
 import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
 import { CrewCardList } from '@/components/trips/crew-card-list';
+import { SwapPlaceButton } from '@/components/places/swap-place-button';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
@@ -257,6 +258,7 @@ function StopSpotlightCard({
   tone,
   canEdit,
   allDayPlaces,
+  allPlaces,
   tripId,
 }: {
   label: string;
@@ -265,6 +267,7 @@ function StopSpotlightCard({
   tone: 'previous' | 'current' | 'next';
   canEdit: boolean;
   allDayPlaces: Place[];
+  allPlaces: Place[];
   tripId: string;
 }) {
   const toneStyles: Record<'previous' | 'current' | 'next', { chipBg: string; chipText: string; panelBg: string }> = {
@@ -317,7 +320,8 @@ function StopSpotlightCard({
       )}
 
       {canEdit && place && (
-        <div className="mt-4">
+        <div className="mt-4 space-y-2">
+          <SwapPlaceButton place={place} allPlaces={allPlaces} tripId={tripId} />
           <CheckInOutButton
             place={place}
             allDayPlaces={allDayPlaces}
@@ -968,6 +972,7 @@ export default async function TripDetailPage({
                   tone="previous"
                   canEdit={canEdit}
                   allDayPlaces={stopPointers.previous?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
+                  allPlaces={planningPlaces}
                   tripId={tripId}
                 />
                 <StopSpotlightCard
@@ -977,6 +982,7 @@ export default async function TripDetailPage({
                   tone="current"
                   canEdit={canEdit}
                   allDayPlaces={stopPointers.current?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
+                  allPlaces={planningPlaces}
                   tripId={tripId}
                 />
                 <StopSpotlightCard
@@ -986,6 +992,7 @@ export default async function TripDetailPage({
                   tone="next"
                   canEdit={canEdit}
                   allDayPlaces={stopPointers.next?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
+                  allPlaces={planningPlaces}
                   tripId={tripId}
                 />
               </div>

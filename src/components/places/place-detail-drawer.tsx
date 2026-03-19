@@ -12,6 +12,7 @@ import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComme
 import type { ConflictingPlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
+import { SwapPlaceButton } from '@/components/places/swap-place-button';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { PlaceExpenseHistory } from '@/components/places/place-expense-history';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
@@ -232,17 +233,22 @@ function ScheduleEditor({
         )}
 
         {canEdit && (
-          <button
-            onClick={openEditor}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1 cursor-pointer"
-            style={{
-              backgroundColor: hasSchedule || savedBackupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
-              color: hasSchedule || savedBackupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
-            }}
-          >
-            <Pencil className="w-3 h-3" />
-            {hasSchedule || savedBackupPlace ? 'Edit schedule' : 'Add schedule'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={openEditor}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors mt-1 cursor-pointer"
+              style={{
+                backgroundColor: hasSchedule || savedBackupPlace ? 'var(--color-bg-subtle)' : 'var(--color-primary-light)',
+                color: hasSchedule || savedBackupPlace ? 'var(--color-text-muted)' : 'var(--color-primary)',
+              }}
+            >
+              <Pencil className="w-3 h-3" />
+              {hasSchedule || savedBackupPlace ? 'Edit schedule' : 'Add schedule'}
+            </button>
+            {hasSchedule && allPlaces && allPlaces.length > 1 && (
+              <SwapPlaceButton place={place} allPlaces={allPlaces} tripId={tripId} />
+            )}
+          </div>
         )}
       </div>
     );
