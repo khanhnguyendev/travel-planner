@@ -93,6 +93,27 @@ export function PlacesSection({
     setReviewsByPlaceId(initialReviewsByPlaceId);
   }, [initialReviewsByPlaceId]);
 
+  const accommodationCategoryIds = useMemo(
+    () => new Set(categories.filter((category) => category.category_type === 'accommodation').map((category) => category.id)),
+    [categories]
+  );
+
+  const planningCategories = useMemo(
+    () => categories.filter((category) => category.category_type !== 'accommodation'),
+    [categories]
+  );
+
+  const planningPlaces = useMemo(
+    () => places.filter((place) => !accommodationCategoryIds.has(place.category_id)),
+    [accommodationCategoryIds, places]
+  );
+
+  useEffect(() => {
+    if (selectedCategoryId && !planningCategories.some((category) => category.id === selectedCategoryId)) {
+      setSelectedCategoryId(null);
+    }
+  }, [planningCategories, selectedCategoryId]);
+
   function handleCategoryCreated(cat: Category) {
     setCategories((prev) => [...prev, cat]);
   }
@@ -131,13 +152,13 @@ export function PlacesSection({
     }
   }
 
-  const basePlaces = searchResults ?? places;
+  const basePlaces = searchResults ?? planningPlaces;
   const voteSummaryMap = Object.fromEntries(voteSummaries.map((v) => [v.placeId, v]));
   const nextPlaceId = useMemo(() => {
     let closest: Place | null = null;
     let closestDiff = Infinity;
 
-    for (const place of places) {
+    for (const place of planningPlaces) {
       if (!place.visit_date || !place.visit_time_from) continue;
       const [hours, minutes] = place.visit_time_from.split(':').map(Number);
       const timestamp = new Date(
@@ -151,7 +172,7 @@ export function PlacesSection({
     }
 
     return closest?.id ?? null;
-  }, [places]);
+  }, [planningPlaces]);
 
   const sortedPlaces = useMemo(() => {
     const list = [...basePlaces];
@@ -204,19 +225,19 @@ export function PlacesSection({
         </Dialog>
       )}
 
-      {places.length >= 2 && (
-        <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
+      {planningPlaces.length >= 2 && (
+        <VoteLeaderboard places={planningPlaces} voteSummaries={voteSummaries} categories={planningCategories} />
       )}
 
       <div className="section-shell overflow-hidden p-3 sm:p-5">
         <div className="space-y-3">
           <div className="flex items-start gap-2">
-            {places.length > 0 && (
+            {planningPlaces.length > 0 && (
               <div className="min-w-0 flex-1">
                 <PlaceSearch
-                  places={places}
+                  places={planningPlaces}
                   onResults={(filtered) =>
-                    setSearchResults(filtered.length === places.length ? null : filtered)
+                    setSearchResults(filtered.length === planningPlaces.length ? null : filtered)
                   }
                 />
               </div>
@@ -231,7 +252,7 @@ export function PlacesSection({
                 Add place
               </button>
             )}
-            {editor && places.length > 0 && !selectMode && (
+            {editor && planningPlaces.length > 0 && !selectMode && (
               <button
                 onClick={() => { setSelectMode(true); setSelectedIds(new Set()); }}
                 className="hidden min-h-[48px] items-center gap-2 rounded-[1.1rem] border px-4 py-3 text-sm font-semibold transition-colors hover:bg-black/[0.03] md:inline-flex"
@@ -264,7 +285,7 @@ export function PlacesSection({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 pb-1">
-            {places.length > 1 && (
+            {planningPlaces.length > 1 && (
               <div className="flex flex-shrink-0 items-center gap-1.5">
                 <label htmlFor="sort-places" className="text-xs font-medium whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
                   Sort
@@ -283,9 +304,9 @@ export function PlacesSection({
               </div>
             )}
 
-            {categories.length > 0 && (
+            {planningCategories.length > 0 && (
               <CategoryList
-                categories={categories}
+                categories={planningCategories}
                 selectedId={selectedCategoryId}
                 onSelect={setSelectedCategoryId}
                 inline
@@ -322,7 +343,7 @@ export function PlacesSection({
 
       <PlaceGrid
         places={sortedPlaces}
-        categories={categories}
+        categories={planningCategories}
         tripId={tripId}
         selectedCategoryId={selectedCategoryId}
         selectedLocationTag={selectedLocationTag}
