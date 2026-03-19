@@ -5,17 +5,12 @@ import { calculateMemberBalances } from '@/features/expenses/debt';
 import { formatCurrency } from '@/lib/format';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { MemberWithProfile } from '@/features/members/queries';
-import type { BudgetContribution } from '@/lib/types';
 
 interface MemberBalancesProps {
   expenses: ExpenseWithSplits[];
   members: MemberWithProfile[];
   currentUserId: string;
   budgetCurrency: string;
-  contributions: BudgetContribution[];
-  // Legacy — kept for callers not yet migrated
-  budgetAmount?: number | null;
-  budgetPayerUserId?: string | null;
 }
 
 export function MemberBalances({
@@ -23,21 +18,10 @@ export function MemberBalances({
   members,
   currentUserId,
   budgetCurrency,
-  contributions,
-  budgetAmount,
-  budgetPayerUserId,
 }: MemberBalancesProps) {
-  if (expenses.length === 0 && contributions.length === 0 && !budgetAmount) return null;
+  if (expenses.length === 0) return null;
 
-  const memberUserIds = members.map((m) => m.user_id);
-  const balances = calculateMemberBalances(expenses, {
-    contributions: contributions.map((c) => ({ userId: c.user_id, amount: c.amount, currency: c.currency })),
-    memberUserIds,
-    // Legacy fallback
-    budgetAmount,
-    budgetCurrency,
-    budgetPayerUserId,
-  });
+  const balances = calculateMemberBalances(expenses);
 
   // Group by currency, pick the primary currency
   const primaryCurrency = budgetCurrency || expenses[0]?.currency || 'VND';
