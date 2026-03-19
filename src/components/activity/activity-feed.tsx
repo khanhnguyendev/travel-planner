@@ -443,91 +443,90 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
 
   return (
     <div
-      className="overflow-hidden rounded-[1.35rem] border bg-white shadow-[0_18px_50px_rgba(28,25,23,0.06)] transition-shadow hover:shadow-[0_24px_60px_rgba(28,25,23,0.08)]"
-      style={{ borderColor: 'rgba(193, 176, 152, 0.28)' }}
+      className={cn(
+        'group relative min-w-0 overflow-hidden border bg-white transition-all',
+        'rounded-[1.1rem] shadow-[0_10px_24px_rgba(87,67,40,0.05)]',
+        'border-stone-200/80 hover:border-stone-300 hover:shadow-sm'
+      )}
     >
-      <button
-        type="button"
-        onClick={() => setExpanded((value) => !value)}
-        className="w-full px-3 py-3 text-left transition-colors hover:bg-black/[0.015] sm:px-4"
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: bg }}
-          >
-            <Icon className="h-4 w-4" style={{ color }} />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm leading-snug text-stone-700">
-                  <span className="font-semibold text-stone-950">{displayName}</span>
-                  {' '}
-                  {labelNode}
-                </p>
-                <div
-                  className="mt-1 flex flex-wrap items-center gap-2 text-[11px]"
-                  style={{ color: 'var(--color-text-subtle)' }}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    <Clock3 className="h-3 w-3" />
-                    {formatDateTime(entry.created_at, { includeYear: false })}
-                  </span>
-                  <span
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]"
-                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}
-                  >
-                    {formatActionKey(entry.action)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-shrink-0 items-center gap-2">
-                <Avatar
-                  user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
-                  size="sm"
-                />
-                <span
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors"
-                  style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}
-                >
-                  <ChevronDown
-                    className={cn('h-4 w-4 transition-transform duration-200', expanded && 'rotate-180')}
-                  />
-                </span>
-              </div>
-            </div>
-
-            {summaryChips.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {summaryChips.map((chip) => {
-                  const ChipIcon = chip.icon;
-                  return (
-                    <span
-                      key={`${entry.id}-${chip.label}`}
-                      className="inline-flex min-w-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium"
-                      style={{ backgroundColor: chip.bg, color: chip.color }}
-                    >
-                      <ChipIcon className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{chip.label}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        {/* Icon */}
+        <div
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+          style={{ backgroundColor: bg }}
+        >
+          <Icon className="h-4 w-4" style={{ color }} />
         </div>
-      </button>
+
+        {/* Middle: Actor + Label + Chips */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-2 min-w-0">
+            <p className="text-sm leading-snug text-stone-700 truncate">
+              <span className="font-semibold text-stone-950">{displayName}</span>
+              {' '}
+              {labelNode}
+            </p>
+          </div>
+          <div className="mt-0.5 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+            <span className="inline-flex items-center gap-1">
+              <Clock3 className="h-3 w-3" />
+              {formatDateTime(entry.created_at, { includeYear: false })}
+            </span>
+            <span>·</span>
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]"
+              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}
+            >
+              {formatActionKey(entry.action)}
+            </span>
+          </div>
+
+          {summaryChips.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5 leading-none">
+              {summaryChips.map((chip) => {
+                const ChipIcon = chip.icon;
+                return (
+                  <span
+                    key={`${entry.id}-${chip.label}`}
+                    className="inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{ backgroundColor: chip.bg, color: chip.color }}
+                  >
+                    <ChipIcon className="h-2.5 w-2.5 flex-shrink-0" />
+                    <span className="truncate">{chip.label}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Avatar + Toggle */}
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          <Avatar
+            user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
+            size="sm"
+          />
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="rounded-lg p-1 transition-colors hover:bg-black/[0.05]"
+            aria-label={expanded ? 'Collapse' : 'Expand'}
+          >
+            <ChevronDown
+              className={cn('h-4 w-4 transition-transform duration-200', expanded && 'rotate-180')}
+              style={{ color: 'var(--color-text-subtle)' }}
+            />
+          </button>
+        </div>
+      </div>
 
       {expanded && (
-        <div className="border-t px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4" style={{ borderColor: 'var(--color-border-muted)' }}>
+        <div className="border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--color-border-muted)' }}>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {facts.map((fact) => (
               <div
                 key={`${entry.id}-${fact.label}`}
-                className="rounded-2xl border px-3 py-2.5"
+                className="rounded-[1rem] border px-3 py-2.5"
                 style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'rgba(255,255,255,0.82)' }}
               >
                 <p
@@ -550,7 +549,7 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
             <div className="mt-3 space-y-2">
               {note && (
                 <div
-                  className="rounded-2xl border px-3 py-3"
+                  className="rounded-[1rem] border px-3 py-3"
                   style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'var(--color-bg-subtle)' }}
                 >
                   <p
@@ -567,7 +566,7 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
 
               {detailNode && (
                 <div
-                  className="rounded-2xl border px-3 py-3 text-sm leading-relaxed"
+                  className="rounded-[1rem] border px-3 py-3 text-sm leading-relaxed"
                   style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'rgba(255,255,255,0.82)', color: 'var(--color-text-muted)' }}
                 >
                   {detailNode}
