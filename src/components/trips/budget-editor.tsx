@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Pencil } from 'lucide-react';
 import { updateTripBudget } from '@/features/trips/actions';
 import { formatCurrency } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { BudgetContribution } from '@/lib/types';
+import { RefreshOverlay } from '@/components/ui/refresh-overlay';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', VND: '₫', GBP: '£', JPY: '¥', THB: '฿',
@@ -36,10 +38,12 @@ export function BudgetEditor({
   contributions,
   actionSlot,
 }: BudgetEditorProps) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(budget != null ? String(budget) : '');
   const [currency, setCurrency] = useState(budgetCurrency || 'VND');
   const [pending, setPending] = useState(false);
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const hasBudget = budget != null;
   const activeCurrency = budgetCurrency || 'VND';
@@ -74,6 +78,9 @@ export function BudgetEditor({
       return;
     }
     setEditing(false);
+    startRefreshTransition(() => {
+      router.refresh();
+    });
   }
 
   function handleCancel() {
@@ -167,11 +174,9 @@ export function BudgetEditor({
   const barColor = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#14B8A6';
 
   return (
-    <div
-      className="mt-4 overflow-hidden rounded-xl px-4 py-4"
-      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="relative mt-4 overflow-hidden rounded-xl" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+      <div className="px-4 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           {/* Budget cap row */}
           <div className="flex items-center gap-2">
@@ -182,6 +187,7 @@ export function BudgetEditor({
               <button
                 type="button"
                 onClick={() => setEditing(true)}
+                disabled={isRefreshing}
                 className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
                 title="Edit budget cap"
               >
@@ -231,37 +237,39 @@ export function BudgetEditor({
             {actionSlot}
           </div>
         )}
+        </div>
+
+        {/* Progress bar — only when budget cap is set */}
+        {hasBudget && (
+          <>
+            <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${pct}%`, backgroundColor: barColor }}
+              />
+            </div>
+
+            <div className="mt-2 grid grid-cols-1 gap-1 sm:flex sm:items-center sm:justify-between sm:gap-3">
+              <span className="break-words text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                {Math.round(pct)}% of cap used
+              </span>
+              <span className="break-words text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                {formatCurrency(totalSpent, budgetCurrency)} spent
+              </span>
+              <span
+                className="break-words text-xs font-medium"
+                style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
+              >
+                {overBudget
+                  ? `${formatCurrency(Math.abs(capRemaining), budgetCurrency)} over cap`
+                  : `${formatCurrency(capRemaining, budgetCurrency)} remaining`}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Progress bar — only when budget cap is set */}
-      {hasBudget && (
-        <>
-          <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
-            <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{ width: `${pct}%`, backgroundColor: barColor }}
-            />
-          </div>
-
-          <div className="mt-2 grid grid-cols-1 gap-1 sm:flex sm:items-center sm:justify-between sm:gap-3">
-            <span className="break-words text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-              {Math.round(pct)}% of cap used
-            </span>
-            <span className="break-words text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-              {formatCurrency(totalSpent, budgetCurrency)} spent
-            </span>
-            <span
-              className="break-words text-xs font-medium"
-              style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
-            >
-              {overBudget
-                ? `${formatCurrency(Math.abs(capRemaining), budgetCurrency)} over cap`
-                : `${formatCurrency(capRemaining, budgetCurrency)} remaining`}
-            </span>
-          </div>
-        </>
-      )}
-
+      {isRefreshing && <RefreshOverlay label="Updating budget" />}
     </div>
   );
 }

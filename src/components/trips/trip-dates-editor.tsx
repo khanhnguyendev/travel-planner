@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Pencil, Check, X } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Check, X, Loader2 } from 'lucide-react';
 import { updateTripDates } from '@/features/trips/actions';
 import { useLoadingToast, useToast } from '@/components/ui/toast';
 
@@ -14,9 +15,11 @@ interface TripDatesEditorProps {
 }
 
 export function TripDatesEditor({ tripId, startDate, endDate, canManage, field }: TripDatesEditorProps) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(field === 'start' ? (startDate ?? '') : (endDate ?? ''));
   const [pending, setPending] = useState(false);
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const loadingToast = useLoadingToast();
   const { showToast } = useToast();
 
@@ -37,6 +40,9 @@ export function TripDatesEditor({ tripId, startDate, endDate, canManage, field }
     if (result.ok) {
       resolve('Dates updated!', 'success');
       setEditing(false);
+      startRefreshTransition(() => {
+        router.refresh();
+      });
     } else {
       resolve(result.error, 'error');
     }
@@ -50,11 +56,16 @@ export function TripDatesEditor({ tripId, startDate, endDate, canManage, field }
           setValue(field === 'start' ? (startDate ?? '') : (endDate ?? ''));
           setEditing(true);
         }}
+        disabled={pending || isRefreshing}
         className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
         title={field === 'start' ? 'Edit start date' : 'Edit end date'}
         aria-label={field === 'start' ? 'Edit start date' : 'Edit end date'}
       >
-        <Pencil className="w-3 h-3" style={{ color: 'var(--color-text-subtle)' }} />
+        {isRefreshing ? (
+          <Loader2 className="h-3 w-3 animate-spin" style={{ color: 'var(--color-text-subtle)' }} />
+        ) : (
+          <Pencil className="w-3 h-3" style={{ color: 'var(--color-text-subtle)' }} />
+        )}
       </button>
 
       {editing && (

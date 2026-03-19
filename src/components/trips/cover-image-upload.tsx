@@ -1,9 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Camera, Loader2, X } from 'lucide-react';
 import { updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { RefreshOverlay } from '@/components/ui/refresh-overlay';
 import { cn } from '@/lib/utils';
 
 interface CoverImageUploadProps {
@@ -19,9 +21,11 @@ export function CoverImageUpload({
   height = 200,
   variant = 'panel',
 }: CoverImageUploadProps) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentCoverUrl ?? null);
   const loadingToast = useLoadingToast();
 
@@ -66,6 +70,9 @@ export function CoverImageUpload({
       if (result.ok) {
         setPreviewUrl(publicUrl);
         resolve('Cover image updated!', 'success');
+        startRefreshTransition(() => {
+          router.refresh();
+        });
       } else {
         resolve(result.error ?? 'Failed to save cover image', 'error');
       }
@@ -86,6 +93,9 @@ export function CoverImageUpload({
       if (result.ok) {
         setPreviewUrl(null);
         resolve('Cover image removed', 'success');
+        startRefreshTransition(() => {
+          router.refresh();
+        });
       } else {
         resolve(result.error ?? 'Failed to remove cover image', 'error');
       }
@@ -96,7 +106,7 @@ export function CoverImageUpload({
     }
   }
 
-  const busy = uploading || removing;
+  const busy = uploading || removing || isRefreshing;
   const identityMode = variant === 'identity';
 
   return (
@@ -188,6 +198,8 @@ export function CoverImageUpload({
           {!identityMode && 'Remove'}
         </button>
       )}
+
+      {isRefreshing && <RefreshOverlay label="Updating cover" />}
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
     </div>
