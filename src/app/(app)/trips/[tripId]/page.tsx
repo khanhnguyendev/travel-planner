@@ -38,6 +38,8 @@ import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
 import { AccommodationSection } from '@/components/places/accommodation-section';
+import { TransportSection, TransportSectionTrigger } from '@/components/transport/transport-section';
+import { getTransportBookings } from '@/features/transport/queries';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
 import { getTripActivity } from '@/features/activity/queries';
@@ -384,7 +386,7 @@ export default async function TripDetailPage({
 
   const places = await getPlaces(tripId);
 
-  const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries] =
+  const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries, transportBookings] =
     await Promise.all([
       getVoteSummary(tripId),
       user && isMember ? Promise.all(places.map((place) => getUserVote(place.id, user.id))) : [],
@@ -403,6 +405,7 @@ export default async function TripDetailPage({
       getCommentsByTripId(tripId),
       isMember ? getExpensesWithSplits(tripId) : [],
       isMember ? getTripActivity(tripId) : [],
+      isMember ? getTransportBookings(tripId) : [],
     ]);
 
   const userVotes = userVotesRaw.filter(Boolean) as PlaceVote[];
@@ -918,6 +921,17 @@ export default async function TripDetailPage({
           />
         </TripSectionRefreshBoundary>
       )}
+
+      {isMember && (transportBookings.length > 0 ? (
+        <TransportSection
+          bookings={transportBookings}
+          tripId={tripId}
+          currency={trip.budget_currency}
+          canEdit={canEdit}
+        />
+      ) : canEdit ? (
+        <TransportSectionTrigger tripId={tripId} currency={trip.budget_currency} />
+      ) : null)}
 
       {!isMember && primaryAccommodation && (
         <section className="section-shell mt-4 p-4 sm:p-5">

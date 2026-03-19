@@ -181,6 +181,29 @@ export interface BudgetContribution {
   created_at: string;
 }
 
+export type TransportType = 'rent' | 'bus' | 'plane';
+
+export interface TransportBooking {
+  id: string;
+  trip_id: string;
+  created_by: string;
+  transport_type: TransportType;
+  provider: string | null;
+  from_location: string | null;
+  to_location: string | null;
+  departure_date: string | null;
+  departure_time: string | null;
+  arrival_date: string | null;
+  arrival_time: string | null;
+  cost: number | null;
+  currency: string;
+  reference_code: string | null;
+  note: string | null;
+  expense_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TripActivity {
   id: string;
   trip_id: string;

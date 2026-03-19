@@ -23,7 +23,9 @@ export type ActivityAction =
   | 'budget.remove'
   | 'member.join'
   | 'member.remove'
-  | 'place.schedule_swap';
+  | 'place.schedule_swap'
+  | 'transport.add'
+  | 'transport.delete';
 
 export async function logActivity(params: {
   tripId: string;
