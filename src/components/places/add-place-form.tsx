@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, X, Loader2, AlertCircle, MapPin, CalendarDays, Clock, Plus, BedDouble } from 'lucide-react';
 import type { Category, Place, PlaceReview } from '@/lib/types';
 import type { MapboxSuggestion } from '@/features/places/mapbox';
@@ -9,6 +10,8 @@ import { extractLocationTag } from '@/lib/address';
 import { Dialog } from '@/components/ui/dialog';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { ensureAccommodationCategory } from '@/features/categories/actions';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface AddPlaceFormProps {
   tripId: string;
@@ -23,6 +26,7 @@ function newSessionToken(): string {
 
 
 export function AddPlaceForm({ tripId, categories, onAdded, onCancel }: AddPlaceFormProps) {
+  const router = useRouter();
   const [sessionToken, setSessionToken] = useState<string>(() => newSessionToken());
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
@@ -161,6 +165,14 @@ useEffect(() => {
         setQuery(''); setSelected(null); setSuggestions([]); setShowDropdown(false);
         setError(null); setVisitDate(''); setVisitDateEnd(''); setVisitTimeFrom(''); setVisitTimeTo(''); setIsAccommodation(false);
         setSessionToken(newSessionToken());
+        emitTripSectionRefresh(tripId, [
+          TRIP_REFRESH_SECTIONS.places,
+          TRIP_REFRESH_SECTIONS.timeline,
+          TRIP_REFRESH_SECTIONS.map,
+          TRIP_REFRESH_SECTIONS.stops,
+          TRIP_REFRESH_SECTIONS.activity,
+        ]);
+        router.refresh();
       } catch {
         const msg = 'Network error — check your connection and try again.';
         resolve(msg, 'error');

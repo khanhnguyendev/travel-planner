@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Check, X } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { approveJoinRequest, denyJoinRequest } from '@/features/members/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import type { MemberWithProfile } from '@/features/members/queries';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface JoinRequestsListProps {
   tripId: string;
@@ -13,6 +16,7 @@ interface JoinRequestsListProps {
 }
 
 export function JoinRequestsList({ tripId, initialRequests }: JoinRequestsListProps) {
+  const router = useRouter();
   const [requests, setRequests] = useState(initialRequests);
   const [processing, setProcessing] = useState<Set<string>>(new Set());
   const loadingToast = useLoadingToast();
@@ -33,6 +37,8 @@ export function JoinRequestsList({ tripId, initialRequests }: JoinRequestsListPr
     if (result.ok) {
       resolve('Request approved', 'success');
       setRequests((prev) => prev.filter((r) => r.user_id !== userId));
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.joinRequests, TRIP_REFRESH_SECTIONS.crew, TRIP_REFRESH_SECTIONS.activity]);
+      router.refresh();
     } else {
       resolve(result.error, 'error');
     }
@@ -46,6 +52,8 @@ export function JoinRequestsList({ tripId, initialRequests }: JoinRequestsListPr
     if (result.ok) {
       resolve('Request declined', 'success');
       setRequests((prev) => prev.filter((r) => r.user_id !== userId));
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.joinRequests, TRIP_REFRESH_SECTIONS.activity]);
+      router.refresh();
     } else {
       resolve(result.error, 'error');
     }

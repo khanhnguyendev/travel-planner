@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -8,8 +8,8 @@ import { updateTripBudget, deleteContribution } from '@/features/trips/actions';
 import { formatCurrency, formatDateTime, formatNumericInput, parseNumericInput } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { BudgetContribution } from '@/lib/types';
-import { RefreshOverlay } from '@/components/ui/refresh-overlay';
-import { TRIP_BUDGET_REFRESH_EVENT } from '@/components/trips/budget-refresh';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', VND: '₫', GBP: '£', JPY: '¥', THB: '฿',
@@ -45,20 +45,10 @@ export function BudgetEditor({
   const [currency, setCurrency] = useState(budgetCurrency || 'VND');
   const [pending, setPending] = useState(false);
   const [isRefreshing, startRefreshTransition] = useTransition();
-  const [pendingRefreshSignature, setPendingRefreshSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const hasBudget = budget != null;
   const activeCurrency = budgetCurrency || 'VND';
-  const refreshTimeoutRef = useRef<number | null>(null);
-
-  const refreshSignature = [
-    budget ?? 'none',
-    budgetCurrency,
-    totalSpent,
-    poolSpent,
-    contributions.map((contribution) => contribution.id).join(','),
-  ].join('|');
 
   const nameMap = new Map(members.map((m) => [m.user_id, m.profile.display_name ?? 'Member']));
 
@@ -67,28 +57,6 @@ export function BudgetEditor({
   const totalIncome = incomeByCurrency.reduce((sum, c) => sum + c.amount, 0);
   const hasIncome = totalIncome > 0;
   const poolBalance = totalIncome - poolSpent;
-  const isExternallyRefreshing = pendingRefreshSignature === refreshSignature;
-
-  useEffect(() => {
-    function handleExternalRefresh() {
-      const activeSignature = refreshSignature;
-      setPendingRefreshSignature(activeSignature);
-      if (refreshTimeoutRef.current) {
-        window.clearTimeout(refreshTimeoutRef.current);
-      }
-      refreshTimeoutRef.current = window.setTimeout(() => {
-        setPendingRefreshSignature((current) => (current === activeSignature ? null : current));
-      }, 5000);
-    }
-
-    window.addEventListener(TRIP_BUDGET_REFRESH_EVENT, handleExternalRefresh);
-    return () => {
-      window.removeEventListener(TRIP_BUDGET_REFRESH_EVENT, handleExternalRefresh);
-      if (refreshTimeoutRef.current) {
-        window.clearTimeout(refreshTimeoutRef.current);
-      }
-    };
-  }, [refreshSignature]);
 
   async function handleSave() {
     const parsed = value ? parseNumericInput(value) : null;
@@ -106,6 +74,7 @@ export function BudgetEditor({
       return;
     }
     setEditing(false);
+    emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.budget, TRIP_REFRESH_SECTIONS.activity]);
     startRefreshTransition(() => {
       router.refresh();
     });
@@ -126,6 +95,7 @@ export function BudgetEditor({
     if (!result.ok) {
       alert(result.error);
     } else {
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.budget, TRIP_REFRESH_SECTIONS.activity]);
       startRefreshTransition(() => {
         router.refresh();
       });
@@ -343,7 +313,6 @@ export function BudgetEditor({
         )}
       </div>
 
-      {(isRefreshing || isExternallyRefreshing) && <RefreshOverlay label="Updating budget" />}
     </div>
   );
 }

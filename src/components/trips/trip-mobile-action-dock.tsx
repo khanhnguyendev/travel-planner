@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Plus, MapPin, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog } from '@/components/ui/dialog';
@@ -33,7 +32,6 @@ export function TripMobileActionDock({
   budgetCurrency,
   canManageBudget,
 }: TripMobileActionDockProps) {
-  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [showAddPlace, setShowAddPlace] = useState(false);
 
@@ -60,7 +58,6 @@ export function TripMobileActionDock({
             onAdded={() => {
               setExpanded(false);
               setShowAddPlace(false);
-              router.refresh();
             }}
             onCancel={() => setShowAddPlace(false)}
           />

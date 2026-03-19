@@ -9,7 +9,8 @@ import { BudgetIncomeForm } from '@/components/trips/budget-income-form';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { TRIP_BUDGET_REFRESH_EVENT } from '@/components/trips/budget-refresh';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 type MoneyTab = 'income' | 'expense';
 
@@ -58,8 +59,21 @@ export function AddMoneyDialog({
   }
 
   function handleSuccess() {
-    window.dispatchEvent(new Event(TRIP_BUDGET_REFRESH_EVENT));
     setOpen(false);
+    emitTripSectionRefresh(
+      tripId,
+      activeTab === 'income'
+        ? [TRIP_REFRESH_SECTIONS.budget, TRIP_REFRESH_SECTIONS.activity]
+        : [
+            TRIP_REFRESH_SECTIONS.budget,
+            TRIP_REFRESH_SECTIONS.crew,
+            TRIP_REFRESH_SECTIONS.expenses,
+            TRIP_REFRESH_SECTIONS.activity,
+            TRIP_REFRESH_SECTIONS.places,
+            TRIP_REFRESH_SECTIONS.timeline,
+            TRIP_REFRESH_SECTIONS.map,
+          ]
+    );
     startRefreshTransition(() => {
       router.refresh();
     });

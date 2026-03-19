@@ -9,6 +9,8 @@ import { getPlaces } from '@/features/places/queries';
 import { ExpenseList } from '@/components/expenses/expense-list';
 import { DebtSummary } from '@/components/expenses/debt-summary';
 import { PageHeader } from '@/components/ui/page-header';
+import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { formatCurrency } from '@/lib/format';
 import type { Metadata } from 'next';
 
@@ -70,6 +72,10 @@ export default async function ExpensesPage({
       Add expense
     </Link>
   ) : null;
+  const expensesSignature = [
+    expenses.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}`).join(','),
+    expensesWithSplits.map((expense) => `${expense.id}:${expense.splits.length}:${expense.paid_by_user_id}`).join(','),
+  ].join('|');
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -83,27 +89,34 @@ export default async function ExpensesPage({
         action={addExpenseButton}
       />
 
-      {/* Summary row */}
-      {totalEntries.length > 0 && (
-        <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--color-text-muted)' }}>
-          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
-          {totalEntries
-            .map(([cur, amt]) => formatCurrency(amt, cur))
-            .join(' + ')}
-        </p>
-      )}
+      <TripSectionRefreshBoundary
+        tripId={tripId}
+        sections={TRIP_REFRESH_SECTIONS.expenses}
+        signature={expensesSignature}
+        label="Updating expenses"
+      >
+        {/* Summary row */}
+        {totalEntries.length > 0 && (
+          <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--color-text-muted)' }}>
+            {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
+            {totalEntries
+              .map(([cur, amt]) => formatCurrency(amt, cur))
+              .join(' + ')}
+          </p>
+        )}
 
-      {/* Debt summary */}
-      {expensesWithSplits.length > 0 && (
-        <DebtSummary
-          expenses={expensesWithSplits}
-          members={memberProfiles}
-          currentUserId={user.id}
-        />
-      )}
+        {/* Debt summary */}
+        {expensesWithSplits.length > 0 && (
+          <DebtSummary
+            expenses={expensesWithSplits}
+            members={memberProfiles}
+            currentUserId={user.id}
+          />
+        )}
 
-      {/* List */}
-      <ExpenseList expenses={expenses} tripId={tripId} placeNameById={placeNameById} canEdit={canEdit} />
+        {/* List */}
+        <ExpenseList expenses={expenses} tripId={tripId} placeNameById={placeNameById} canEdit={canEdit} />
+      </TripSectionRefreshBoundary>
     </div>
   );
 }

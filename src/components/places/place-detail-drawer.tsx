@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Send, Trash2, MessageCircle, NotebookPen, AlertTriangle, Receipt } from 'lucide-react';
 import type { Place, PlaceReview, Category, PlaceVote, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
@@ -13,6 +14,9 @@ import { useLoadingToast } from '@/components/ui/toast';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { PlaceExpenseHistory } from '@/components/places/place-expense-history';
+import { RefreshOverlay } from '@/components/ui/refresh-overlay';
+import { emitTripSectionRefresh, useTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface PlaceDetailDrawerProps {
   place: Place;
@@ -102,15 +106,18 @@ function ScheduleEditor({
   place,
   allPlaces,
   canEdit,
+  tripId,
   tripStartDate,
   tripEndDate,
 }: {
   place: Place;
   allPlaces: Place[];
   canEdit: boolean;
+  tripId: string;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   // Saved state mirrors what's in the DB — updated on successful save so view mode stays fresh
   const [savedDate, setSavedDate] = useState(place.visit_date ?? '');
@@ -125,6 +132,7 @@ function ScheduleEditor({
   const [to, setTo] = useState(savedTo);
   const [backupId, setBackupId] = useState(savedBackupId);
   const [pending, setPending] = useState(false);
+  const [, startRefreshTransition] = useTransition();
   const [conflicts, setConflicts] = useState<ConflictingPlace[]>([]);
   const loadingToast = useLoadingToast();
 
@@ -160,6 +168,17 @@ function ScheduleEditor({
       setSavedBackupId(backupId);
       setConflicts(result.conflicts ?? []);
       setEditing(false);
+      emitTripSectionRefresh(tripId, [
+        TRIP_REFRESH_SECTIONS.placeDetail,
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.map,
+        TRIP_REFRESH_SECTIONS.stops,
+        TRIP_REFRESH_SECTIONS.activity,
+      ]);
+      startRefreshTransition(() => {
+        router.refresh();
+      });
     } else {
       resolve(result.error, 'error');
     }
@@ -318,13 +337,17 @@ function ScheduleEditor({
 function NoteEditor({
   place,
   canEdit,
+  tripId,
 }: {
   place: Place;
   canEdit: boolean;
+  tripId: string;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(place.note ?? '');
   const [pending, setPending] = useState(false);
+  const [, startRefreshTransition] = useTransition();
   const loadingToast = useLoadingToast();
 
   async function handleSave() {
@@ -335,6 +358,16 @@ function NoteEditor({
     if (result.ok) {
       resolve('Note saved!', 'success');
       setEditing(false);
+      emitTripSectionRefresh(tripId, [
+        TRIP_REFRESH_SECTIONS.placeDetail,
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.map,
+        TRIP_REFRESH_SECTIONS.activity,
+      ]);
+      startRefreshTransition(() => {
+        router.refresh();
+      });
     } else {
       resolve(result.error, 'error');
     }
@@ -534,8 +567,28 @@ export function PlaceDetailDrawer({
   onClose,
   onDeleted,
 }: PlaceDetailDrawerProps) {
+  const router = useRouter();
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const loadingToastDrawer = useLoadingToast();
+  const refreshSignature = [
+    place.id,
+    place.visit_date ?? '',
+    place.visit_date_end ?? '',
+    place.visit_time_from ?? '',
+    place.visit_time_to ?? '',
+    place.checkout_date ?? '',
+    place.backup_place_id ?? '',
+    place.note ?? '',
+    place.actual_checkin_at ?? '',
+    place.actual_checkout_at ?? '',
+    placeExpenses.map((expense) => `${expense.id}:${expense.amount}:${expense.created_at}`).join(','),
+  ].join('|');
+  const isSectionRefreshing = useTripSectionRefresh({
+    tripId,
+    sections: TRIP_REFRESH_SECTIONS.placeDetail,
+    signature: refreshSignature,
+  });
 
   async function handleDelete() {
     if (!confirm(`Remove "${place.name}" from this trip?`)) return;
@@ -545,8 +598,19 @@ export function PlaceDetailDrawer({
     setDeleting(false);
     if (result.ok) {
       resolve('Place removed', 'success');
+      emitTripSectionRefresh(tripId, [
+        TRIP_REFRESH_SECTIONS.placeDetail,
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.map,
+        TRIP_REFRESH_SECTIONS.stops,
+        TRIP_REFRESH_SECTIONS.activity,
+      ]);
       onDeleted?.();
       onClose();
+      startRefreshTransition(() => {
+        router.refresh();
+      });
     } else {
       resolve(result.error, 'error');
     }
@@ -669,7 +733,7 @@ export function PlaceDetailDrawer({
           {/* Schedule + backup */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
-            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripStartDate={tripStartDate} tripEndDate={tripEndDate} />
+            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripId={tripId} tripStartDate={tripStartDate} tripEndDate={tripEndDate} />
           </div>
 
           {/* Check-in / Check-out (editors only, only if place has a visit date) */}
@@ -692,7 +756,7 @@ export function PlaceDetailDrawer({
                 Note
                 {!canEdit && <span className="font-normal normal-case text-stone-300">(editor only)</span>}
               </h3>
-              <NoteEditor place={place} canEdit={canEdit} />
+              <NoteEditor place={place} canEdit={canEdit} tripId={tripId} />
             </div>
           )}
 
@@ -770,6 +834,7 @@ export function PlaceDetailDrawer({
             </a>
           )}
         </div>
+        {(isRefreshing || isSectionRefreshing) && <RefreshOverlay label="Updating place" />}
       </aside>
       </div>
     </>,

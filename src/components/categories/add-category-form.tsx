@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, X, BedDouble } from 'lucide-react';
 import { createCategory } from '@/features/categories/actions';
 import type { Category, CategoryType } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 const PRESET_COLORS = [
   '#0D9488', // teal
@@ -21,13 +24,16 @@ interface AddCategoryFormProps {
   tripId: string;
   onCreated?: (category: Category) => void;
   onCancel?: () => void;
+  refreshTripAfterCreate?: boolean;
 }
 
 export function AddCategoryForm({
   tripId,
   onCreated,
   onCancel,
+  refreshTripAfterCreate = false,
 }: AddCategoryFormProps) {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [icon, setIcon] = useState('');
@@ -68,6 +74,16 @@ export function AddCategoryForm({
       setIcon('');
       setColor(PRESET_COLORS[0]);
       onCreated?.(result.data.category);
+
+      if (refreshTripAfterCreate) {
+        emitTripSectionRefresh(tripId, [
+          TRIP_REFRESH_SECTIONS.places,
+          TRIP_REFRESH_SECTIONS.timeline,
+          TRIP_REFRESH_SECTIONS.map,
+          TRIP_REFRESH_SECTIONS.activity,
+        ]);
+        router.refresh();
+      }
     });
   }
 

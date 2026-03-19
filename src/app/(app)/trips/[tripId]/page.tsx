@@ -37,6 +37,8 @@ import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
 import { TripMobileActionDock } from '@/components/trips/trip-mobile-action-dock';
 import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
+import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
@@ -272,6 +274,10 @@ function formatStopPlan(place: Place): string {
     parts.push(`Checkout ${formatDate(place.checkout_date)}`);
   }
   return parts.length > 0 ? parts.join(' • ') : 'No schedule yet';
+}
+
+function buildRefreshSignature(parts: Array<string | number | null | undefined>) {
+  return parts.map((part) => (part == null ? '' : String(part))).join('|');
 }
 
 function StopSpotlightCard({
@@ -560,6 +566,56 @@ export default async function TripDetailPage({
   const crewIdentityLabel = joinRequests.length > 0
     ? `${members.length} joined · ${joinRequests.length} requested`
     : `${members.length} crew joined`;
+  const placesSurfaceSignature = buildRefreshSignature([
+    places.map((place) => [
+      place.id,
+      place.category_id,
+      place.visit_date,
+      place.visit_date_end,
+      place.visit_time_from,
+      place.visit_time_to,
+      place.checkout_date,
+      place.backup_place_id,
+      place.note,
+      place.actual_checkin_at,
+      place.actual_checkout_at,
+    ].join(':')).join(','),
+    categories.map((category) => [category.id, category.name, category.category_type].join(':')).join(','),
+    Object.values(placeExpensesByPlaceId).flat().map((expense) => `${expense.id}:${expense.amount}:${expense.created_at}`).join(','),
+    Object.entries(commentsByPlaceId).map(([placeId, items]) => `${placeId}:${items.length}`).join(','),
+  ]);
+  const stopsSignature = buildRefreshSignature([
+    scheduledPlaces.map((place) => [
+      place.id,
+      place.visit_date,
+      place.visit_time_from,
+      place.visit_time_to,
+      place.actual_checkin_at,
+      place.actual_checkout_at,
+    ].join(':')).join(','),
+    stopPointers.previous?.id,
+    stopPointers.current?.id,
+    stopPointers.next?.id,
+  ]);
+  const budgetSignature = buildRefreshSignature([
+    trip.budget ?? 'none',
+    trip.budget_currency,
+    totalsByCurrency[trip.budget_currency] ?? 0,
+    poolSpent,
+    contributions.map((contribution) => `${contribution.id}:${contribution.amount}:${contribution.currency}:${contribution.created_at}`).join(','),
+    recentExpenses.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}:${expense.expense_date ?? ''}`).join(','),
+  ]);
+  const crewSignature = buildRefreshSignature([
+    sortedCrewMembers.map((member) => `${member.id}:${member.role}:${member.joined_at}`).join(','),
+    Array.from(memberBalanceMap.entries()).map(([userId, net]) => `${userId}:${net}`).join(','),
+  ]);
+  const expensesSignature = buildRefreshSignature([
+    expenses.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}:${expense.expense_date ?? ''}`).join(','),
+    expensesWithSplits.map((expense) => `${expense.id}:${expense.splits.length}:${expense.paid_by_user_id}:${expense.expense_date ?? ''}`).join(','),
+  ]);
+  const activitySignature = buildRefreshSignature(
+    activityEntries.map((entry) => `${entry.id}:${entry.action}:${entry.created_at}`)
+  );
 
   return (
     <div className="animate-in fade-in overflow-x-hidden duration-300">
@@ -736,103 +792,116 @@ export default async function TripDetailPage({
             </div>
           </div>
 
-          <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
-            <div className="mb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Budget
-              </p>
-            </div>
-
-            <BudgetEditor
-              tripId={tripId}
-              budget={trip.budget}
-              budgetCurrency={trip.budget_currency}
-              canManage={canManage}
-              totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
-              poolSpent={poolSpent}
-              members={members}
-              contributions={contributions}
-              actionSlot={canEdit ? (
-                <AddMoneyDialog
-                  tripId={tripId}
-                  members={members}
-                  currentUserId={currentUserId}
-                  places={places}
-                  budget={trip.budget}
-                  budgetCurrency={trip.budget_currency}
-                  canManageBudget={canManage}
-                  poolBalance={contributions
-                    .filter((c) => c.currency === trip.budget_currency)
-                    .reduce((sum, c) => sum + c.amount, 0) - poolSpent}
-                  triggerLabel="Add money"
-                  triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
-                />
-              ) : null}
-            />
-
-            <div className="mt-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
+          <TripSectionRefreshBoundary
+            tripId={tripId}
+            sections={TRIP_REFRESH_SECTIONS.budget}
+            signature={budgetSignature}
+            label="Updating money"
+          >
+            <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+              <div className="mb-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Recent transactions
+                  Budget
                 </p>
-                {isMember && recentExpenses.length > 0 && (
-                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                    Last {Math.min(recentExpenses.length, 5)}
-                  </span>
-                )}
               </div>
 
-              {!isMember ? (
-                <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                  Spending stays inside the crew workspace. Join the trip to review recent transactions and balances.
-                </div>
-              ) : recentExpenses.length === 0 ? (
-                <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                  No transactions yet. Add income or log the first shared expense to start the trip ledger.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentExpenses.map((expense, index) => (
-                    <Link
-                      key={expense.id}
-                      href={`/trips/${tripId}/expenses/${expense.id}`}
-                      className={`${index >= 3 ? 'hidden lg:flex' : 'flex'} flex-col items-start gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between`}
-                    >
-                      <div className="min-w-0 w-full flex-1">
-                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                          {expense.title}
-                        </p>
-                        <p className="mt-1 truncate text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                          {expense.paid_by_profile.display_name ?? 'Member'}
-                          {expense.category ? ` · ${expense.category}` : ''}
-                          {' · '}
-                          {expense.expense_date
-                            ? formatDateAndTime(expense.expense_date, expense.created_at)
-                            : formatDateTime(expense.created_at)}
-                        </p>
-                        {expense.place_id && placeNameById[expense.place_id] && (
-                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                            <MapPin className="h-3 w-3" />
-                            {placeNameById[expense.place_id]}
-                          </p>
-                        )}
-                      </div>
-                      <div className="w-full text-left sm:w-auto sm:text-right">
-                        <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                          {formatCurrency(expense.amount, expense.currency)}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                          {expense.splits.length} split{expense.splits.length === 1 ? '' : 's'}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+              <BudgetEditor
+                tripId={tripId}
+                budget={trip.budget}
+                budgetCurrency={trip.budget_currency}
+                canManage={canManage}
+                totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
+                poolSpent={poolSpent}
+                members={members}
+                contributions={contributions}
+                actionSlot={canEdit ? (
+                  <AddMoneyDialog
+                    tripId={tripId}
+                    members={members}
+                    currentUserId={currentUserId}
+                    places={places}
+                    budget={trip.budget}
+                    budgetCurrency={trip.budget_currency}
+                    canManageBudget={canManage}
+                    poolBalance={contributions
+                      .filter((c) => c.currency === trip.budget_currency)
+                      .reduce((sum, c) => sum + c.amount, 0) - poolSpent}
+                    triggerLabel="Add money"
+                    triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+                  />
+                ) : null}
+              />
 
-          <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+              <div className="mt-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Recent transactions
+                  </p>
+                  {isMember && recentExpenses.length > 0 && (
+                    <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                      Last {Math.min(recentExpenses.length, 5)}
+                    </span>
+                  )}
+                </div>
+
+                {!isMember ? (
+                  <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    Spending stays inside the crew workspace. Join the trip to review recent transactions and balances.
+                  </div>
+                ) : recentExpenses.length === 0 ? (
+                  <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    No transactions yet. Add income or log the first shared expense to start the trip ledger.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentExpenses.map((expense, index) => (
+                      <Link
+                        key={expense.id}
+                        href={`/trips/${tripId}/expenses/${expense.id}`}
+                        className={`${index >= 3 ? 'hidden lg:flex' : 'flex'} flex-col items-start gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between`}
+                      >
+                        <div className="min-w-0 w-full flex-1">
+                          <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                            {expense.title}
+                          </p>
+                          <p className="mt-1 truncate text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                            {expense.paid_by_profile.display_name ?? 'Member'}
+                            {expense.category ? ` · ${expense.category}` : ''}
+                            {' · '}
+                            {expense.expense_date
+                              ? formatDateAndTime(expense.expense_date, expense.created_at)
+                              : formatDateTime(expense.created_at)}
+                          </p>
+                          {expense.place_id && placeNameById[expense.place_id] && (
+                            <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                              <MapPin className="h-3 w-3" />
+                              {placeNameById[expense.place_id]}
+                            </p>
+                          )}
+                        </div>
+                        <div className="w-full text-left sm:w-auto sm:text-right">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+                            {formatCurrency(expense.amount, expense.currency)}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                            {expense.splits.length} split{expense.splits.length === 1 ? '' : 's'}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TripSectionRefreshBoundary>
+
+          <TripSectionRefreshBoundary
+            tripId={tripId}
+            sections={TRIP_REFRESH_SECTIONS.crew}
+            signature={crewSignature}
+            label="Updating crew"
+          >
+            <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
             <div className="mb-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -894,51 +963,59 @@ export default async function TripDetailPage({
                 Join the trip to vote, comment, add places, manage crew, and track shared spending.
               </div>
             )}
-          </div>
+            </div>
+          </TripSectionRefreshBoundary>
         </div>
       </section>
 
-      <section className="section-shell p-4 mt-4 sm:p-5">
-        <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                Trip stops
-              </p>
+      <TripSectionRefreshBoundary
+        tripId={tripId}
+        sections={TRIP_REFRESH_SECTIONS.stops}
+        signature={stopsSignature}
+        label="Updating trip stops"
+      >
+        <section className="section-shell mt-4 p-4 sm:p-5">
+          <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                  Trip stops
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <StopSpotlightCard
+                label="Previous stop"
+                place={stopPointers.previous}
+                emptyLabel="None yet"
+                tone="previous"
+                canEdit={canEdit}
+                allDayPlaces={stopPointers.previous?.visit_date ? places.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
+                tripId={tripId}
+              />
+              <StopSpotlightCard
+                label="Current"
+                place={stopPointers.current}
+                emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
+                tone="current"
+                canEdit={canEdit}
+                allDayPlaces={stopPointers.current?.visit_date ? places.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
+                tripId={tripId}
+              />
+              <StopSpotlightCard
+                label="Next stop"
+                place={stopPointers.next}
+                emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
+                tone="next"
+                canEdit={canEdit}
+                allDayPlaces={stopPointers.next?.visit_date ? places.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
+                tripId={tripId}
+              />
             </div>
           </div>
-
-          <div className="grid gap-3 lg:grid-cols-3">
-            <StopSpotlightCard
-              label="Previous stop"
-              place={stopPointers.previous}
-              emptyLabel="None yet"
-              tone="previous"
-              canEdit={canEdit}
-              allDayPlaces={stopPointers.previous?.visit_date ? places.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
-              tripId={tripId}
-            />
-            <StopSpotlightCard
-              label="Current"
-              place={stopPointers.current}
-              emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
-              tone="current"
-              canEdit={canEdit}
-              allDayPlaces={stopPointers.current?.visit_date ? places.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
-              tripId={tripId}
-            />
-            <StopSpotlightCard
-              label="Next stop"
-              place={stopPointers.next}
-              emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
-              tone="next"
-              canEdit={canEdit}
-              allDayPlaces={stopPointers.next?.visit_date ? places.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
-              tripId={tripId}
-            />
-          </div>
-        </div>
-      </section>
+        </section>
+      </TripSectionRefreshBoundary>
 
       <TripMobileActionDock
         tripId={tripId}
@@ -956,26 +1033,69 @@ export default async function TripDetailPage({
 
       {activeTab === 'places' && (
         <div className="mb-6">
-          <PlacesSection
+          <TripSectionRefreshBoundary
             tripId={tripId}
-            role={resolvedRole}
-            initialPlaces={places}
-            initialCategories={categories}
-            initialVoteSummaries={voteSummaries}
-            initialUserVotes={userVotes}
-            reviewsByPlaceId={reviewsByPlaceId}
-            placeExpensesByPlaceId={placeExpensesByPlaceId}
-            commentsByPlaceId={commentsByPlaceId}
-            commentAuthors={commentAuthors}
-            currentUserId={currentUserId}
-            canVote={canVote}
-            canComment={canComment}
-            tripStartDate={trip.start_date}
-            tripEndDate={trip.end_date}
-          />
+            sections={TRIP_REFRESH_SECTIONS.places}
+            signature={placesSurfaceSignature}
+            label="Refreshing places"
+          >
+            <PlacesSection
+              tripId={tripId}
+              role={resolvedRole}
+              initialPlaces={places}
+              initialCategories={categories}
+              initialVoteSummaries={voteSummaries}
+              initialUserVotes={userVotes}
+              reviewsByPlaceId={reviewsByPlaceId}
+              placeExpensesByPlaceId={placeExpensesByPlaceId}
+              commentsByPlaceId={commentsByPlaceId}
+              commentAuthors={commentAuthors}
+              currentUserId={currentUserId}
+              canVote={canVote}
+              canComment={canComment}
+              tripStartDate={trip.start_date}
+              tripEndDate={trip.end_date}
+            />
+          </TripSectionRefreshBoundary>
 
-          <div className="mt-4">
-            <AccommodationSection
+          <TripSectionRefreshBoundary
+            tripId={tripId}
+            sections={TRIP_REFRESH_SECTIONS.places}
+            signature={placesSurfaceSignature}
+            label="Refreshing places"
+          >
+            <div className="mt-4">
+              <AccommodationSection
+                places={places}
+                categories={categories}
+                tripId={tripId}
+                currentUserId={currentUserId}
+                canEdit={canEdit}
+                canVote={canVote}
+                canComment={canComment}
+                voteSummaries={voteSummaries}
+                userVotes={userVotes}
+                reviewsByPlaceId={reviewsByPlaceId}
+                placeExpensesByPlaceId={placeExpensesByPlaceId}
+                commentsByPlaceId={commentsByPlaceId}
+                commentAuthors={commentAuthors}
+                tripStartDate={trip.start_date}
+                tripEndDate={trip.end_date}
+              />
+            </div>
+          </TripSectionRefreshBoundary>
+        </div>
+      )}
+
+      {activeTab === 'timeline' && (
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.timeline}
+          signature={placesSurfaceSignature}
+          label="Refreshing timeline"
+        >
+          <div className="section-shell mb-5 overflow-hidden p-4 sm:p-6">
+            <TripTimeline
               places={places}
               categories={categories}
               tripId={tripId}
@@ -993,141 +1113,140 @@ export default async function TripDetailPage({
               tripEndDate={trip.end_date}
             />
           </div>
-        </div>
-      )}
-
-      {activeTab === 'timeline' && (
-        <div className="section-shell mb-5 overflow-hidden p-4 sm:p-6">
-          <TripTimeline
-            places={places}
-            categories={categories}
-            tripId={tripId}
-            currentUserId={currentUserId}
-            canEdit={canEdit}
-            canVote={canVote}
-            canComment={canComment}
-            voteSummaries={voteSummaries}
-            userVotes={userVotes}
-            reviewsByPlaceId={reviewsByPlaceId}
-            placeExpensesByPlaceId={placeExpensesByPlaceId}
-            commentsByPlaceId={commentsByPlaceId}
-            commentAuthors={commentAuthors}
-            tripStartDate={trip.start_date}
-            tripEndDate={trip.end_date}
-          />
-        </div>
+        </TripSectionRefreshBoundary>
       )}
 
       {activeTab === 'map' && (
-        <div className="section-shell mb-5 overflow-hidden p-3 sm:p-4">
-          <MapTabClient
-            tripId={tripId}
-            places={places}
-            categories={categories}
-            canVote={canVote}
-            canComment={canComment}
-            voteSummaries={voteSummaries}
-            userVotes={userVotes}
-            reviewsByPlaceId={reviewsByPlaceId}
-            placeExpensesByPlaceId={placeExpensesByPlaceId}
-            commentsByPlaceId={commentsByPlaceId}
-            commentAuthors={commentAuthors}
-            currentUserId={currentUserId}
-            tripStartDate={trip.start_date}
-            tripEndDate={trip.end_date}
-          />
-        </div>
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.map}
+          signature={placesSurfaceSignature}
+          label="Refreshing map"
+        >
+          <div className="section-shell mb-5 overflow-hidden p-3 sm:p-4">
+            <MapTabClient
+              tripId={tripId}
+              places={places}
+              categories={categories}
+              canVote={canVote}
+              canComment={canComment}
+              voteSummaries={voteSummaries}
+              userVotes={userVotes}
+              reviewsByPlaceId={reviewsByPlaceId}
+              placeExpensesByPlaceId={placeExpensesByPlaceId}
+              commentsByPlaceId={commentsByPlaceId}
+              commentAuthors={commentAuthors}
+              currentUserId={currentUserId}
+              tripStartDate={trip.start_date}
+              tripEndDate={trip.end_date}
+            />
+          </div>
+        </TripSectionRefreshBoundary>
       )}
 
       {activeTab === 'expenses' && (
-        <div className="mb-5 space-y-3 sm:space-y-4">
-          {expensesWithSplits.length > 0 && (
-            <DebtSummary
-              expenses={expensesWithSplits}
-              members={memberProfiles}
-              currentUserId={currentUserId}
-            />
-          )}
-
-          <div className="section-shell overflow-hidden p-4 sm:p-6">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Money
-                </p>
-                <h2 className="mt-1 text-lg font-semibold section-title sm:text-xl" style={{ color: 'var(--color-text)' }}>
-                  Shared expenses
-                </h2>
-                <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  {expenses.length > 0 ? `${expenses.length} expense entries across ${Object.keys(totalsByCurrency).length} currencies` : 'No expenses added yet'}
-                </p>
-              </div>
-
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-                {canEdit && (
-                  <AddExpenseDialog
-                    tripId={tripId}
-                    members={members}
-                    currentUserId={currentUserId}
-                    places={places}
-                    triggerClassName="w-full justify-center sm:w-auto"
-                  />
-                )}
-                <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] w-full justify-center text-sm sm:w-auto">
-                  View all
-                </Link>
-              </div>
-            </div>
-
-            {expenses.length === 0 ? (
-              <div className="rounded-[1.5rem] bg-stone-950/[0.03] px-4 py-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  <Receipt className="h-6 w-6" style={{ color: 'var(--color-text-subtle)' }} />
-                </div>
-                <p className="text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
-                  Track your first shared expense
-                </p>
-                <p className="mx-auto mt-2 max-w-xs text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Add transport, food, tickets, and receipts here so balances stay clear for everyone.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {expenses.slice(0, 4).map((expense) => (
-                  <Link
-                    key={expense.id}
-                    href={`/trips/${tripId}/expenses/${expense.id}`}
-                    className="mini-stat flex min-h-[56px] items-center justify-between gap-3 px-4 py-3 transition-transform hover:-translate-y-0.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {expense.title}
-                      </p>
-                      <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                        {expense.category ?? 'General'}{expense.expense_date ? ` · ${expense.expense_date}` : ''}
-                      </p>
-                      {expense.place_id && placeNameById[expense.place_id] && (
-                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                          <MapPin className="h-3 w-3" />
-                          {placeNameById[expense.place_id]}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                      {formatCurrency(expense.amount, expense.currency)}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.expenses}
+          signature={expensesSignature}
+          label="Updating money"
+        >
+          <div className="mb-5 space-y-3 sm:space-y-4">
+            {expensesWithSplits.length > 0 && (
+              <DebtSummary
+                expenses={expensesWithSplits}
+                members={memberProfiles}
+                currentUserId={currentUserId}
+              />
             )}
+
+            <div className="section-shell overflow-hidden p-4 sm:p-6">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Money
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold section-title sm:text-xl" style={{ color: 'var(--color-text)' }}>
+                    Shared expenses
+                  </h2>
+                  <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    {expenses.length > 0 ? `${expenses.length} expense entries across ${Object.keys(totalsByCurrency).length} currencies` : 'No expenses added yet'}
+                  </p>
+                </div>
+
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                  {canEdit && (
+                    <AddExpenseDialog
+                      tripId={tripId}
+                      members={members}
+                      currentUserId={currentUserId}
+                      places={places}
+                      triggerClassName="w-full justify-center sm:w-auto"
+                    />
+                  )}
+                  <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] w-full justify-center text-sm sm:w-auto">
+                    View all
+                  </Link>
+                </div>
+              </div>
+
+              {expenses.length === 0 ? (
+                <div className="rounded-[1.5rem] bg-stone-950/[0.03] px-4 py-8 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                    <Receipt className="h-6 w-6" style={{ color: 'var(--color-text-subtle)' }} />
+                  </div>
+                  <p className="text-base font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                    Track your first shared expense
+                  </p>
+                  <p className="mx-auto mt-2 max-w-xs text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    Add transport, food, tickets, and receipts here so balances stay clear for everyone.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {expenses.slice(0, 4).map((expense) => (
+                    <Link
+                      key={expense.id}
+                      href={`/trips/${tripId}/expenses/${expense.id}`}
+                      className="mini-stat flex min-h-[56px] items-center justify-between gap-3 px-4 py-3 transition-transform hover:-translate-y-0.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                          {expense.title}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                          {expense.category ?? 'General'}{expense.expense_date ? ` · ${expense.expense_date}` : ''}
+                        </p>
+                        {expense.place_id && placeNameById[expense.place_id] && (
+                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                            <MapPin className="h-3 w-3" />
+                            {placeNameById[expense.place_id]}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+                        {formatCurrency(expense.amount, expense.currency)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </TripSectionRefreshBoundary>
       )}
 
       {activeTab === 'activity' && (
-        <div className="mb-5">
-          <ActivityFeed activities={activityEntries} />
-        </div>
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.activity}
+          signature={activitySignature}
+          label="Refreshing activity"
+        >
+          <div className="mb-5">
+            <ActivityFeed activities={activityEntries} />
+          </div>
+        </TripSectionRefreshBoundary>
       )}
     </div>
   );

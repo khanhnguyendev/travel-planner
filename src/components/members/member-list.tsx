@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Shield, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -9,6 +10,8 @@ import type { MemberWithProfile } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
 import { Avatar } from '@/components/ui/avatar';
 import { formatCurrency, formatDateTime } from '@/lib/format';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 // -------------------------------------------------------
 // Role badge
@@ -61,6 +64,7 @@ export function MemberList({
   balanceMap,
   balanceCurrency = 'VND',
 }: MemberListProps) {
+  const router = useRouter();
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
 
@@ -73,6 +77,8 @@ export function MemberList({
       const result = await changeMemberRole(tripId, userId, newRole);
       if (result.ok) {
         resolve('Role updated!', 'success');
+        emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.crew, TRIP_REFRESH_SECTIONS.activity]);
+        router.refresh();
       } else {
         resolve(result.error ?? 'Failed to update role', 'error');
       }
@@ -91,6 +97,8 @@ export function MemberList({
       const result = await removeMember(tripId, userId);
       if (result.ok) {
         resolve('Member removed', 'success');
+        emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.crew, TRIP_REFRESH_SECTIONS.activity]);
+        router.refresh();
       } else {
         resolve(result.error ?? 'Failed to remove member', 'error');
       }

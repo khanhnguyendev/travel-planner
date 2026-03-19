@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Link2, Copy, Check, Loader2, UserPlus } from 'lucide-react';
 import { generateInviteLink } from '@/features/members/actions';
 import type { TripRole } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
 import { Dialog } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface InviteLinkButtonProps {
   tripId: string;
@@ -25,7 +28,9 @@ export function InviteLinkButton({
   label = 'Invite link',
   className,
 }: InviteLinkButtonProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [, startRefreshTransition] = useTransition();
   const [role, setRole] = useState<TripRole>('editor');
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -47,6 +52,10 @@ export function InviteLinkButton({
     if (result.ok) {
       resolve('Link ready!', 'success');
       setInviteUrl(result.data.inviteUrl);
+      emitTripSectionRefresh(tripId, TRIP_REFRESH_SECTIONS.invites);
+      startRefreshTransition(() => {
+        router.refresh();
+      });
     } else {
       resolve(result.error, 'error');
     }

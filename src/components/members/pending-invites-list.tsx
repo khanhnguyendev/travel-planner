@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Mail, Link2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -9,6 +10,8 @@ import type { PendingInvite } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
 import { CopyButton } from '@/components/ui/copy-button';
 import { formatDateTime } from '@/lib/format';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 // -------------------------------------------------------
 // Props
@@ -36,6 +39,7 @@ const roleBadgeClass: Record<TripRole, string> = {
 // -------------------------------------------------------
 
 export function PendingInvitesList({ tripId, invites, canManage }: PendingInvitesListProps) {
+  const router = useRouter();
   const [revoking, setRevoking] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
 
@@ -53,6 +57,8 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
       const result = await revokeInvite(tripId, inviteId);
       if (result.ok) {
         resolve('Invite revoked', 'success');
+        emitTripSectionRefresh(tripId, TRIP_REFRESH_SECTIONS.invites);
+        router.refresh();
       } else {
         resolve(result.error ?? 'Failed to revoke invite', 'error');
       }

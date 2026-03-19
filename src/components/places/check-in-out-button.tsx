@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { LogIn, LogOut, Clock, X, RotateCcw } from 'lucide-react';
 import { checkInPlace, checkOutPlace, cascadePlaceDelay, clearPlaceCheckin } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import type { Place } from '@/lib/types';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface CheckInOutButtonProps {
   place: Place;
@@ -20,6 +23,7 @@ function toLocalDatetimeValue(date: Date): string {
 }
 
 export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButtonProps) {
+  const router = useRouter();
   const isCheckedIn = Boolean(place.actual_checkin_at);
   const isCheckedOut = Boolean(place.actual_checkout_at);
 
@@ -27,8 +31,23 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
   const [datetimeValue, setDatetimeValue] = useState(() => toLocalDatetimeValue(new Date()));
   const [pendingDelay, setPendingDelay] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [, startRefreshTransition] = useTransition();
 
   const loadingToast = useLoadingToast();
+
+  function refreshPlaceSurfaces() {
+    emitTripSectionRefresh(tripId, [
+      TRIP_REFRESH_SECTIONS.placeDetail,
+      TRIP_REFRESH_SECTIONS.places,
+      TRIP_REFRESH_SECTIONS.timeline,
+      TRIP_REFRESH_SECTIONS.map,
+      TRIP_REFRESH_SECTIONS.stops,
+      TRIP_REFRESH_SECTIONS.activity,
+    ]);
+    startRefreshTransition(() => {
+      router.refresh();
+    });
+  }
 
   function openCheckin() {
     setDatetimeValue(toLocalDatetimeValue(new Date()));
@@ -60,6 +79,7 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
       setStep('cascade-prompt');
     } else {
       setStep('idle');
+      refreshPlaceSurfaces();
     }
   }
 
@@ -70,6 +90,7 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
     setLoading(false);
     if (result.ok) {
       resolve('Checked out!', 'success');
+      refreshPlaceSurfaces();
     } else {
       resolve(result.error, 'error');
     }
@@ -83,6 +104,7 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
     setLoading(false);
     if (result.ok) {
       resolve('Schedule updated', 'success');
+      refreshPlaceSurfaces();
     } else {
       resolve(result.error, 'error');
     }
@@ -97,6 +119,7 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
     setLoading(false);
     if (result.ok) {
       resolve('Check-in cleared', 'success');
+      refreshPlaceSurfaces();
     } else {
       resolve(result.error, 'error');
     }
@@ -131,7 +154,10 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
           </button>
           <button
             type="button"
-            onClick={() => setStep('idle')}
+            onClick={() => {
+              setStep('idle');
+              refreshPlaceSurfaces();
+            }}
             disabled={loading}
             className="flex-1 inline-flex items-center justify-center rounded-full border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
           >

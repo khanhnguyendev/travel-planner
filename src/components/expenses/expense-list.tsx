@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Receipt, User, Plus, Trash2, CheckSquare, X, MapPin, Wallet } from 'lucide-react';
 import type { Expense } from '@/lib/types';
 import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
 import { deleteExpense } from '@/features/expenses/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
   'Accommodation': '🛏️',
@@ -63,6 +66,7 @@ function CurrencyPill({ currency }: { currency: string }) {
 }
 
 export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById = {}, canEdit }: ExpenseListProps) {
+  const router = useRouter();
   const [expenses, setExpenses] = useState(initialExpenses);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -96,6 +100,16 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
     if (result.ok) {
       resolve('Expense removed', 'success');
       setExpenses((prev) => prev.filter((e) => e.id !== id));
+      emitTripSectionRefresh(tripId, [
+        TRIP_REFRESH_SECTIONS.budget,
+        TRIP_REFRESH_SECTIONS.crew,
+        TRIP_REFRESH_SECTIONS.expenses,
+        TRIP_REFRESH_SECTIONS.activity,
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.map,
+      ]);
+      router.refresh();
     } else {
       resolve(result.error, 'error');
     }
@@ -114,11 +128,33 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
       setExpenses((prev) => prev.filter((e) => !deleted.has(e.id)));
       setSelectedIds(new Set());
       setSelectMode(false);
+      emitTripSectionRefresh(tripId, [
+        TRIP_REFRESH_SECTIONS.budget,
+        TRIP_REFRESH_SECTIONS.crew,
+        TRIP_REFRESH_SECTIONS.expenses,
+        TRIP_REFRESH_SECTIONS.activity,
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.map,
+      ]);
+      router.refresh();
     } else {
       resolve(`${failed} failed to delete`, 'error');
       const succeeded = ids.filter((_, i) => results[i].ok);
       setExpenses((prev) => prev.filter((e) => !succeeded.includes(e.id)));
       setSelectedIds((prev) => { const next = new Set(prev); succeeded.forEach((id) => next.delete(id)); return next; });
+      if (succeeded.length > 0) {
+        emitTripSectionRefresh(tripId, [
+          TRIP_REFRESH_SECTIONS.budget,
+          TRIP_REFRESH_SECTIONS.crew,
+          TRIP_REFRESH_SECTIONS.expenses,
+          TRIP_REFRESH_SECTIONS.activity,
+          TRIP_REFRESH_SECTIONS.places,
+          TRIP_REFRESH_SECTIONS.timeline,
+          TRIP_REFRESH_SECTIONS.map,
+        ]);
+        router.refresh();
+      }
     }
   }
 

@@ -11,6 +11,8 @@ import { MemberList } from '@/components/members/member-list';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { PendingInvitesList } from '@/components/members/pending-invites-list';
 import { JoinRequestsList } from '@/components/members/join-requests-list';
+import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import type { Metadata } from 'next';
 
 // -------------------------------------------------------
@@ -64,6 +66,16 @@ export default async function MembersPage({
   }
 
   const canManage = canManageCheck;
+  const crewSignature = [
+    members.map((member) => `${member.id}:${member.user_id}:${member.role}:${member.joined_at}`).join(','),
+    Array.from(balanceMap.entries()).map(([userId, net]) => `${userId}:${net}`).join(','),
+  ].join('|');
+  const inviteSignature = pendingInvites
+    .map((invite) => `${invite.id}:${invite.role}:${invite.expires_at}:${invite.token ?? ''}`)
+    .join(',');
+  const joinRequestsSignature = joinRequests
+    .map((request) => `${request.id}:${request.user_id}:${request.joined_at ?? ''}`)
+    .join(',');
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -88,90 +100,118 @@ export default async function MembersPage({
       <div className="space-y-6">
         {/* Invite link — owner/admin only */}
         {canManage && (
-          <div className="card p-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: 'var(--color-primary-light)' }}
-                >
-                  <Users className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+          <TripSectionRefreshBoundary
+            tripId={tripId}
+            sections={TRIP_REFRESH_SECTIONS.invites}
+            signature={inviteSignature}
+            label="Updating invite links"
+          >
+            <div className="card p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--color-primary-light)' }}
+                  >
+                    <Users className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
+                      Share invite link
+                    </h2>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
+                      Generate a link and send it manually. Email invites are not enabled yet.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
-                    Share invite link
-                  </h2>
-                  <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                    Generate a link and send it manually. Email invites are not enabled yet.
-                  </p>
-                </div>
+                <InviteLinkButton tripId={tripId} />
               </div>
-              <InviteLinkButton tripId={tripId} />
+              <div
+                className="rounded-xl px-4 py-3 text-sm"
+                style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+              >
+                Invite links expire after 7 days. You can create separate links for viewers, editors, or admins.
+              </div>
             </div>
-            <div
-              className="rounded-xl px-4 py-3 text-sm"
-              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-            >
-              Invite links expire after 7 days. You can create separate links for viewers, editors, or admins.
-            </div>
-          </div>
+          </TripSectionRefreshBoundary>
         )}
 
         {/* Join requests */}
         {canManage && (
-          <div className="card p-6">
-            <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
-              Join requests
-              {joinRequests.length > 0 && (
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
-                  {joinRequests.length}
-                </span>
-              )}
-            </h2>
-            <JoinRequestsList tripId={tripId} initialRequests={joinRequests} />
-          </div>
+          <TripSectionRefreshBoundary
+            tripId={tripId}
+            sections={TRIP_REFRESH_SECTIONS.joinRequests}
+            signature={joinRequestsSignature}
+            label="Updating join requests"
+          >
+            <div className="card p-6">
+              <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
+                Join requests
+                {joinRequests.length > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                    {joinRequests.length}
+                  </span>
+                )}
+              </h2>
+              <JoinRequestsList tripId={tripId} initialRequests={joinRequests} />
+            </div>
+          </TripSectionRefreshBoundary>
         )}
 
         {/* Pending invites */}
         {canManage && (
-          <div className="card p-6">
-            <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
-              Active invite links
-              {pendingInvites.length > 0 && (
-                <span
-                  className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600"
-                >
-                  {pendingInvites.length}
-                </span>
-              )}
-            </h2>
-            <PendingInvitesList
-              tripId={tripId}
-              invites={pendingInvites}
-              canManage={canManage}
-            />
-          </div>
+          <TripSectionRefreshBoundary
+            tripId={tripId}
+            sections={TRIP_REFRESH_SECTIONS.invites}
+            signature={inviteSignature}
+            label="Updating invite links"
+          >
+            <div className="card p-6">
+              <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
+                Active invite links
+                {pendingInvites.length > 0 && (
+                  <span
+                    className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600"
+                  >
+                    {pendingInvites.length}
+                  </span>
+                )}
+              </h2>
+              <PendingInvitesList
+                tripId={tripId}
+                invites={pendingInvites}
+                canManage={canManage}
+              />
+            </div>
+          </TripSectionRefreshBoundary>
         )}
 
         {/* Member list */}
-        <div className="card p-6">
-          <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
-            Members
-            <span
-              className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600"
-            >
-              {members.length}
-            </span>
-          </h2>
-          <MemberList
-            tripId={tripId}
-            members={members}
-            currentUserId={user.id}
-            currentUserRole={role}
-            balanceMap={balanceMap}
-            balanceCurrency={budgetCurrency}
-          />
-        </div>
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.crew}
+          signature={crewSignature}
+          label="Updating members"
+        >
+          <div className="card p-6">
+            <h2 className="font-semibold text-base mb-4" style={{ color: 'var(--color-text)' }}>
+              Members
+              <span
+                className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600"
+              >
+                {members.length}
+              </span>
+            </h2>
+            <MemberList
+              tripId={tripId}
+              members={members}
+              currentUserId={user.id}
+              currentUserRole={role}
+              balanceMap={balanceMap}
+              balanceCurrency={budgetCurrency}
+            />
+          </div>
+        </TripSectionRefreshBoundary>
       </div>
     </div>
   );

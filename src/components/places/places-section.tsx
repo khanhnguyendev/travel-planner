@@ -175,6 +175,7 @@ export function PlacesSection({
             tripId={tripId}
             onCreated={(cat) => { handleCategoryCreated(cat); setShowAddCategory(false); }}
             onCancel={() => setShowAddCategory(false)}
+            refreshTripAfterCreate
           />
         </Dialog>
       )}

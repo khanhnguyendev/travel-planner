@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { BedDouble, CalendarDays, Pencil, Check, X } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { updatePlaceSchedule } from '@/features/places/actions';
@@ -9,6 +10,8 @@ import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { useLoadingToast } from '@/components/ui/toast';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { PlaceExpenseSummary } from '@/components/places/place-expense-summary';
+import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
+import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface AccommodationSectionProps {
   places: Place[];
@@ -35,10 +38,12 @@ function formatDate(dateStr: string): string {
 }
 
 function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [checkIn, setCheckIn] = useState(place.visit_date ?? '');
   const [checkOut, setCheckOut] = useState(place.checkout_date ?? '');
   const [pending, setPending] = useState(false);
+  const [, startRefreshTransition] = useTransition();
   const loadingToast = useLoadingToast();
 
   async function handleSave() {
@@ -52,6 +57,17 @@ function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
     if (result.ok) {
       resolve('Dates saved!', 'success');
       setEditing(false);
+      emitTripSectionRefresh(place.trip_id, [
+        TRIP_REFRESH_SECTIONS.placeDetail,
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.map,
+        TRIP_REFRESH_SECTIONS.stops,
+        TRIP_REFRESH_SECTIONS.activity,
+      ]);
+      startRefreshTransition(() => {
+        router.refresh();
+      });
     } else {
       resolve(result.error, 'error');
     }
