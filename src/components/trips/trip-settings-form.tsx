@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Globe, Lock, AlertTriangle } from 'lucide-react';
-import { updateTrip, updateTripDates, archiveTrip } from '@/features/trips/actions';
+import { updateTrip, updateTripDates, updateTripBudget, archiveTrip } from '@/features/trips/actions';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { useToast } from '@/components/ui/toast';
 import type { Trip } from '@/lib/types';
@@ -300,22 +300,27 @@ function MoneySection({ trip }: { trip: Trip }) {
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [currency, setCurrency] = useState(trip.budget_currency || 'VND');
   const [saving, setSaving] = useState(false);
+  const changed = currency !== (trip.budget_currency || 'VND');
 
   async function handleSave() {
-    if (currency === trip.budget_currency) return;
+    if (!changed) return;
+    const hasBudgetCap = trip.budget != null;
+    const confirmed = window.confirm(
+      `Changing currency to ${currency} will reset your budget cap to "none" (the old amount was in ${trip.budget_currency || 'VND'} and can't be converted automatically).${hasBudgetCap ? '' : ''}\n\nExisting expenses and income contributions keep their own currency and won't be affected.\n\nContinue?`
+    );
+    if (!confirmed) return;
     setSaving(true);
-    const result = await updateTrip(trip.id, { budget_currency: currency });
+    // Reset budget cap + set new currency in one call
+    await updateTripBudget(trip.id, null, currency, null);
     setSaving(false);
-    if (result.ok) {
-      showToast('Currency updated', 'success');
-      startRefreshTransition(() => router.refresh());
-    }
+    showToast(`Currency changed to ${currency}. Budget cap cleared.`, 'success');
+    startRefreshTransition(() => router.refresh());
   }
 
   return (
     <Section title="Money" description="Default currency used for expenses, budget, and contributions.">
       <div className="space-y-4">
-        <Field label="Default currency" hint="Changing this affects how balances and income are displayed.">
+        <Field label="Default currency" hint="Controls which expenses and income count toward the budget. Existing records keep their own currency.">
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -325,11 +330,16 @@ function MoneySection({ trip }: { trip: Trip }) {
             {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </Field>
+        {changed && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            ⚠️ Changing currency will <strong>reset your budget cap</strong> to none. Existing expenses and income contributions are not affected — they keep their original currency.
+          </div>
+        )}
         <div className="flex justify-end">
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || isRefreshing || currency === trip.budget_currency}
+            disabled={saving || isRefreshing || !changed}
             className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
           >
             {saving ? 'Saving…' : 'Save currency'}
