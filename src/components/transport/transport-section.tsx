@@ -9,6 +9,7 @@ import {
 import type { TransportBooking, TransportType } from '@/lib/types';
 import type { MapboxSuggestion } from '@/features/places/mapbox';
 import { addTransportBooking, deleteTransportBooking } from '@/features/transport/actions';
+import { formatNumericInput, parseNumericInput } from '@/lib/format';
 import { useLoadingToast } from '@/components/ui/toast';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
@@ -377,7 +378,7 @@ function AddTransportDialog({
       departure_time: depTime || null,
       arrival_date: arrDate || null,
       arrival_time: arrTime || null,
-      cost: cost ? parseFloat(cost) : null,
+      cost: cost ? parseNumericInput(cost) : null,
       currency,
       reference_code: refCode.trim() || null,
       note: note.trim() || null,
@@ -500,13 +501,12 @@ function AddTransportDialog({
             <span className="text-stone-400 font-normal ml-1">— creates an expense entry</span>
           </label>
           <input
-            type="number"
-            min="0"
-            step="any"
+            type="text"
+            inputMode="numeric"
             className={inputCls}
             style={inputStyle}
             value={cost}
-            onChange={(e) => setCost(e.target.value)}
+            onChange={(e) => setCost(formatNumericInput(e.target.value, { allowDecimals: false }))}
             placeholder="0"
           />
         </div>
