@@ -675,6 +675,31 @@ export default async function TripDetailPage({
                 {crewIdentityLabel}
               </span>
             </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href={user ? '/dashboard' : '/'}
+                className="inline-flex min-h-[34px] items-center rounded-full bg-white/14 px-3 py-1 text-xs font-medium text-white/84 backdrop-blur-sm transition-colors hover:bg-white/20"
+              >
+                {user ? 'Dashboard' : 'Home'}
+              </Link>
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+              >
+                <Sparkles className="h-3 w-3" />
+                {tripPhase}
+              </span>
+              <RoleBadge role={resolvedRole} />
+              <VisibilityBadge visibility={trip.visibility} />
+              {isArchived && (
+                <span
+                  className="inline-flex items-center rounded-full bg-white/14 px-3 py-1 text-xs font-semibold text-white/84 backdrop-blur-sm"
+                >
+                  Archived
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -687,32 +712,6 @@ export default async function TripDetailPage({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                   Trip overview
                 </p>
-                <div className="-mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-                  <Link
-                    href={user ? '/dashboard' : '/'}
-                    className="inline-flex flex-shrink-0 items-center rounded-full px-3 py-1 text-xs font-medium transition-colors"
-                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                  >
-                    {user ? 'Dashboard' : 'Home'}
-                  </Link>
-                  <span
-                    className="inline-flex flex-shrink-0 items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {tripPhase}
-                  </span>
-                  <RoleBadge role={resolvedRole} />
-                  <VisibilityBadge visibility={trip.visibility} />
-                  {isArchived && (
-                    <span
-                      className="inline-flex flex-shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold"
-                      style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-                    >
-                      Archived
-                    </span>
-                  )}
-                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
