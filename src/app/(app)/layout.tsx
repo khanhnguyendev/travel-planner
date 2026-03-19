@@ -55,7 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ToastProvider>
-      <div className="app-shell-bg min-h-screen">
+      <div className="app-shell-bg min-h-screen overflow-x-hidden">
         <header className="sticky top-0 z-40 border-b glass" style={{ borderColor: 'rgba(255,255,255,0.65)' }}>
           <div
             className={cn(
@@ -123,7 +123,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:pt-8 md:pb-10">
+        <main className="mx-auto max-w-7xl overflow-x-hidden px-4 pb-28 pt-6 sm:px-6 sm:pt-8 md:pb-10">
           {children}
         </main>
       </div>

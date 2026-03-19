@@ -89,10 +89,19 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { color-scheme: light; scroll-behavior: smooth; }
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
 
 body {
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(13,148,136,0.12), transparent 30%),
     radial-gradient(circle at top right, rgba(79,70,229,0.10), transparent 28%),
@@ -103,6 +112,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  max-width: 100%;
 }
 
 /* Subtle teal ambient glow behind the page */

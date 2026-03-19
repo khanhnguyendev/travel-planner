@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
@@ -77,6 +77,12 @@ export const metadata: Metadata = {
       'Lên kế hoạch du lịch nhóm dễ dàng: thu thập địa điểm, bình chọn nơi đến, theo dõi chi tiêu chung.',
     images: ['/og-image.png'],
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
