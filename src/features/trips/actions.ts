@@ -312,16 +312,20 @@ export async function addBudgetContribution(
     return { ok: false, error: 'Insufficient permissions' };
   }
 
-  // Validate that userId is an accepted member of the trip
+  // Validate that userId is an accepted member of the trip and fetch their name
   const { data: targetData } = await admin
     .from('trip_members')
-    .select('user_id')
+    .select('user_id, profiles(display_name)')
     .eq('trip_id', tripId)
     .eq('user_id', userId)
     .eq('invite_status', 'accepted')
     .single();
 
   if (!targetData) return { ok: false, error: 'Selected user is not a member of this trip' };
+
+  const contributorName =
+    (targetData as unknown as { profiles?: { display_name?: string | null } | null })
+      ?.profiles?.display_name ?? null;
 
   // Insert contribution row
   const { error: contribError } = await admin.from('budget_contributions').insert({
@@ -341,7 +345,7 @@ export async function addBudgetContribution(
     tripId,
     userId: user.id,
     action: 'budget.contribute',
-    meta: { amount, currency, contributorUserId: userId, note: note ?? null },
+    meta: { amount, currency, contributorUserId: userId, contributorName, note: note ?? null },
   });
 
   revalidatePath(`/trips/${tripId}`);

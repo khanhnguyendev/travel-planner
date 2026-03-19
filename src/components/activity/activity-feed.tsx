@@ -98,7 +98,13 @@ const ACTION_CONFIG: Record<string, {
     icon: Coins,
     color: '#0D9488',
     bg: '#F0FDFA',
-    label: (m) => `added ${m?.amount && m?.currency ? `${m.amount} ${m.currency}` : 'funds'} to the trip budget`,
+    label: (m) => {
+      const amount = m?.amount && m?.currency ? `${m.amount} ${m.currency}` : 'funds';
+      if (m?.contributorName) {
+        return `recorded ${amount} income for ${m.contributorName}`;
+      }
+      return `added ${amount} to the trip fund`;
+    },
   },
   'member.remove': {
     icon: UserMinus,
