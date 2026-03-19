@@ -57,11 +57,11 @@ export function DebtSummary({ expenses, members, currentUserId }: DebtSummaryPro
   }
 
   return (
-    <div className="card p-6 mb-6">
+    <div className="card mb-5 overflow-hidden p-4 sm:p-6">
       {/* Card header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="mb-4 flex items-center gap-2">
         <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
           style={{ backgroundColor: 'var(--color-primary-light)' }}
         >
           <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
@@ -86,29 +86,32 @@ export function DebtSummary({ expenses, members, currentUserId }: DebtSummaryPro
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-3 rounded-xl"
+                  className="flex flex-col gap-2 rounded-xl p-3 sm:flex-row sm:items-center sm:gap-3"
                   style={{
                     backgroundColor: isInvolved
                       ? 'var(--color-primary-light)'
                       : 'var(--color-bg-subtle)',
                   }}
                 >
-                  <Avatar name={fromName} />
+                  <div className="flex min-w-0 items-center gap-2.5 sm:flex-1">
+                    <Avatar name={fromName} />
+                    <span
+                      className="min-w-0 flex-1 text-sm leading-snug"
+                      style={{
+                        color: isInvolved
+                          ? 'var(--color-primary)'
+                          : 'var(--color-text)',
+                      }}
+                    >
+                      <strong>{fromName}</strong>
+                      <span className="sm:hidden">{' -> '}</span>
+                      <span className="hidden sm:inline"> owes </span>
+                      <strong>{toName}</strong>
+                    </span>
+                    <Avatar name={toName} />
+                  </div>
                   <span
-                    className="text-sm flex-1 min-w-0"
-                    style={{
-                      color: isInvolved
-                        ? 'var(--color-primary)'
-                        : 'var(--color-text)',
-                    }}
-                  >
-                    <strong>{fromName}</strong>
-                    {' owes '}
-                    <strong>{toName}</strong>
-                  </span>
-                  <Avatar name={toName} />
-                  <span
-                    className="text-sm font-semibold flex-shrink-0 ml-2"
+                    className="self-end text-sm font-semibold sm:ml-2 sm:self-auto"
                     style={{
                       color: isInvolved
                         ? 'var(--color-primary)'

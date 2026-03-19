@@ -70,12 +70,12 @@ function PlaceRow({ place, category, onClick }: PlaceRowProps) {
   return (
     <button
       onClick={() => onClick?.(place)}
-      className="w-full flex items-start gap-3 p-3 rounded-xl text-left transition-colors hover:bg-[var(--color-bg-muted)] min-h-[52px]"
+      className="flex min-h-[0] w-full flex-col gap-2 rounded-xl p-2.5 text-left transition-colors hover:bg-[var(--color-bg-muted)] sm:flex-row sm:items-start sm:gap-3 sm:p-3"
       style={{ backgroundColor: 'var(--color-bg-subtle)' }}
     >
       {/* Time */}
       <div
-        className="flex items-center gap-1 text-xs flex-shrink-0 mt-0.5 w-28"
+        className="mt-0.5 flex items-center gap-1 text-[11px] flex-shrink-0 sm:w-24 sm:text-xs md:w-28"
         style={{ color: 'var(--color-text-subtle)' }}
       >
         <Clock className="w-3 h-3 flex-shrink-0" />
@@ -178,7 +178,7 @@ export function TripTimeline({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Scheduled section */}
       {scheduled.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center">
@@ -191,18 +191,18 @@ export function TripTimeline({
         <div className="relative">
           {/* Vertical timeline line */}
           <div
-            className="absolute left-4 top-8 bottom-4 w-0.5 rounded-full"
+            className="absolute bottom-4 left-3.5 top-7 w-0.5 rounded-full sm:left-4 sm:top-8"
             style={{ backgroundColor: '#0D9488' }}
           />
 
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {sortedDates.map((date) => {
               const dayPlaces = groupedByDate.get(date)!;
               return (
-                <div key={date} className="relative pl-12">
+                <div key={date} className="relative pl-10 sm:pl-12">
                   {/* Day dot */}
                   <div
-                    className="absolute left-2 top-1.5 w-4 h-4 rounded-full border-2 border-white"
+                    className="absolute left-1.5 top-1.5 h-4 w-4 rounded-full border-2 border-white sm:left-2"
                     style={{ backgroundColor: '#0D9488' }}
                   />
 

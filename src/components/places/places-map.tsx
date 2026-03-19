@@ -19,8 +19,8 @@ export function PlacesMap({ places, categories, onPlaceClick }: PlacesMapProps) 
   if (withCoords.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center rounded-2xl overflow-hidden"
-        style={{ height: 400, backgroundColor: 'var(--color-bg-subtle)' }}
+        className="flex h-[340px] flex-col items-center justify-center overflow-hidden rounded-2xl sm:h-[400px]"
+        style={{ backgroundColor: 'var(--color-bg-subtle)' }}
       >
         <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
           No places with location data
@@ -30,8 +30,8 @@ export function PlacesMap({ places, categories, onPlaceClick }: PlacesMapProps) 
   }
 
   return (
-    <div className="space-y-2">
-      <div className="rounded-2xl overflow-hidden" style={{ height: 400 }}>
+    <div className="min-w-0 space-y-2 overflow-hidden">
+      <div className="h-[340px] overflow-hidden rounded-2xl sm:h-[400px]">
         <LeafletMap places={withCoords} categories={categories} onPlaceClick={onPlaceClick} />
       </div>
       {withoutCoords > 0 && (

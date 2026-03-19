@@ -17,11 +17,11 @@ export function CategoryList({
   inline = false,
 }: CategoryListProps) {
   return (
-    <div className={inline ? 'flex items-center gap-2' : 'flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide'}>
+    <div className={inline ? 'flex flex-wrap items-center gap-2 sm:flex-nowrap' : 'flex flex-wrap items-center gap-2 pb-1 sm:flex-nowrap sm:overflow-x-auto sm:scrollbar-hide'}>
       {/* "All" chip */}
       <button
         onClick={() => onSelect(null)}
-        className="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+        className="flex-shrink-0 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm"
         style={{
           backgroundColor:
             selectedId === null

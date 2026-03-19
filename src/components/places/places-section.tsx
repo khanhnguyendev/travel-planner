@@ -167,7 +167,7 @@ export function PlacesSection({
   }, [basePlaces, sortOption]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Dialogs */}
       {showAddCategory && editor && (
         <Dialog title="Add category" onClose={() => setShowAddCategory(false)} maxWidth="max-w-sm">
@@ -194,7 +194,7 @@ export function PlacesSection({
         <VoteLeaderboard places={places} voteSummaries={voteSummaries} categories={categories} />
       )}
 
-      <div className="section-shell p-4 sm:p-5">
+      <div className="section-shell overflow-hidden p-3 sm:p-5">
         <div className="space-y-3">
           <div className="flex items-start gap-2">
             {places.length > 0 && (
@@ -249,9 +249,9 @@ export function PlacesSection({
             )}
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex flex-wrap items-center gap-2 pb-1">
             {places.length > 1 && (
-              <div className="flex flex-shrink-0 items-center gap-2">
+              <div className="flex flex-shrink-0 items-center gap-1.5">
                 <label htmlFor="sort-places" className="text-xs font-medium whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
                   Sort
                 </label>
@@ -259,7 +259,7 @@ export function PlacesSection({
                   id="sort-places"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="rounded-full border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
+                  className="min-h-[36px] rounded-full border px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500 sm:min-h-[40px] sm:text-sm"
                   style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
                 >
                   {SORT_OPTIONS.map((opt) => (
@@ -282,7 +282,7 @@ export function PlacesSection({
               <div className="flex flex-shrink-0 items-center gap-2">
                 <button
                   onClick={() => setSelectedLocationTag(null)}
-                  className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors sm:px-3 sm:text-xs"
                   style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}
                 >
                   {selectedLocationTag}
@@ -294,7 +294,7 @@ export function PlacesSection({
             {editor && (
               <button
                 onClick={() => setShowAddCategory(true)}
-                className="inline-flex min-h-[40px] flex-shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03]"
+                className="inline-flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-black/[0.03] sm:min-h-[40px] sm:gap-2 sm:py-2 sm:text-sm"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 aria-label="Add category"
               >

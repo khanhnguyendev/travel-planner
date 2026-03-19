@@ -374,8 +374,8 @@ function TabBar({
 
   return (
     <div className="sticky-tabs mt-4 mb-5">
-      <div className="section-shell overflow-x-auto p-2">
-        <div className="flex min-w-max items-center gap-2">
+      <div className="section-shell overflow-x-auto p-1.5 scrollbar-hide sm:p-2">
+        <div className="flex min-w-max items-center gap-1.5 sm:gap-2">
           {tabItems
             .filter((tab) => tabs.includes(tab.value))
             .map((tab) => {
@@ -384,7 +384,8 @@ function TabBar({
                 <Link
                   key={tab.value}
                   href={`/trips/${tripId}?tab=${tab.value}`}
-                  className={`pill-tab flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${isActive ? 'pill-tab-active' : ''}`}
+                  scroll={false}
+                  className={`pill-tab flex min-h-[40px] items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold sm:min-h-[44px] sm:gap-2 sm:px-4 sm:text-sm ${isActive ? 'pill-tab-active' : ''}`}
                   style={{ color: isActive ? 'var(--color-text)' : 'var(--color-text-muted)' }}
                 >
                   {tab.icon}
@@ -993,7 +994,7 @@ export default async function TripDetailPage({
       )}
 
       {activeTab === 'timeline' && (
-        <div className="section-shell mb-6 p-5 sm:p-6">
+        <div className="section-shell mb-5 overflow-hidden p-4 sm:p-6">
           <TripTimeline
             places={places}
             categories={categories}
@@ -1015,7 +1016,7 @@ export default async function TripDetailPage({
       )}
 
       {activeTab === 'map' && (
-        <div className="mb-6">
+        <div className="section-shell mb-5 overflow-hidden p-3 sm:p-4">
           <MapTabClient
             tripId={tripId}
             places={places}
@@ -1036,7 +1037,7 @@ export default async function TripDetailPage({
       )}
 
       {activeTab === 'expenses' && (
-        <div className="mb-6 space-y-4">
+        <div className="mb-5 space-y-3 sm:space-y-4">
           {expensesWithSplits.length > 0 && (
             <DebtSummary
               expenses={expensesWithSplits}
@@ -1045,13 +1046,13 @@ export default async function TripDetailPage({
             />
           )}
 
-          <div className="section-shell p-5 sm:p-6">
-            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="section-shell overflow-hidden p-4 sm:p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                   Money
                 </p>
-                <h2 className="mt-1 text-xl font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                <h2 className="mt-1 text-lg font-semibold section-title sm:text-xl" style={{ color: 'var(--color-text)' }}>
                   Shared expenses
                 </h2>
                 <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -1059,16 +1060,17 @@ export default async function TripDetailPage({
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                 {canEdit && (
                   <AddExpenseDialog
                     tripId={tripId}
                     members={members}
                     currentUserId={currentUserId}
                     places={places}
+                    triggerClassName="w-full justify-center sm:w-auto"
                   />
                 )}
-                <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] text-sm">
+                <Link href={`/trips/${tripId}/expenses`} className="btn-secondary min-h-[44px] w-full justify-center text-sm sm:w-auto">
                   View all
                 </Link>
               </div>
@@ -1120,7 +1122,7 @@ export default async function TripDetailPage({
       )}
 
       {activeTab === 'activity' && (
-        <div className="mb-6">
+        <div className="mb-5">
           <ActivityFeed activities={activityEntries} />
         </div>
       )}
