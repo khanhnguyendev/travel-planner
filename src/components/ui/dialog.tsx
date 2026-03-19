@@ -37,10 +37,10 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
   return createPortal(
     <>
       <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 sm:pt-16">
+      <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-x-hidden px-2 py-3 sm:p-4 sm:pt-16">
         <div
           className={cn(
-            'relative flex w-full flex-col overflow-hidden rounded-[1.5rem] max-h-[88dvh] overflow-x-hidden sm:max-h-[92dvh]',
+            'relative mx-auto flex min-w-0 w-full max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-[1.5rem] max-h-[88dvh] overflow-x-hidden sm:max-h-[92dvh]',
             maxWidth
           )}
           style={{ backgroundColor: 'var(--color-bg)' }}
@@ -57,7 +57,7 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
             </button>
           </div>
           {/* Scrollable body */}
-          <div className="overflow-y-auto overflow-x-hidden p-4 sm:p-5">
+          <div className="min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-5">
             {children}
           </div>
         </div>

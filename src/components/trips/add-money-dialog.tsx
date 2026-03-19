@@ -71,18 +71,18 @@ export function AddMoneyDialog({
         <Dialog
           title={activeTab === 'income' ? (budget != null ? 'Add income' : 'Set budget') : 'Add expense'}
           onClose={() => setOpen(false)}
-          maxWidth="max-w-xl"
+          maxWidth="sm:max-w-xl"
         >
-          <div className="space-y-4 sm:space-y-5">
+          <div className="min-w-0 space-y-3 overflow-x-hidden sm:space-y-5">
             {canManageBudget && (
               <div
-                className="grid w-full grid-cols-2 rounded-[1rem] p-1"
+                className="grid w-full min-w-0 grid-cols-2 rounded-[1rem] p-1"
                 style={{ backgroundColor: 'var(--color-bg-subtle)' }}
               >
                 <button
                   type="button"
                   onClick={() => setActiveTab('income')}
-                  className="inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold transition-colors"
+                  className="inline-flex min-h-[42px] min-w-0 items-center justify-center gap-1 rounded-[0.85rem] px-2.5 py-2 text-xs font-semibold transition-colors sm:min-h-[44px] sm:gap-1.5 sm:px-3 sm:text-sm"
                   style={{
                     backgroundColor: activeTab === 'income' ? 'white' : 'transparent',
                     color: activeTab === 'income' ? 'var(--color-primary)' : 'var(--color-text-muted)',
@@ -95,7 +95,7 @@ export function AddMoneyDialog({
                 <button
                   type="button"
                   onClick={() => setActiveTab('expense')}
-                  className="inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold transition-colors"
+                  className="inline-flex min-h-[42px] min-w-0 items-center justify-center gap-1 rounded-[0.85rem] px-2.5 py-2 text-xs font-semibold transition-colors sm:min-h-[44px] sm:gap-1.5 sm:px-3 sm:text-sm"
                   style={{
                     backgroundColor: activeTab === 'expense' ? 'white' : 'transparent',
                     color: activeTab === 'expense' ? 'var(--color-primary)' : 'var(--color-text-muted)',

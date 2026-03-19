@@ -67,16 +67,16 @@ export function BudgetIncomeForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-[1rem] bg-stone-950/[0.03] px-4 py-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+    <form onSubmit={handleSubmit} className="min-w-0 space-y-4 overflow-x-hidden">
+      <div className="rounded-[1rem] bg-stone-950/[0.03] px-3 py-3 text-sm leading-relaxed sm:px-4" style={{ color: 'var(--color-text-muted)' }}>
         Record funds added to the shared trip budget. Each contribution is tracked separately.
       </div>
 
-      <div className="space-y-1.5">
+      <div className="min-w-0 space-y-1.5">
         <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
           Amount
         </label>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full flex-1">
             <span
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm"
@@ -90,7 +90,7 @@ export function BudgetIncomeForm({
               step="any"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="w-full rounded-xl border py-2.5 pl-8 pr-3 text-sm outline-none"
+              className="w-full min-w-0 rounded-xl border py-2.5 pl-8 pr-3 text-sm outline-none"
               style={{
                 borderColor: 'var(--color-border)',
                 backgroundColor: 'white',
@@ -104,7 +104,7 @@ export function BudgetIncomeForm({
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className="min-h-[44px] w-full rounded-xl border px-3 py-2.5 text-sm outline-none sm:w-auto sm:min-w-[96px]"
+            className="min-h-[44px] w-full min-w-0 rounded-xl border px-3 py-2.5 text-sm outline-none sm:w-auto sm:min-w-[96px]"
             style={{
               borderColor: 'var(--color-border)',
               backgroundColor: 'white',
@@ -118,14 +118,14 @@ export function BudgetIncomeForm({
         </div>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
           Added by
         </label>
         <select
           value={contributorId}
           onChange={(e) => setContributorId(e.target.value)}
-          className="w-full min-h-[44px] rounded-xl border px-3 py-2.5 text-sm outline-none"
+          className="w-full min-h-[44px] min-w-0 rounded-xl border px-3 py-2.5 text-sm outline-none"
           style={{
             borderColor: 'var(--color-border)',
             backgroundColor: 'white',
@@ -144,7 +144,7 @@ export function BudgetIncomeForm({
         </p>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
           Note <span className="font-normal text-stone-400">(optional)</span>
         </label>
@@ -153,7 +153,7 @@ export function BudgetIncomeForm({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Initial deposit, Transport fund…"
-          className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
+          className="w-full min-w-0 rounded-xl border px-3 py-2.5 text-sm outline-none"
           style={{
             borderColor: 'var(--color-border)',
             backgroundColor: 'white',
