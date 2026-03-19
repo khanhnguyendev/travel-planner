@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface DialogProps {
@@ -11,6 +12,12 @@ interface DialogProps {
 }
 
 export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: DialogProps) {
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -24,10 +31,12 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 sm:pt-16">
+      <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 sm:pt-16">
         <div
           className={`relative w-full ${maxWidth} rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[95dvh] sm:max-h-[92dvh]`}
           style={{ backgroundColor: 'var(--color-bg)' }}
@@ -53,6 +62,7 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

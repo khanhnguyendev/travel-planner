@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, Star, DollarSign, ExternalLink, Clock, CalendarDays, ShieldAlert, Pencil, Check, Send, Trash2, MessageCircle, NotebookPen, AlertTriangle, Receipt } from 'lucide-react';
 import type { Place, PlaceReview, Category, PlaceVote, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
@@ -551,6 +552,11 @@ export function PlaceDetailDrawer({
     }
   }
   const overlayRef = useRef<HTMLDivElement>(null);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -565,17 +571,19 @@ export function PlaceDetailDrawer({
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       <div
         ref={overlayRef}
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
       <div
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+        className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
       <aside
@@ -769,6 +777,7 @@ export function PlaceDetailDrawer({
         </div>
       </aside>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
