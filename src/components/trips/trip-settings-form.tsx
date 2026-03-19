@@ -7,6 +7,7 @@ import { updateTrip, updateTripDates, updateTripBudget, archiveTrip } from '@/fe
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { useToast } from '@/components/ui/toast';
 import { formatDate } from '@/lib/format';
+import { getTripDurationLabel } from '@/lib/date';
 import type { Trip } from '@/lib/types';
 
 const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'];
@@ -187,13 +188,7 @@ function DatesSection({ trip }: { trip: Trip }) {
         : 'Dates flexible';
 
   const durationLabel = hasBothDates
-    ? (() => {
-        const start = new Date(`${startDate}T00:00:00`);
-        const end = new Date(`${endDate}T00:00:00`);
-        const diffDays = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
-        const nights = Math.max(diffDays - 1, 0);
-        return `${diffDays} day${diffDays === 1 ? '' : 's'} · ${nights} night${nights === 1 ? '' : 's'}`;
-      })()
+    ? getTripDurationLabel(startDate, endDate)
     : 'These dates shape the planning window across the trip.';
 
   return (

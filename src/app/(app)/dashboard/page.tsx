@@ -17,7 +17,7 @@ import {
 import { getSession } from '@/features/auth/session';
 import { getPublicTrips, getTrips, type TripWithRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
-import { formatDateRange } from '@/lib/date';
+import { formatDateRange, getTripDurationLabel } from '@/lib/date';
 import { formatCurrency, formatDateTime } from '@/lib/format';
 import type { Trip } from '@/lib/types';
 import { normalizePublicStorageUrl } from '@/lib/storage';
@@ -36,21 +36,6 @@ const VISIBILITY_CONFIG = {
   public: { icon: <Globe className="h-3 w-3" />, label: 'Public', color: '#1D4ED8', bg: '#DBEAFE' },
   private: { icon: <Lock className="h-3 w-3" />, label: 'Private', color: '#475569', bg: '#E2E8F0' },
 } as const;
-
-function getTripDurationLabel(startDate: string | null, endDate: string | null) {
-  if (!startDate || !endDate) return null;
-
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const nights = Math.max(0, Math.round((end.getTime() - start.getTime()) / msPerDay));
-  const days = nights + 1;
-
-  const dayLabel = `${days} day${days === 1 ? '' : 's'}`;
-  const nightLabel = `${nights} night${nights === 1 ? '' : 's'}`;
-
-  return `${dayLabel} · ${nightLabel}`;
-}
 
 async function TripCard({ trip }: { trip: TripWithRole }) {
   const members = await getMembers(trip.id);

@@ -25,6 +25,7 @@ import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '@/lib/format';
+import { getTripDurationLabel } from '@/lib/date';
 import { normalizePublicStorageUrl } from '@/lib/storage';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
@@ -213,22 +214,6 @@ function formatSnapshotDate(value: string | null) {
     year: 'numeric',
   });
 }
-
-function getTripDurationLabel(startDate: string | null, endDate: string | null) {
-  if (!startDate || !endDate) return null;
-
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const nights = Math.max(0, Math.round((end.getTime() - start.getTime()) / msPerDay));
-  const days = nights + 1;
-
-  const dayLabel = `${days} day${days === 1 ? '' : 's'}`;
-  const nightLabel = `${nights} night${nights === 1 ? '' : 's'}`;
-
-  return `${dayLabel} · ${nightLabel}`;
-}
-
 
 function formatStopPlan(place: Place): string {
   const parts: string[] = [];

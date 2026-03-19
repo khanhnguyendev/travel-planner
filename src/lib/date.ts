@@ -16,3 +16,14 @@ export function formatDateRange(start: string, end: string): string {
   const days = daysBetween(start, end);
   return `${formatDate(start)} – ${formatDate(end)} (${days} day${days !== 1 ? 's' : ''})`;
 }
+
+export function getTripDurationLabel(start: string | null, end: string | null): string | null {
+  if (!start || !end) return null;
+
+  const days = daysBetween(start, end);
+  const nights = Math.max(days - 1, 0);
+  const dayLabel = `${days} day${days === 1 ? '' : 's'}`;
+  const nightLabel = `${nights} night${nights === 1 ? '' : 's'}`;
+
+  return `${dayLabel} · ${nightLabel}`;
+}
