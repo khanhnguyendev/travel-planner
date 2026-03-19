@@ -332,6 +332,14 @@ export async function removeMember(
   }
 
   const admin = createAdminClient();
+
+  const { data: removedProfile } = await admin
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .single();
+  const removedName = (removedProfile as { display_name?: string | null } | null)?.display_name ?? null;
+
   const { error } = await admin
     .from('trip_members')
     .delete()
@@ -343,7 +351,7 @@ export async function removeMember(
     return { ok: false, error: 'Failed to remove member' };
   }
 
-  void logActivity({ tripId, userId: user.id, action: 'member.remove', meta: { removedUserId: userId } });
+  void logActivity({ tripId, userId: user.id, action: 'member.remove', meta: { removedUserId: userId, removedName } });
 
   revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: undefined };

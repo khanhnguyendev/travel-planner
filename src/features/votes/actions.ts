@@ -94,7 +94,9 @@ export async function upsertVote(
   }
 
   const activityAction = parsed.data.voteType === 'upvote' ? 'vote.upvote' : 'vote.downvote';
-  void logActivity({ tripId, userId: user.id, action: activityAction, entityType: 'place', entityId: placeId });
+  const { data: placeData } = await admin.from('places').select('name').eq('id', placeId).single();
+  const placeName = (placeData as { name?: string } | null)?.name ?? null;
+  void logActivity({ tripId, userId: user.id, action: activityAction, entityType: 'place', entityId: placeId, meta: { placeName } });
 
   return { ok: true, data: { vote: data as PlaceVote } };
 }

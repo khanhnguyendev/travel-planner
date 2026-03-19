@@ -272,11 +272,11 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   // Fetch trip_id for membership check + revalidation
   const { data: expenseData } = await admin
     .from('expenses')
-    .select('id, trip_id, title')
+    .select('id, trip_id, title, amount, currency')
     .eq('id', id)
     .single();
 
-  const expense = expenseData as unknown as { id: string; trip_id: string; title: string } | null;
+  const expense = expenseData as unknown as { id: string; trip_id: string; title: string; amount: number; currency: string } | null;
   if (!expense) return { ok: false, error: 'Expense not found' };
 
   const editorRole = await requireEditor(expense.trip_id, user.id);
@@ -300,7 +300,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
     action: 'expense.delete',
     entityType: 'expense',
     entityId: id,
-    meta: { title: expense.title },
+    meta: { title: expense.title, amount: expense.amount, currency: expense.currency },
   });
 
   return { ok: true, data: undefined };
