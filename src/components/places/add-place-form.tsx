@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
-import { Search, X, Loader2, AlertCircle, MapPin, CalendarDays, Clock, Plus } from 'lucide-react';
+import { Search, X, Loader2, AlertCircle, MapPin, CalendarDays, Clock, Plus, BedDouble } from 'lucide-react';
 import type { Category, Place, PlaceReview } from '@/lib/types';
 import type { MapboxSuggestion } from '@/features/places/mapbox';
 import { useLoadingToast } from '@/components/ui/toast';
 import { extractLocationTag } from '@/lib/address';
 import { Dialog } from '@/components/ui/dialog';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
+import { ensureAccommodationCategory } from '@/features/categories/actions';
 
 interface AddPlaceFormProps {
   tripId: string;
@@ -31,6 +32,8 @@ export function AddPlaceForm({ tripId, categories, onAdded, onCancel }: AddPlace
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [isAccommodation, setIsAccommodation] = useState(false);
+  const [accommodationLoading, setAccommodationLoading] = useState(false);
   const [visitDate, setVisitDate] = useState('');
   const [visitDateEnd, setVisitDateEnd] = useState('');
   const [visitTimeFrom, setVisitTimeFrom] = useState('');
@@ -94,6 +97,20 @@ useEffect(() => {
     else if (e.key === 'Escape') { setShowDropdown(false); setActiveIndex(-1); }
   }
 
+  async function handleAccommodationToggle(checked: boolean) {
+    setIsAccommodation(checked);
+    if (!checked) return;
+    // Find or create the accommodation category and select it
+    setAccommodationLoading(true);
+    const result = await ensureAccommodationCategory(tripId);
+    setAccommodationLoading(false);
+    if (result.ok) {
+      const cat = result.data.category;
+      setLocalCategories((prev) => prev.some((c) => c.id === cat.id) ? prev : [...prev, cat]);
+      setCategoryId(cat.id);
+    }
+  }
+
   function handleClearSelection() {
     setSelected(null);
     setQuery('');
@@ -142,7 +159,7 @@ useEffect(() => {
         resolve('Place added!', 'success');
         onAdded?.(data.data!.place, []);
         setQuery(''); setSelected(null); setSuggestions([]); setShowDropdown(false);
-        setError(null); setVisitDate(''); setVisitDateEnd(''); setVisitTimeFrom(''); setVisitTimeTo('');
+        setError(null); setVisitDate(''); setVisitDateEnd(''); setVisitTimeFrom(''); setVisitTimeTo(''); setIsAccommodation(false);
         setSessionToken(newSessionToken());
       } catch {
         const msg = 'Network error — check your connection and try again.';
@@ -244,6 +261,35 @@ useEffect(() => {
               )}
             </div>
           </div>
+
+          {/* Accommodation toggle */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={isAccommodation}
+                disabled={accommodationLoading || isPending}
+                onChange={(e) => void handleAccommodationToggle(e.target.checked)}
+              />
+              <div
+                className="w-10 h-6 rounded-full transition-colors"
+                style={{ backgroundColor: isAccommodation ? 'var(--color-primary)' : 'var(--color-border)' }}
+              >
+                <div
+                  className="w-4 h-4 bg-white rounded-full shadow transition-transform mt-1"
+                  style={{ transform: isAccommodation ? 'translateX(1.25rem)' : 'translateX(0.25rem)' }}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <BedDouble className="w-4 h-4" style={{ color: isAccommodation ? 'var(--color-primary)' : 'var(--color-text-subtle)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                This is accommodation
+              </span>
+              {accommodationLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--color-text-subtle)' }} />}
+            </div>
+          </label>
 
           {/* Category */}
           <div>

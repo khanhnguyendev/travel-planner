@@ -133,6 +133,59 @@ export async function updateCategory(
 }
 
 // -------------------------------------------------------
+// ensureAccommodationCategory
+// -------------------------------------------------------
+
+/**
+ * Returns the first accommodation-type category for the trip,
+ * creating one if none exists. Used by the accommodation toggle in the add-place form.
+ */
+export async function ensureAccommodationCategory(
+  tripId: string
+): Promise<ActionResult<{ category: Category }>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const admin = createAdminClient();
+
+  // Find existing accommodation category
+  const { data: existing } = await admin
+    .from('categories')
+    .select('*')
+    .eq('trip_id', tripId)
+    .eq('category_type', 'accommodation')
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    return { ok: true, data: { category: existing as Category } };
+  }
+
+  // Create one
+  const { data, error } = await admin
+    .from('categories')
+    .insert({
+      trip_id: tripId,
+      name: 'Accommodation',
+      icon: '🏨',
+      color: null,
+      sort_order: null,
+      category_type: 'accommodation',
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('ensureAccommodationCategory error:', error);
+    return { ok: false, error: 'Failed to create accommodation category' };
+  }
+
+  revalidatePath(`/trips/${tripId}`);
+  return { ok: true, data: { category: data as Category } };
+}
+
+// -------------------------------------------------------
 // deleteCategory
 // -------------------------------------------------------
 
