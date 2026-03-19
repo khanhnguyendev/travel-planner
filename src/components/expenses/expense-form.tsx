@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, MapPin, PencilLine, Wallet, User } from 'lucide-react';
-import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
+import { createExpense, updateExpense, type CreateExpenseInput, type UpdateExpenseInput, type SplitInput } from '@/features/expenses/actions';
+import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place, TransportBooking } from '@/lib/types';
 import { Car, Bus, Plane } from 'lucide-react';
@@ -55,6 +56,8 @@ interface ExpenseFormProps {
   onSuccess?: () => void;
   /** Called on cancel (dialog mode). Uses router.back() if not provided. */
   onCancel?: () => void;
+  /** Optional initial expense data for editing. */
+  expense?: ExpenseWithSplits;
 }
 
 // -------------------------------------------------------
@@ -70,7 +73,13 @@ function roundTo2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function buildDefaultSplits(members: MemberWithProfile[]): SplitRow[] {
+function buildDefaultSplits(members: MemberWithProfile[], initialSplits?: ExpenseWithSplits['splits']): SplitRow[] {
+  if (initialSplits && initialSplits.length > 0) {
+    return initialSplits.map((s) => ({
+      userId: s.user_id,
+      amountOwed: String(s.amount_owed),
+    }));
+  }
   return members.map((m) => ({
     userId: m.user_id,
     amountOwed: '',
@@ -145,30 +154,38 @@ function InputField({
 // Main component
 // -------------------------------------------------------
 
-export function ExpenseForm({ tripId, members, currentUserId, places = [], transportBookings = [], poolBalance, poolCurrency, onSuccess, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ tripId, members, currentUserId, places = [], transportBookings = [], poolBalance, poolCurrency, onSuccess, onCancel, expense }: ExpenseFormProps) {
   const router = useRouter();
+  const isEditing = !!expense;
 
   // Form fields
-  const [paidFromPool, setPaidFromPool] = useState(false);
-  const [title, setTitle] = useState('');
-  const [subjectMode, setSubjectMode] = useState<ExpenseSubjectMode>('manual');
-  const [category, setCategory] = useState<string | null>(null);
-  const [placeId, setPlaceId] = useState<string | null>(null);
-  const [transportBookingId, setTransportBookingId] = useState<string | null>(null);
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>('VND');
-  const [expenseDate, setExpenseDate] = useState(
-    new Date().toISOString().slice(0, 10)
+  const [paidFromPool, setPaidFromPool] = useState(expense?.paid_from_pool ?? false);
+  const [title, setTitle] = useState(expense?.title ?? '');
+  const [subjectMode, setSubjectMode] = useState<ExpenseSubjectMode>(
+    expense?.transport_booking_id ? 'transport' : expense?.place_id ? 'place' : 'manual'
   );
-  const [note, setNote] = useState('');
-  const [paidByUserId, setPaidByUserId] = useState(currentUserId);
+  const [category, setCategory] = useState<string | null>(expense?.category ?? null);
+  const [placeId, setPlaceId] = useState<string | null>(expense?.place_id ?? null);
+  const [transportBookingId, setTransportBookingId] = useState<string | null>(expense?.transport_booking_id ?? null);
+  const [amount, setAmount] = useState(expense ? String(expense.amount) : '');
+  const [currency, setCurrency] = useState<Currency>((expense?.currency as Currency) ?? 'VND');
+  const [expenseDate, setExpenseDate] = useState(
+    expense?.expense_date ? expense.expense_date.slice(0, 10) : new Date().toISOString().slice(0, 10)
+  );
+  const [note, setNote] = useState(expense?.note ?? '');
+  const [paidByUserId, setPaidByUserId] = useState(expense?.paid_by_user_id ?? currentUserId);
 
   // Splits
-  const [splits, setSplits] = useState<SplitRow[]>(buildDefaultSplits(members));
+  const [splits, setSplits] = useState<SplitRow[]>(buildDefaultSplits(members, expense?.splits));
 
   // Receipt upload state
-  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
-  const [uploadedReceiptPath, setUploadedReceiptPath] = useState<string | null>(null);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const initialReceiptUrl = expense?.receipt_path && supabaseUrl
+    ? `${supabaseUrl}/storage/v1/object/public/receipts/${expense.receipt_path}`
+    : null;
+
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(initialReceiptUrl);
+  const [uploadedReceiptPath, setUploadedReceiptPath] = useState<string | null>(expense?.receipt_path ?? null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -384,16 +401,57 @@ function updateSplitAmount(index: number, value: string) {
     };
 
     setIsSubmitting(true);
-    const resolve = loadingToast('Creating expense…');
+    const resolve = loadingToast(isEditing ? 'Updating expense…' : 'Creating expense…');
     try {
-      const result = await createExpense(input);
-      if (result.ok) {
-        resolve('Expense added!', 'success');
-        if (onSuccess) { onSuccess(); } else { router.push(`/trips/${tripId}/expenses`); }
+      if (isEditing) {
+        const updateInput: UpdateExpenseInput = {
+          title: resolvedTitle,
+          category: category ?? null,
+          amount: totalAmount,
+          currency,
+          expenseDate: expenseDate ? new Date(expenseDate).toISOString() : null,
+          note: note.trim() || null,
+          paidByUserId,
+          paidFromPool,
+          splits: splitInputs,
+          receiptPath: uploadedReceiptPath ?? null,
+          placeId: subjectMode === 'place' ? (placeId ?? null) : null,
+          transportBookingId: subjectMode === 'transport' ? (transportBookingId ?? null) : null,
+        };
+        const result = await updateExpense(expense.id, updateInput);
+        if (result.ok) {
+          resolve('Expense updated!', 'success');
+          if (onSuccess) { onSuccess(); } else { router.push(`/trips/${tripId}/expenses/${expense.id}`); }
+        } else {
+          const msg = result.error ?? 'Failed to update expense';
+          resolve(msg, 'error');
+          setError(msg);
+        }
       } else {
-        const msg = result.error ?? 'Failed to create expense';
-        resolve(msg, 'error');
-        setError(msg);
+        const createInput: CreateExpenseInput = {
+          tripId,
+          title: resolvedTitle,
+          category: category ?? null,
+          amount: totalAmount,
+          currency,
+          expenseDate: expenseDate ? new Date(expenseDate).toISOString() : null,
+          note: note.trim() || null,
+          paidByUserId,
+          paidFromPool,
+          splits: splitInputs,
+          receiptPath: uploadedReceiptPath ?? null,
+          placeId: subjectMode === 'place' ? (placeId ?? null) : null,
+          transportBookingId: subjectMode === 'transport' ? (transportBookingId ?? null) : null,
+        };
+        const result = await createExpense(createInput);
+        if (result.ok) {
+          resolve('Expense added!', 'success');
+          if (onSuccess) { onSuccess(); } else { router.push(`/trips/${tripId}/expenses`); }
+        } else {
+          const msg = result.error ?? 'Failed to create expense';
+          resolve(msg, 'error');
+          setError(msg);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -935,7 +993,7 @@ function updateSplitAmount(index: number, value: string) {
           className="btn-primary inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isSubmitting ? 'Saving…' : 'Save expense'}
+          {isSubmitting ? 'Saving…' : isEditing ? 'Update expense' : 'Save expense'}
         </button>
         <button
           type="button"

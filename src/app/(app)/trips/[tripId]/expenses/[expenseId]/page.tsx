@@ -4,6 +4,7 @@ import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getExpense } from '@/features/expenses/queries';
 import { getPlaces } from '@/features/places/queries';
 import { ExpenseDetail } from '@/components/expenses/expense-detail';
+import type { TripRole } from '@/lib/types';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -42,7 +43,7 @@ export default async function ExpenseDetailPage({
       tripTitle={trip.title}
       linkedPlaceName={expense.place_id ? places.find((place) => place.id === expense.place_id)?.name ?? null : null}
       currentUserId={user.id}
-      role={role}
+      role={(role?.toLowerCase() ?? 'viewer') as TripRole}
     />
   );
 }

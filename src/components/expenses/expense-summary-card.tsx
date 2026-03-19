@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink } from 'lucide-react';
+import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { Avatar } from '@/components/ui/avatar';
 import { formatCurrency, formatDateTime } from '@/lib/format';
@@ -31,6 +31,9 @@ interface ExpenseSummaryCardProps {
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
+  tripId?: string;
+  canModify?: boolean;
+  onDelete?: (id: string) => void;
 }
 
 // -------------------------------------------------------
@@ -135,17 +138,20 @@ function CollapsedRow({
 }
 
 // -------------------------------------------------------
-// Expanded panel
-// -------------------------------------------------------
-
 function ExpandedPanel({
   expense,
   linkedPlaceName,
   href,
+  tripId,
+  canModify,
+  onDelete,
 }: {
   expense: ExpenseWithSplits;
   linkedPlaceName?: string | null;
   href?: string;
+  tripId?: string;
+  canModify?: boolean;
+  onDelete?: (id: string) => void;
 }) {
   return (
     <div className="border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--color-border-muted)' }}>
@@ -225,16 +231,42 @@ function ExpandedPanel({
           </span>
         )}
 
-        {href && (
-          <Link
-            href={href}
-            className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:underline"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            View details
-            <ExternalLink className="h-3 w-3" />
-          </Link>
-        )}
+        <div className="ml-auto flex items-center gap-3">
+          {canModify && (
+            <>
+              <Link
+                href={`/trips/${tripId}/expenses/${expense.id}/edit`}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 transition-colors"
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete?.(expense.id);
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-red-500 hover:text-red-700 transition-colors"
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </button>
+            </>
+          )}
+
+          {href && (
+            <Link
+              href={href}
+              className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:underline"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              View details
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -253,6 +285,9 @@ export function ExpenseSummaryCard({
   disabled = false,
   onClick,
   className,
+  tripId,
+  canModify,
+  onDelete,
 }: ExpenseSummaryCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -276,7 +311,7 @@ export function ExpenseSummaryCard({
             expense={expense}
             linkedPlaceName={linkedPlaceName}
             expanded={false}
-            onToggle={() => {}}
+            onToggle={() => { }}
           />
         </button>
       </div>
@@ -298,6 +333,9 @@ export function ExpenseSummaryCard({
           expense={expense}
           linkedPlaceName={linkedPlaceName}
           href={href}
+          tripId={tripId}
+          canModify={canModify}
+          onDelete={onDelete}
         />
       )}
     </div>

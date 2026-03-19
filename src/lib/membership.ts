@@ -48,3 +48,15 @@ export async function requireEditor(
   if (!role || !EDITOR_ROLES.includes(role)) return null;
   return role;
 }
+/**
+ * Asserts the user has owner role.
+ * Returns the role if allowed, null otherwise.
+ */
+export async function requireOwner(
+  tripId: string,
+  userId: string
+): Promise<TripRole | null> {
+  const role = await getTripRole(tripId, userId);
+  if (role !== 'owner') return null;
+  return role;
+}

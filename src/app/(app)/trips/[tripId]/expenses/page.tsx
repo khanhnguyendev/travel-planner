@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
+import type { TripRole } from '@/lib/types';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { getMembers } from '@/features/members/queries';
 import { getPlaces } from '@/features/places/queries';
@@ -21,7 +22,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { tripId } = await params;
   const trip = await getTrip(tripId);
-  return { title: trip ? `Chi tiêu — ` : 'Chi tiêu' };
+  return { title: trip ? `Chi tiêu — ${trip.title}` : 'Chi tiêu' };
 }
 
 export default async function ExpensesPage({
@@ -44,7 +45,8 @@ export default async function ExpensesPage({
     notFound();
   }
 
-  const canEdit = ['owner', 'admin', 'editor'].includes(role);
+  const normalizedRole = (role?.toLowerCase() ?? 'viewer') as TripRole;
+  const canEdit = ['owner', 'admin', 'editor'].includes(normalizedRole);
 
   // Compute totals per currency
   const totals: Record<string, number> = {};
@@ -71,6 +73,7 @@ export default async function ExpensesPage({
       Add expense
     </Link>
   ) : null;
+
   const expensesSignature = [
     expensesWithSplits.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}`).join(','),
     expensesWithSplits.map((expense) => `${expense.id}:${expense.splits.length}:${expense.paid_by_user_id}`).join(','),
@@ -114,7 +117,12 @@ export default async function ExpensesPage({
         )}
 
         {/* List */}
-        <ExpenseList expenses={expensesWithSplits} tripId={tripId} placeNameById={placeNameById} canEdit={canEdit} />
+        <ExpenseList 
+          expenses={expensesWithSplits} 
+          tripId={tripId} 
+          placeNameById={placeNameById} 
+          role={normalizedRole} 
+        />
       </TripSectionRefreshBoundary>
     </div>
   );

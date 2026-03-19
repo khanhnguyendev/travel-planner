@@ -13,6 +13,7 @@ export type ActivityAction =
   | 'vote.upvote'
   | 'vote.downvote'
   | 'expense.add'
+  | 'expense.update'
   | 'expense.delete'
   | 'category.add'
   | 'member.join'

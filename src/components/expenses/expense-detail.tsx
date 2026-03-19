@@ -147,6 +147,7 @@ export function ExpenseDetail({
       ? `${supabaseUrl}/storage/v1/object/public/receipts/${expense.receipt_path}`
       : null;
 
+  const isOwner = role === 'owner';
   const isOwnerOrAdmin = ['owner', 'admin'].includes(role);
 
   async function handleDelete() {
@@ -228,24 +229,28 @@ export function ExpenseDetail({
               </p>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <a
-            href={`/trips/${tripId}/expenses/${expense.id}/edit`}
-            className={cn('inline-flex min-h-[44px] items-center justify-center gap-1.5 btn-secondary text-sm')}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Edit
-          </a>
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className={cn(
-              'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
-            )}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            {isDeleting ? 'Deleting…' : 'Delete'}
-          </button>
+          {isOwnerOrAdmin && (
+            <a
+              href={`/trips/${tripId}/expenses/${expense.id}/edit`}
+              className={cn('inline-flex min-h-[44px] items-center justify-center gap-1.5 btn-secondary text-sm')}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </a>
+          )}
+          {isOwnerOrAdmin && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={cn(
+                'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {isDeleting ? 'Deleting…' : 'Delete'}
+            </button>
+          )}
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { requireEditor } from '@/lib/membership';
+import { requireEditor, requireOwner } from '@/lib/membership';
 import { logActivity } from '@/lib/activity';
 import type { ActionResult } from '@/features/auth/actions';
 
@@ -38,9 +38,13 @@ export interface UpdateExpenseInput {
   currency?: string;
   expenseDate?: string | null;
   note?: string | null;
+  category?: string | null;
   paidByUserId?: string;
+  paidFromPool?: boolean;
+  splits?: SplitInput[];
   receiptPath?: string | null;
   placeId?: string | null;
+  transportBookingId?: string | null;
 }
 
 // -------------------------------------------------------
@@ -216,7 +220,7 @@ export async function updateExpense(
   // Fetch existing expense to get trip_id for membership check + revalidation
   const { data: existingData } = await admin
     .from('expenses')
-    .select('id, trip_id')
+    .select('id, trip_id, title, amount, currency')
     .eq('id', id)
     .single();
 
@@ -224,10 +228,10 @@ export async function updateExpense(
     return { ok: false, error: 'Expense not found' };
   }
 
-  const existing = existingData as unknown as { id: string; trip_id: string };
+  const existing = existingData as unknown as { id: string; trip_id: string; title: string; amount: number; currency: string };
 
-  const editorRole = await requireEditor(existing.trip_id, user.id);
-  if (!editorRole) return { ok: false, error: 'Insufficient permissions' };
+  const ownerRole = await requireOwner(existing.trip_id, user.id);
+  if (!ownerRole) return { ok: false, error: 'Insufficient permissions' };
 
   const updatePayload: Record<string, unknown> = {};
   if (input.title !== undefined) updatePayload.title = input.title;
@@ -235,9 +239,12 @@ export async function updateExpense(
   if (input.currency !== undefined) updatePayload.currency = input.currency;
   if (input.expenseDate !== undefined) updatePayload.expense_date = input.expenseDate;
   if (input.note !== undefined) updatePayload.note = input.note;
+  if (input.category !== undefined) updatePayload.category = input.category;
   if (input.paidByUserId !== undefined) updatePayload.paid_by_user_id = input.paidByUserId;
+  if (input.paidFromPool !== undefined) updatePayload.paid_from_pool = input.paidFromPool;
   if (input.receiptPath !== undefined) updatePayload.receipt_path = input.receiptPath;
   if (input.placeId !== undefined) updatePayload.place_id = input.placeId;
+  if (input.transportBookingId !== undefined) updatePayload.transport_booking_id = input.transportBookingId;
 
   const { error } = await admin
     .from('expenses')
@@ -249,8 +256,55 @@ export async function updateExpense(
     return { ok: false, error: 'Failed to update expense' };
   }
 
+  // Handle splits if provided
+  if (input.splits) {
+    // Delete existing splits
+    await admin.from('expense_splits').delete().eq('expense_id', id);
+
+    // Insert new splits
+    const splitRows = input.splits.map((s) => ({
+      expense_id: id,
+      trip_id: existing.trip_id,
+      user_id: s.userId,
+      amount_owed: s.amountOwed,
+      status: 'pending' as const,
+    }));
+
+    const { error: splitsError } = await admin.from('expense_splits').insert(splitRows);
+    if (splitsError) {
+      console.error('updateExpense splits error:', splitsError);
+      return { ok: false, error: 'Failed to update expense splits' };
+    }
+  }
+
+  // Handle receipt movement if changed to a temp path
+  if (input.receiptPath && input.receiptPath.includes('/temp/')) {
+    const filename = input.receiptPath.split('/').pop() ?? 'receipt';
+    const finalPath = `trip/${existing.trip_id}/expenses/${id}/${filename}`;
+    await moveReceiptToFinalPath(admin, input.receiptPath, finalPath);
+
+    // Update expense with final receipt path
+    await admin
+      .from('expenses')
+      .update({ receipt_path: finalPath })
+      .eq('id', id);
+  }
+
   revalidatePath(`/trips/${existing.trip_id}/expenses`);
   revalidatePath(`/trips/${existing.trip_id}/expenses/${id}`);
+
+  void logActivity({
+    tripId: existing.trip_id,
+    userId: user.id,
+    action: 'expense.update',
+    entityType: 'expense',
+    entityId: id,
+    meta: {
+      title: input.title ?? existing.title,
+      amount: input.amount ?? existing.amount,
+      currency: input.currency ?? existing.currency,
+    },
+  });
 
   return { ok: true, data: undefined };
 }
@@ -281,8 +335,8 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   const expense = expenseData as unknown as { id: string; trip_id: string; title: string; amount: number; currency: string } | null;
   if (!expense) return { ok: false, error: 'Expense not found' };
 
-  const editorRole = await requireEditor(expense.trip_id, user.id);
-  if (!editorRole) return { ok: false, error: 'Insufficient permissions' };
+  const ownerRole = await requireOwner(expense.trip_id, user.id);
+  if (!ownerRole) return { ok: false, error: 'Insufficient permissions' };
 
   // Delete splits first (FK constraint)
   await admin.from('expense_splits').delete().eq('expense_id', id);
