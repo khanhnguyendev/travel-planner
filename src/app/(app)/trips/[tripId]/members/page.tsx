@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Users, ArrowLeft } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getTrip, getUserRole } from '@/features/trips/queries';
+import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/queries';
 import { getMembers, getPendingInvites, getJoinRequests } from '@/features/members/queries';
+import { getExpensesWithSplits } from '@/features/expenses/queries';
+import { calculateMemberBalances } from '@/features/expenses/debt';
 import { PageHeader } from '@/components/ui/page-header';
 import { MemberList } from '@/components/members/member-list';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
@@ -39,12 +41,25 @@ export default async function MembersPage({
   const { tripId } = await params;
   const user = await requireSession();
 
-  const [trip, role, members, pendingInvites] = await Promise.all([
+  const [trip, role, members, pendingInvites, expensesWithSplits, contributions] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getMembers(tripId),
     getPendingInvites(tripId),
+    getExpensesWithSplits(tripId),
+    getBudgetContributions(tripId),
   ]);
+
+  const budgetCurrency = trip?.budget_currency ?? 'VND';
+  const memberUserIds = members.map((m) => m.user_id);
+  const balanceMap = new Map(
+    calculateMemberBalances(expensesWithSplits, {
+      contributions: contributions.map((c) => ({ userId: c.user_id, amount: c.amount, currency: c.currency })),
+      memberUserIds,
+    })
+      .filter((b) => b.currency === budgetCurrency)
+      .map((b) => [b.userId, b.net])
+  );
 
   const canManageCheck = role ? ['owner', 'admin'].includes(role) : false;
   const joinRequests = canManageCheck ? await getJoinRequests(tripId) : [];
@@ -158,6 +173,8 @@ export default async function MembersPage({
             members={members}
             currentUserId={user.id}
             currentUserRole={role}
+            balanceMap={balanceMap}
+            balanceCurrency={budgetCurrency}
           />
         </div>
       </div>

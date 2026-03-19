@@ -8,6 +8,7 @@ import { removeMember, changeMemberRole } from '@/features/members/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
 import { Avatar } from '@/components/ui/avatar';
+import { formatCurrency } from '@/lib/format';
 
 // -------------------------------------------------------
 // Role badge
@@ -42,6 +43,8 @@ interface MemberListProps {
   members: MemberWithProfile[];
   currentUserId: string;
   currentUserRole: TripRole;
+  balanceMap?: Map<string, number>;
+  balanceCurrency?: string;
 }
 
 const ROLE_OPTIONS: TripRole[] = ['admin', 'editor', 'viewer'];
@@ -55,6 +58,8 @@ export function MemberList({
   members,
   currentUserId,
   currentUserRole,
+  balanceMap,
+  balanceCurrency = 'VND',
 }: MemberListProps) {
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
@@ -109,6 +114,8 @@ export function MemberList({
         const isOwner = m.role === 'owner';
         const isCurrentUser = m.user_id === currentUserId;
         const isLoading = loadingUserId === m.user_id;
+        const balanceNet = balanceMap?.get(m.user_id);
+        const hasBalance = balanceNet !== undefined && Math.abs(balanceNet) > 0.005;
 
         // Can change role: canManage, not owner, not self
         const canChangeRole = canManage && !isOwner && !isCurrentUser;
@@ -139,6 +146,14 @@ export function MemberList({
               {m.joined_at && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
                   Joined {new Date(m.joined_at).toLocaleDateString()}
+                </p>
+              )}
+              {hasBalance && (
+                <p
+                  className="text-xs mt-0.5 font-medium"
+                  style={{ color: balanceNet! > 0 ? '#0F766E' : '#EF4444' }}
+                >
+                  {balanceNet! > 0 ? '+' : ''}{formatCurrency(balanceNet!, balanceCurrency)}
                 </p>
               )}
             </div>
