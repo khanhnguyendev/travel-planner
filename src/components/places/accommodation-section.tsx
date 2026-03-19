@@ -230,7 +230,7 @@ export function AccommodationSection({
 
   return (
     <>
-      <div className="section-shell mb-6 p-5">
+      <div className="section-shell mt-4 mb-6 p-5">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm" style={{ color: '#EA580C' }}>
             <BedDouble className="w-4 h-4 text-orange-600" />

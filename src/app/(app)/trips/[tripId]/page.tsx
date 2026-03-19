@@ -509,8 +509,16 @@ export default async function TripDetailPage({
   }));
 
   const tripPhase = getTripPhase(trip);
-  const stopPointers = getStopPointers(places);
-  const scheduledPlaces = places.filter((place) => place.visit_date);
+  const accommodationCategoryIds = new Set(
+    categories
+      .filter((category) => category.category_type === 'accommodation')
+      .map((category) => category.id)
+  );
+  const accommodationPlaces = places.filter((place) => accommodationCategoryIds.has(place.category_id));
+  const planningPlaces = places.filter((place) => !accommodationCategoryIds.has(place.category_id));
+  const stopPointers = getStopPointers(planningPlaces);
+  const planningScheduledPlaces = planningPlaces.filter((place) => place.visit_date);
+  const scheduledPlacesCount = places.filter((place) => place.visit_date).length;
   const tripDurationLabel = getTripDurationLabel(trip.start_date, trip.end_date);
   const placeNameById = Object.fromEntries(places.map((place) => [place.id, place.name]));
   const placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]> = {};
@@ -585,7 +593,7 @@ export default async function TripDetailPage({
     Object.entries(commentsByPlaceId).map(([placeId, items]) => `${placeId}:${items.length}`).join(','),
   ]);
   const stopsSignature = buildRefreshSignature([
-    scheduledPlaces.map((place) => [
+    planningScheduledPlaces.map((place) => [
       place.id,
       place.visit_date,
       place.visit_time_from,
@@ -767,7 +775,7 @@ export default async function TripDetailPage({
                 </div>
                 <SnapshotPill
                   label="Places"
-                  value={`${places.length} saved · ${scheduledPlaces.length} scheduled`}
+                  value={`${places.length} saved · ${scheduledPlacesCount} scheduled`}
                   icon={<MapPin className="h-4 w-4" />}
                   className="min-w-0"
                 />
@@ -968,6 +976,33 @@ export default async function TripDetailPage({
         </div>
       </section>
 
+      {accommodationPlaces.length > 0 && (
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.places}
+          signature={placesSurfaceSignature}
+          label="Refreshing stay"
+        >
+          <AccommodationSection
+            places={places}
+            categories={categories}
+            tripId={tripId}
+            currentUserId={currentUserId}
+            canEdit={canEdit}
+            canVote={canVote}
+            canComment={canComment}
+            voteSummaries={voteSummaries}
+            userVotes={userVotes}
+            reviewsByPlaceId={reviewsByPlaceId}
+            placeExpensesByPlaceId={placeExpensesByPlaceId}
+            commentsByPlaceId={commentsByPlaceId}
+            commentAuthors={commentAuthors}
+            tripStartDate={trip.start_date}
+            tripEndDate={trip.end_date}
+          />
+        </TripSectionRefreshBoundary>
+      )}
+
       <TripSectionRefreshBoundary
         tripId={tripId}
         sections={TRIP_REFRESH_SECTIONS.stops}
@@ -991,25 +1026,25 @@ export default async function TripDetailPage({
                 emptyLabel="None yet"
                 tone="previous"
                 canEdit={canEdit}
-                allDayPlaces={stopPointers.previous?.visit_date ? places.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
+                allDayPlaces={stopPointers.previous?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
                 tripId={tripId}
               />
               <StopSpotlightCard
                 label="Current"
                 place={stopPointers.current}
-                emptyLabel={scheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
+                emptyLabel={planningScheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
                 tone="current"
                 canEdit={canEdit}
-                allDayPlaces={stopPointers.current?.visit_date ? places.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
+                allDayPlaces={stopPointers.current?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
                 tripId={tripId}
               />
               <StopSpotlightCard
                 label="Next stop"
                 place={stopPointers.next}
-                emptyLabel={scheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
+                emptyLabel={planningScheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
                 tone="next"
                 canEdit={canEdit}
-                allDayPlaces={stopPointers.next?.visit_date ? places.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
+                allDayPlaces={stopPointers.next?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
                 tripId={tripId}
               />
             </div>
@@ -1056,33 +1091,6 @@ export default async function TripDetailPage({
               tripStartDate={trip.start_date}
               tripEndDate={trip.end_date}
             />
-          </TripSectionRefreshBoundary>
-
-          <TripSectionRefreshBoundary
-            tripId={tripId}
-            sections={TRIP_REFRESH_SECTIONS.places}
-            signature={placesSurfaceSignature}
-            label="Refreshing places"
-          >
-            <div className="mt-4">
-              <AccommodationSection
-                places={places}
-                categories={categories}
-                tripId={tripId}
-                currentUserId={currentUserId}
-                canEdit={canEdit}
-                canVote={canVote}
-                canComment={canComment}
-                voteSummaries={voteSummaries}
-                userVotes={userVotes}
-                reviewsByPlaceId={reviewsByPlaceId}
-                placeExpensesByPlaceId={placeExpensesByPlaceId}
-                commentsByPlaceId={commentsByPlaceId}
-                commentAuthors={commentAuthors}
-                tripStartDate={trip.start_date}
-                tripEndDate={trip.end_date}
-              />
-            </div>
           </TripSectionRefreshBoundary>
         </div>
       )}

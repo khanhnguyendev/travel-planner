@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Tag, X, Trash2, CheckSquare } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
@@ -79,6 +79,19 @@ export function PlacesSection({
   const loadingToast = useLoadingToast();
 
   const editor = canEdit(role);
+
+  useEffect(() => {
+    setPlaces(initialPlaces);
+    setSearchResults(null);
+  }, [initialPlaces]);
+
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
+  useEffect(() => {
+    setReviewsByPlaceId(initialReviewsByPlaceId);
+  }, [initialReviewsByPlaceId]);
 
   function handleCategoryCreated(cat: Category) {
     setCategories((prev) => [...prev, cat]);
