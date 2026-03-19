@@ -2,10 +2,11 @@ import type { Profile } from '@/lib/types';
 
 interface AvatarProps {
   user: Pick<Profile, 'display_name' | 'avatar_url'>;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
 const sizeClasses = {
+  xs: 'w-5 h-5 text-[10px]',
   sm: 'w-6 h-6 text-xs',
   md: 'w-8 h-8 text-sm',
   lg: 'w-10 h-10 text-base',

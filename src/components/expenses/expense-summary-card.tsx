@@ -1,11 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { Calendar, FileText, Receipt, Tag, User, Users, Wallet } from 'lucide-react';
+import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
@@ -24,6 +24,7 @@ const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
 interface ExpenseSummaryCardProps {
   expense: ExpenseWithSplits;
   linkedPlaceName?: string | null;
+  /** Link to the full detail page. Shown inside the expanded section. */
   href?: string;
   compact?: boolean;
   selected?: boolean;
@@ -32,232 +33,220 @@ interface ExpenseSummaryCardProps {
   className?: string;
 }
 
-function expenseMoment(expense: Pick<ExpenseWithSplits, 'expense_date' | 'created_at'>) {
-  return expense.expense_date
-    ? formatDateAndTime(expense.expense_date, expense.created_at)
-    : formatDateTime(expense.created_at);
-}
+// -------------------------------------------------------
+// Collapsed row — single tight line
+// -------------------------------------------------------
 
-function AvatarStack({
-  members,
-  size = 'sm',
-}: {
-  members: ExpenseWithSplits['splits'];
-  size?: 'sm' | 'md';
-}) {
-  if (members.length === 0) {
-    return (
-      <span className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
-        No split members
-      </span>
-    );
-  }
-
-  const preview = members.slice(0, 4);
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center -space-x-2">
-        {preview.map((member) => (
-          <div key={member.id} className="rounded-full border-2 border-white">
-            <Avatar
-              user={{
-                display_name: member.profile.display_name ?? 'Member',
-                avatar_url: member.profile.avatar_url,
-              }}
-              size={size}
-            />
-          </div>
-        ))}
-      </div>
-      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-        {members.length} member{members.length === 1 ? '' : 's'}
-      </span>
-    </div>
-  );
-}
-
-function MetaBlock({
-  label,
-  icon,
-  children,
-}: {
-  label: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1rem] bg-white/72 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
-      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
-        {icon}
-        {label}
-      </p>
-      <div className="mt-2 min-w-0">{children}</div>
-    </div>
-  );
-}
-
-function ExpenseSummaryInner({
+function CollapsedRow({
   expense,
   linkedPlaceName,
-  compact,
+  expanded,
+  onToggle,
 }: {
   expense: ExpenseWithSplits;
   linkedPlaceName?: string | null;
-  compact: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
-  const payerName = expense.paid_by_profile.display_name ?? 'Unknown member';
-  const notePreview = expense.note?.trim() ?? '';
-  const hasNote = notePreview.length > 0;
-  const chips = [
-    expense.category ? {
-      key: 'category',
-      icon: EXPENSE_CATEGORY_EMOJIS[expense.category] ?? null,
-      label: expense.category,
-      bg: '#FEF3C7',
-      text: '#92400E',
-    } : null,
-    linkedPlaceName ? {
-      key: 'place',
-      icon: null,
-      label: linkedPlaceName,
-      bg: '#EFF6FF',
-      text: '#2563EB',
-    } : null,
-    expense.paid_from_pool ? {
-      key: 'pool',
-      icon: null,
-      label: 'Shared pool',
-      bg: '#CCFBF1',
-      text: '#0F766E',
-    } : null,
-    expense.receipt_path ? {
-      key: 'receipt',
-      icon: null,
-      label: 'Receipt',
-      bg: '#F1F5F9',
-      text: '#475569',
-    } : null,
-  ].filter(Boolean) as Array<{ key: string; icon: string | null; label: string; bg: string; text: string }>;
+  const emoji = expense.category ? EXPENSE_CATEGORY_EMOJIS[expense.category] : null;
+  const payerName = expense.paid_by_profile.display_name ?? 'Unknown';
+  const date = expense.expense_date
+    ? formatDate(expense.expense_date)
+    : formatDate(expense.created_at);
+  const splitCount = expense.splits.length;
+  const previewSplits = expense.splits.slice(0, 3);
 
   return (
-    <div className="min-w-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {chips.map((chip) => (
-              <span
-                key={chip.key}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                style={{ backgroundColor: chip.bg, color: chip.text }}
-              >
-                {chip.icon ? <span>{chip.icon}</span> : null}
-                {chip.label}
-              </span>
-            ))}
-          </div>
-          <h3 className="mt-3 line-clamp-2 text-base font-semibold leading-snug section-title sm:text-lg" style={{ color: 'var(--color-text)' }}>
-            {expense.title}
-          </h3>
-          {hasNote && (
-            <p className={cn('mt-2 text-sm leading-relaxed', compact ? 'line-clamp-2' : 'line-clamp-3')} style={{ color: 'var(--color-text-muted)' }}>
-              {notePreview}
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-[1rem] bg-white/85 px-3 py-3 text-left shadow-sm sm:min-w-[164px] sm:text-right">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
-            Total
-          </p>
-          <p className="mt-1 text-lg font-semibold sm:text-[1.35rem]" style={{ color: 'var(--color-primary)' }}>
-            {formatCurrency(expense.amount, expense.currency)}
-          </p>
-        </div>
+    <div className="flex items-center gap-3 px-3 py-2.5">
+      {/* Icon */}
+      <div
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-lg leading-none"
+        style={{ backgroundColor: 'var(--color-primary-light)' }}
+      >
+        {emoji
+          ? <span>{emoji}</span>
+          : expense.paid_from_pool
+            ? <Wallet className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+            : <Receipt className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+        }
       </div>
 
-      <div className={cn('mt-4 grid gap-3', compact ? 'lg:grid-cols-2' : 'sm:grid-cols-2')}>
-        <MetaBlock label="Used For" icon={<Tag className="h-3.5 w-3.5" />}>
-          <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+      {/* Middle: title + meta */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
             {expense.title}
           </p>
-          <div className="mt-1 space-y-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            {expense.category && <p>Category: {expense.category}</p>}
-            {linkedPlaceName ? <p>Place: {linkedPlaceName}</p> : <p>No place linked</p>}
-          </div>
-        </MetaBlock>
-
-        <MetaBlock label="Paid By" icon={expense.paid_from_pool ? <Wallet className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}>
+          {linkedPlaceName && (
+            <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>
+              <MapPin className="h-2.5 w-2.5" />
+              {linkedPlaceName}
+            </span>
+          )}
+        </div>
+        <div className="mt-0.5 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
           {expense.paid_from_pool ? (
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-teal-50 text-teal-700">
-                <Wallet className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                  Shared pool
-                </p>
-                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Covered by trip funds
-                </p>
-              </div>
-            </div>
+            <span className="font-medium" style={{ color: 'var(--color-primary)' }}>Pool</span>
           ) : (
-            <div className="flex items-center gap-2">
-              <Avatar
-                user={{
-                  display_name: payerName,
-                  avatar_url: expense.paid_by_profile.avatar_url,
-                }}
-                size="md"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                  {payerName}
-                </p>
-                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Paid the upfront amount
-                </p>
+            <span className="truncate max-w-[80px] sm:max-w-none">{payerName}</span>
+          )}
+          <span>·</span>
+          <span className="flex-shrink-0">{date}</span>
+          {splitCount > 0 && (
+            <>
+              <span>·</span>
+              <div className="flex items-center -space-x-1.5">
+                {previewSplits.map((s) => (
+                  <div key={s.id} className="rounded-full border border-white">
+                    <Avatar
+                      user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
+                      size="xs"
+                    />
+                  </div>
+                ))}
+                {splitCount > 3 && (
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
+                    +{splitCount - 3}
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
-        </MetaBlock>
-
-        <MetaBlock label="Split With" icon={<Users className="h-3.5 w-3.5" />}>
-          <AvatarStack members={expense.splits} size={compact ? 'sm' : 'md'} />
-          {expense.splits.length > 0 && (
-            <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              {expense.splits.length === 1 ? 'One person shares this bill' : 'Shared across the listed members'}
-            </p>
-          )}
-        </MetaBlock>
-
-        <MetaBlock label="Recorded" icon={<Calendar className="h-3.5 w-3.5" />}>
-          <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-            {expenseMoment(expense)}
-          </p>
-          <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            Unified trip timestamp
-          </p>
-        </MetaBlock>
+        </div>
       </div>
 
-      {expense.receipt_path && !compact && (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-sm font-medium shadow-sm" style={{ color: 'var(--color-text-muted)' }}>
-          <Receipt className="h-4 w-4" />
-          Receipt attached
-        </div>
-      )}
-
-      {!hasNote && !compact && (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          <FileText className="h-4 w-4" />
-          No extra note added
-        </div>
-      )}
+      {/* Right: amount + toggle */}
+      <div className="flex flex-shrink-0 items-center gap-1.5">
+        <span className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
+          {formatCurrency(expense.amount, expense.currency)}
+        </span>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="rounded-lg p-1 transition-colors hover:bg-black/[0.05]"
+          aria-label={expanded ? 'Collapse' : 'Expand'}
+        >
+          <ChevronDown
+            className={cn('h-4 w-4 transition-transform duration-200', expanded && 'rotate-180')}
+            style={{ color: 'var(--color-text-subtle)' }}
+          />
+        </button>
+      </div>
     </div>
   );
 }
+
+// -------------------------------------------------------
+// Expanded panel
+// -------------------------------------------------------
+
+function ExpandedPanel({
+  expense,
+  linkedPlaceName,
+  href,
+}: {
+  expense: ExpenseWithSplits;
+  linkedPlaceName?: string | null;
+  href?: string;
+}) {
+  return (
+    <div className="border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--color-border-muted)' }}>
+      {/* Split breakdown */}
+      {expense.splits.length > 0 && (
+        <div className="mb-2.5">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Split
+          </p>
+          <div className="space-y-1">
+            {expense.splits.map((s) => {
+              const pct = expense.amount > 0 ? Math.round((s.amount_owed / expense.amount) * 100) : 0;
+              const isSettled = s.status === 'settled';
+              return (
+                <div key={s.id} className="flex items-center gap-2">
+                  <Avatar
+                    user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
+                    size="xs"
+                  />
+                  <span
+                    className={cn('flex-1 text-xs truncate', isSettled && 'line-through opacity-50')}
+                    style={{ color: 'var(--color-text)' }}
+                  >
+                    {s.profile.display_name ?? 'Member'}
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'var(--color-text-subtle)' }}>{pct}%</span>
+                  <span
+                    className={cn('text-xs font-semibold tabular-nums flex-shrink-0', isSettled && 'line-through opacity-50')}
+                    style={{ color: isSettled ? 'var(--color-text-subtle)' : 'var(--color-text)' }}
+                  >
+                    {formatCurrency(s.amount_owed, expense.currency)}
+                  </span>
+                  {isSettled && (
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-green-600">✓</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Note */}
+      {expense.note && (
+        <div className="mb-2.5 flex items-start gap-1.5 rounded-lg px-2.5 py-2" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+          <FileText className="mt-0.5 h-3 w-3 flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+          <p className="text-xs leading-relaxed line-clamp-3" style={{ color: 'var(--color-text-muted)' }}>
+            {expense.note}
+          </p>
+        </div>
+      )}
+
+      {/* Footer: date + place + receipt + detail link */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+          {expense.expense_date
+            ? formatDate(expense.expense_date)
+            : formatDateTime(expense.created_at)}
+        </span>
+
+        {linkedPlaceName && (
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>
+            <MapPin className="h-2.5 w-2.5" />
+            {linkedPlaceName}
+          </span>
+        )}
+
+        {expense.receipt_path && (
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#F1F5F9', color: '#475569' }}>
+            <Receipt className="h-2.5 w-2.5" />
+            Receipt
+          </span>
+        )}
+
+        {expense.paid_from_pool && (
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#CCFBF1', color: '#0F766E' }}>
+            <Wallet className="h-2.5 w-2.5" />
+            Shared pool
+          </span>
+        )}
+
+        {href && (
+          <Link
+            href={href}
+            className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:underline"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            View details
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------
+// ExpenseSummaryCard
+// -------------------------------------------------------
 
 export function ExpenseSummaryCard({
   expense,
@@ -269,38 +258,51 @@ export function ExpenseSummaryCard({
   onClick,
   className,
 }: ExpenseSummaryCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const containerClassName = cn(
-    'group relative block min-w-0 overflow-hidden rounded-[1.35rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.92),rgba(245,244,239,0.88))] p-4 shadow-[0_18px_34px_rgba(87,67,40,0.06)] transition-all',
-    compact ? 'sm:p-4' : 'sm:p-5',
-    !disabled && 'hover:-translate-y-0.5 hover:shadow-[0_22px_40px_rgba(87,67,40,0.10)]',
-    selected && 'ring-2 ring-teal-500',
+    'group relative min-w-0 overflow-hidden rounded-[1.1rem] border bg-white transition-all',
+    selected
+      ? 'border-teal-400 ring-2 ring-teal-400/30'
+      : 'border-stone-200/80',
+    !disabled && 'hover:border-stone-300 hover:shadow-sm',
     disabled && 'pointer-events-none opacity-50',
     className
   );
 
-  const content = (
-    <ExpenseSummaryInner
-      expense={expense}
-      linkedPlaceName={linkedPlaceName}
-      compact={compact}
-    />
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className={containerClassName}>
-        {content}
-      </Link>
-    );
-  }
-
+  // In select mode or with an onClick handler, the whole row is a button
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={cn(containerClassName, 'w-full text-left')}>
-        {content}
-      </button>
+      <div className={containerClassName}>
+        <button type="button" onClick={onClick} className="w-full text-left">
+          <CollapsedRow
+            expense={expense}
+            linkedPlaceName={linkedPlaceName}
+            expanded={false}
+            onToggle={() => {}}
+          />
+        </button>
+      </div>
     );
   }
 
-  return <div className={containerClassName}>{content}</div>;
+  return (
+    <div className={containerClassName}>
+      <CollapsedRow
+        expense={expense}
+        linkedPlaceName={linkedPlaceName}
+        expanded={expanded}
+        onToggle={() => {
+          if (!disabled) setExpanded((v) => !v);
+        }}
+      />
+      {expanded && (
+        <ExpandedPanel
+          expense={expense}
+          linkedPlaceName={linkedPlaceName}
+          href={href}
+        />
+      )}
+    </div>
+  );
 }

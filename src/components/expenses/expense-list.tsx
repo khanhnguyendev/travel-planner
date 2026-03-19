@@ -202,20 +202,18 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
               )}
 
               {/* Expense row */}
-              <Link
-                href={selectMode ? '#' : `/trips/${tripId}/expenses/${expense.id}`}
-                onClick={selectMode ? (e) => { e.preventDefault(); toggleSelect(expense.id); } : undefined}
-                className="flex-1"
-              >
+              <div className="flex-1 min-w-0">
                 <ExpenseSummaryCard
                   expense={expense}
                   linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
+                  href={selectMode ? undefined : `/trips/${tripId}/expenses/${expense.id}`}
+                  onClick={selectMode ? () => toggleSelect(expense.id) : undefined}
                   compact
                   selected={isSelected}
                   disabled={isDeleting}
-                  className={cn(selectMode && 'cursor-pointer', isDeleting && 'pointer-events-none')}
+                  className={cn(isDeleting && 'pointer-events-none')}
                 />
-              </Link>
+              </div>
 
               {/* Quick delete — visible on hover, hidden in select mode */}
               {canEdit && !selectMode && (
