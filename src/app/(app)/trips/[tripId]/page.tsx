@@ -13,6 +13,7 @@ import {
   MapPin,
   Sparkles,
   Users,
+  Settings,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/queries';
@@ -30,7 +31,6 @@ import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
 import { TripMobileActionDock } from '@/components/trips/trip-mobile-action-dock';
-import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
 import { TripTabsShell, type TripTabValue as TabValue } from '@/components/trips/trip-tabs-shell';
 import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
@@ -598,6 +598,16 @@ export default async function TripDetailPage({
             <div className="hero-orb absolute inset-0" />
           )}
 
+          {canManage && (
+            <Link
+              href={`/trips/${tripId}/settings`}
+              className="absolute left-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-stone-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-white"
+              title="Trip settings"
+              aria-label="Trip settings"
+            >
+              <Settings className="h-5 w-5" />
+            </Link>
+          )}
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(10,12,17,0.14)_0%,rgba(10,12,17,0.28)_42%,rgba(10,12,17,0.58)_100%)]" />
           <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
           <div className="relative z-10 flex min-h-[176px] flex-col items-center justify-center px-5 py-6 sm:min-h-[212px] sm:px-8 sm:py-7">
@@ -690,13 +700,6 @@ export default async function TripDetailPage({
                           <p className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
                             {formatSnapshotDate(trip.start_date)}
                           </p>
-                          <TripDatesEditor
-                            tripId={tripId}
-                            startDate={trip.start_date}
-                            endDate={trip.end_date}
-                            canManage={canManage}
-                            field="start"
-                          />
                         </div>
                       </div>
                     </div>
@@ -713,13 +716,6 @@ export default async function TripDetailPage({
                           <p className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug section-title" style={{ color: 'var(--color-text)' }}>
                             {formatSnapshotDate(trip.end_date)}
                           </p>
-                          <TripDatesEditor
-                            tripId={tripId}
-                            startDate={trip.start_date}
-                            endDate={trip.end_date}
-                            canManage={canManage}
-                            field="end"
-                          />
                         </div>
                       </div>
                     </div>

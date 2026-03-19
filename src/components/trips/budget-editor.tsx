@@ -14,7 +14,6 @@ import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', VND: '₫', GBP: '£', JPY: '¥', THB: '฿',
 };
-const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'];
 
 interface BudgetEditorProps {
   tripId: string;
@@ -199,7 +198,6 @@ export function BudgetEditor({
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(budget != null ? formatNumericInput(String(budget)) : '');
-  const [currency, setCurrency] = useState(budgetCurrency || 'VND');
   const [pending, setPending] = useState(false);
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -227,7 +225,7 @@ export function BudgetEditor({
     }
     setPending(true);
     setError(null);
-    const result = await updateTripBudget(tripId, parsed ?? null, currency, null);
+    const result = await updateTripBudget(tripId, parsed ?? null, activeCurrency, null);
     setPending(false);
     if (!result.ok) { setError(result.error); return; }
     setEditing(false);
@@ -236,7 +234,6 @@ export function BudgetEditor({
 
   function handleCancel() {
     setValue(budget != null ? formatNumericInput(String(budget)) : '');
-    setCurrency(activeCurrency);
     setError(null);
     setEditing(false);
   }
@@ -261,7 +258,7 @@ export function BudgetEditor({
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm"
               style={{ color: 'var(--color-text-subtle)' }}
             >
-              {CURRENCY_SYMBOLS[currency] ?? currency}
+              {CURRENCY_SYMBOLS[activeCurrency] ?? activeCurrency}
             </span>
             <input
               type="text"
@@ -274,14 +271,9 @@ export function BudgetEditor({
               autoFocus
             />
           </div>
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="cursor-pointer rounded-lg border px-2.5 py-2 text-sm outline-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
-          >
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <span className="rounded-lg border px-2.5 py-2 text-sm" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}>
+            {activeCurrency}
+          </span>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={handleSave} disabled={pending} className="btn-primary cursor-pointer px-3 py-2 text-xs disabled:opacity-60">

@@ -182,7 +182,13 @@ export async function updateTripDates(
 
 export async function updateTrip(
   tripId: string,
-  fields: { cover_image_url?: string | null; title?: string; description?: string | null }
+  fields: {
+    cover_image_url?: string | null;
+    title?: string;
+    description?: string | null;
+    visibility?: 'private' | 'public';
+    budget_currency?: string;
+  }
 ): Promise<ActionResult<{ tripId: string }>> {
   const supabase = await createClient();
   const {
@@ -213,6 +219,8 @@ export async function updateTrip(
   if ('cover_image_url' in fields) updatePayload.cover_image_url = fields.cover_image_url;
   if ('title' in fields && fields.title !== undefined) updatePayload.title = fields.title;
   if ('description' in fields) updatePayload.description = fields.description;
+  if ('visibility' in fields) updatePayload.visibility = fields.visibility;
+  if ('budget_currency' in fields) updatePayload.budget_currency = fields.budget_currency;
 
   const { error } = await admin
     .from('trips')
