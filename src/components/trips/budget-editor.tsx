@@ -136,7 +136,7 @@ function ContributionRow({ c, name, canManage, isDeleting, onDelete, onSaved }: 
 
   return (
     <div
-      className="flex items-center gap-2 rounded-lg px-2.5 py-2"
+      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2"
       style={{ backgroundColor: 'var(--color-bg-muted)', opacity: isDeleting ? 0.5 : 1 }}
     >
       {/* Left: name + meta */}
@@ -149,31 +149,31 @@ function ContributionRow({ c, name, canManage, isDeleting, onDelete, onSaved }: 
         </p>
       </div>
 
-      {/* Center-right: amount */}
+      {/* Amount */}
       <span className="flex-shrink-0 text-xs font-semibold" style={{ color: '#0F766E' }}>
         +{formatCurrency(c.amount, c.currency)}
       </span>
 
-      {/* Actions */}
+      {/* Actions — always visible, sized for touch */}
       {canManage && (
-        <div className="flex flex-shrink-0 items-center gap-0.5">
+        <div className="flex flex-shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => setEditing(true)}
             disabled={isDeleting}
-            className="rounded p-1 text-stone-400 transition-colors hover:bg-white/60 hover:text-stone-700 disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded text-stone-400 transition-colors hover:bg-white/60 hover:text-stone-700 disabled:opacity-40"
             title="Edit"
           >
-            <Pencil className="h-3 w-3" />
+            <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={() => onDelete(c.id)}
             disabled={isDeleting}
-            className="rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
             title="Remove"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
@@ -305,9 +305,10 @@ export function BudgetEditor({
   return (
     <div className="relative mt-4 overflow-hidden rounded-xl" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
       <div className="px-4 py-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Top row: budget cap + action slot */}
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            {/* Budget cap row */}
+            {/* Budget cap */}
             <div className="flex items-center gap-2">
               <span className="break-words text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                 {hasBudget ? `Budget cap: ${formatCurrency(budgetAmount, budgetCurrency)}` : 'No budget cap set'}
@@ -325,34 +326,18 @@ export function BudgetEditor({
               )}
             </div>
 
-            {/* Income section */}
+            {/* Income summary */}
             {hasIncome ? (
-              <div className="mt-2 space-y-2">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                    Income: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
-                  </span>
-                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                    Pool used: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
-                  </span>
-                  <span className="text-xs font-semibold" style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}>
-                    Pool balance: {formatCurrency(poolBalance, activeCurrency)}
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  {incomeByCurrency.map((c) => (
-                    <ContributionRow
-                      key={c.id}
-                      c={c}
-                      name={nameMap.get(c.user_id) ?? 'Member'}
-                      canManage={canManage}
-                      isDeleting={deletingId === c.id}
-                      onDelete={handleDeleteContribution}
-                      onSaved={refresh}
-                    />
-                  ))}
-                </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                  Income: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
+                </span>
+                <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                  Pool used: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
+                </span>
+                <span className="text-xs font-semibold" style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}>
+                  Pool balance: {formatCurrency(poolBalance, activeCurrency)}
+                </span>
               </div>
             ) : (
               <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
@@ -362,11 +347,28 @@ export function BudgetEditor({
           </div>
 
           {(canManage || actionSlot) && (
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="flex flex-shrink-0 items-center gap-2">
               {actionSlot}
             </div>
           )}
         </div>
+
+        {/* Contribution list — full width below the header row */}
+        {hasIncome && (
+          <div className="mt-3 space-y-1">
+            {incomeByCurrency.map((c) => (
+              <ContributionRow
+                key={c.id}
+                c={c}
+                name={nameMap.get(c.user_id) ?? 'Member'}
+                canManage={canManage}
+                isDeleting={deletingId === c.id}
+                onDelete={handleDeleteContribution}
+                onSaved={refresh}
+              />
+            ))}
+          </div>
+        )}
 
         {hasBudget && (
           <>
