@@ -482,6 +482,34 @@ export default async function TripDetailPage({
       })),
     });
   }
+  const transportExpensesByBookingId: Record<string, PlaceExpenseHistoryEntry[]> = {};
+  for (const expense of expensesWithSplits) {
+    if (!expense.transport_booking_id) continue;
+    if (!transportExpensesByBookingId[expense.transport_booking_id]) {
+      transportExpensesByBookingId[expense.transport_booking_id] = [];
+    }
+    transportExpensesByBookingId[expense.transport_booking_id].push({
+      id: expense.id,
+      trip_id: expense.trip_id,
+      place_id: expense.transport_booking_id,
+      title: expense.title,
+      amount: expense.amount,
+      currency: expense.currency,
+      expense_date: expense.expense_date,
+      note: expense.note,
+      category: expense.category,
+      receipt_path: expense.receipt_path,
+      created_at: expense.created_at,
+      paid_by_name: expense.paid_by_profile.display_name,
+      splits_count: expense.splits.length,
+      split_participants: expense.splits.map((split) => ({
+        user_id: split.user_id,
+        display_name: split.profile.display_name,
+        avatar_url: split.profile.avatar_url,
+      })),
+    });
+  }
+
   const totalsByCurrency: Record<string, number> = {};
   for (const expense of expensesWithSplits) {
     totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
@@ -787,6 +815,7 @@ export default async function TripDetailPage({
                       members={members}
                       currentUserId={currentUserId}
                       places={places}
+                      transportBookings={transportBookings}
                       budget={trip.budget}
                       budgetCurrency={trip.budget_currency}
                       canManageBudget={canManage}
@@ -928,12 +957,12 @@ export default async function TripDetailPage({
       {isMember && (transportBookings.length > 0 ? (
         <TransportSection
           bookings={transportBookings}
+          expensesByBookingId={transportExpensesByBookingId}
           tripId={tripId}
-          currency={trip.budget_currency}
           canEdit={canEdit}
         />
       ) : canEdit ? (
-        <TransportSectionTrigger tripId={tripId} currency={trip.budget_currency} />
+        <TransportSectionTrigger tripId={tripId} />
       ) : null)}
 
       {!isMember && primaryAccommodation && (

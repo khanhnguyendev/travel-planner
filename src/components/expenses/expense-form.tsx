@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, MapPin, PencilLine, Wallet, User } from 'lucide-react';
 import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
-import type { Place } from '@/lib/types';
+import type { Place, TransportBooking } from '@/lib/types';
+import { Car, Bus, Plane } from 'lucide-react';
 import { formatCurrency, formatNumericInput, parseNumericInput } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -39,13 +40,14 @@ interface SplitRow {
   amountOwed: string; // raw string for controlled input
 }
 
-type ExpenseSubjectMode = 'manual' | 'place';
+type ExpenseSubjectMode = 'manual' | 'place' | 'transport';
 
 interface ExpenseFormProps {
   tripId: string;
   members: MemberWithProfile[];
   currentUserId: string;
   places?: Place[];
+  transportBookings?: TransportBooking[];
   /** Available balance in the shared pool (income − pool expenses). */
   poolBalance?: number;
   poolCurrency?: string;
@@ -143,7 +145,7 @@ function InputField({
 // Main component
 // -------------------------------------------------------
 
-export function ExpenseForm({ tripId, members, currentUserId, places = [], poolBalance, poolCurrency, onSuccess, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ tripId, members, currentUserId, places = [], transportBookings = [], poolBalance, poolCurrency, onSuccess, onCancel }: ExpenseFormProps) {
   const router = useRouter();
 
   // Form fields
@@ -152,6 +154,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
   const [subjectMode, setSubjectMode] = useState<ExpenseSubjectMode>('manual');
   const [category, setCategory] = useState<string | null>(null);
   const [placeId, setPlaceId] = useState<string | null>(null);
+  const [transportBookingId, setTransportBookingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('VND');
   const [expenseDate, setExpenseDate] = useState(
@@ -183,6 +186,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
   const diff = roundTo2(Math.abs(roundTo2(splitsTotal) - roundTo2(totalAmount)));
   const splitsValid = totalAmount > 0 && diff <= 0.01;
   const selectedPlace = places.find((place) => place.id === placeId) ?? null;
+  const selectedTransport = transportBookings.find((b) => b.id === transportBookingId) ?? null;
 
   function changeSubjectMode(nextMode: ExpenseSubjectMode) {
     setSubjectMode(nextMode);
@@ -315,10 +319,23 @@ function updateSplitAmount(index: number, value: string) {
     const resolvedTitle =
       subjectMode === 'place'
         ? selectedPlace?.name.trim() ?? ''
+        : subjectMode === 'transport'
+        ? [
+            selectedTransport?.transport_type === 'rent' ? 'Car rental' : selectedTransport?.transport_type === 'bus' ? 'Bus' : 'Flight',
+            selectedTransport?.provider ? `– ${selectedTransport.provider}` : null,
+            selectedTransport?.from_location && selectedTransport?.to_location
+              ? `(${selectedTransport.from_location} → ${selectedTransport.to_location})`
+              : null,
+          ].filter(Boolean).join(' ')
         : title.trim();
 
     if (subjectMode === 'manual' && !resolvedTitle) {
       setError('Title is required.');
+      return;
+    }
+
+    if (subjectMode === 'transport' && !selectedTransport) {
+      setError('Select a transport booking.');
       return;
     }
 
@@ -362,7 +379,8 @@ function updateSplitAmount(index: number, value: string) {
       paidFromPool,
       splits: splitInputs,
       receiptPath: uploadedReceiptPath ?? null,
-      placeId: placeId ?? null,
+      placeId: subjectMode === 'place' ? (placeId ?? null) : null,
+      transportBookingId: subjectMode === 'transport' ? (transportBookingId ?? null) : null,
     };
 
     setIsSubmitting(true);
@@ -405,7 +423,7 @@ function updateSplitAmount(index: number, value: string) {
       <div className="min-w-0 rounded-[1.35rem] border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)' }}>
         <div className="mb-4">
           <Label>Expense title source</Label>
-          {places.length > 0 ? (
+          {(places.length > 0 || transportBookings.length > 0) ? (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
                 type="button"
@@ -425,24 +443,46 @@ function updateSplitAmount(index: number, value: string) {
                   <p className="text-xs opacity-75">Use a custom expense name</p>
                 </div>
               </button>
-              <button
-                type="button"
-                onClick={() => changeSubjectMode('place')}
-                className="flex min-h-[52px] items-center gap-3 rounded-[1.1rem] border px-4 py-3 text-left transition-colors"
-                style={{
-                  borderColor: subjectMode === 'place' ? 'var(--color-primary)' : 'var(--color-border)',
-                  backgroundColor: subjectMode === 'place' ? 'var(--color-primary-light)' : 'white',
-                  color: subjectMode === 'place' ? 'var(--color-primary)' : 'var(--color-text)',
-                }}
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">Use a place</p>
-                  <p className="text-xs opacity-75">Link the expense to a saved stop</p>
-                </div>
-              </button>
+              {places.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => changeSubjectMode('place')}
+                  className="flex min-h-[52px] items-center gap-3 rounded-[1.1rem] border px-4 py-3 text-left transition-colors"
+                  style={{
+                    borderColor: subjectMode === 'place' ? 'var(--color-primary)' : 'var(--color-border)',
+                    backgroundColor: subjectMode === 'place' ? 'var(--color-primary-light)' : 'white',
+                    color: subjectMode === 'place' ? 'var(--color-primary)' : 'var(--color-text)',
+                  }}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">Use a place</p>
+                    <p className="text-xs opacity-75">Link to a saved stop</p>
+                  </div>
+                </button>
+              )}
+              {transportBookings.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => changeSubjectMode('transport')}
+                  className="flex min-h-[52px] items-center gap-3 rounded-[1.1rem] border px-4 py-3 text-left transition-colors"
+                  style={{
+                    borderColor: subjectMode === 'transport' ? 'var(--color-primary)' : 'var(--color-border)',
+                    backgroundColor: subjectMode === 'transport' ? 'var(--color-primary-light)' : 'white',
+                    color: subjectMode === 'transport' ? 'var(--color-primary)' : 'var(--color-text)',
+                  }}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
+                    <Plane className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">Use a transport</p>
+                    <p className="text-xs opacity-75">Link to a flight, bus or rental</p>
+                  </div>
+                </button>
+              )}
             </div>
           ) : (
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -451,7 +491,50 @@ function updateSplitAmount(index: number, value: string) {
           )}
         </div>
 
-        {(places.length === 0 || subjectMode === 'manual') ? (
+        {subjectMode === 'transport' ? (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="transportBookingId">Linked transport</Label>
+              <select
+                id="transportBookingId"
+                value={transportBookingId ?? ''}
+                onChange={(e) => setTransportBookingId(e.target.value || null)}
+                className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
+              >
+                <option value="">Select a booking</option>
+                {transportBookings.map((b) => {
+                  const typeLabel = b.transport_type === 'rent' ? 'Car rental' : b.transport_type === 'bus' ? 'Bus' : 'Flight';
+                  const route = b.from_location && b.to_location ? ` · ${b.from_location} → ${b.to_location}` : '';
+                  const date = b.departure_date ? ` · ${new Date(`${b.departure_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '';
+                  return (
+                    <option key={b.id} value={b.id}>
+                      {typeLabel}{b.provider ? ` – ${b.provider}` : ''}{route}{date}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <div className="rounded-[1rem] border border-dashed border-teal-200 bg-white/80 px-3 py-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {selectedTransport ? (
+                <>
+                  <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                    {selectedTransport.transport_type === 'rent' ? 'Car rental' : selectedTransport.transport_type === 'bus' ? 'Bus' : 'Flight'}
+                    {selectedTransport.provider ? ` – ${selectedTransport.provider}` : ''}
+                  </p>
+                  {selectedTransport.from_location && selectedTransport.to_location && (
+                    <p className="mt-1 text-xs">{selectedTransport.from_location} → {selectedTransport.to_location}</p>
+                  )}
+                  {selectedTransport.departure_date && (
+                    <p className="text-xs">{new Date(`${selectedTransport.departure_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs">Pick a transport booking and this expense will be linked to it.</p>
+              )}
+            </div>
+          </div>
+        ) : (places.length === 0 || subjectMode === 'manual') ? (
           <div>
             <Label htmlFor="title">Title</Label>
             <InputField

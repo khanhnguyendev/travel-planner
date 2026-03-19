@@ -3,17 +3,17 @@
 import { useState, useTransition, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Car, Bus, Plane, Plus, X, Check, Trash2, ChevronDown, ChevronUp,
-  CalendarDays, Hash, AlignLeft, ArrowRight, Search, Loader2, MapPin,
+  Car, Bus, Plane, Plus, X, Check, Trash2, Pencil,
+  ArrowRight, Search, Loader2, MapPin, CalendarDays, Clock, Hash, AlignLeft,
 } from 'lucide-react';
-import type { TransportBooking, TransportType } from '@/lib/types';
+import type { TransportBooking, TransportType, PlaceExpenseHistoryEntry } from '@/lib/types';
 import type { MapboxSuggestion } from '@/features/places/mapbox';
-import { addTransportBooking, deleteTransportBooking } from '@/features/transport/actions';
-import { formatNumericInput, parseNumericInput } from '@/lib/format';
+import { addTransportBooking, updateTransportBooking, deleteTransportBooking, type TransportBookingInput } from '@/features/transport/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { Dialog } from '@/components/ui/dialog';
+import { PlaceExpenseSummary } from '@/components/places/place-expense-summary';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -44,28 +44,15 @@ function formatDate(d: string) {
 function formatTime(t: string) {
   const [h, m] = t.split(':').map(Number);
   const ampm = h >= 12 ? 'PM' : 'AM';
-  const hour = h % 12 || 12;
-  return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
-}
-
-function formatCost(amount: number, currency: string) {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
 // ---------------------------------------------------------------------------
-// LocationSearchInput
+// LocationSearchInput (Mapbox autocomplete)
 // ---------------------------------------------------------------------------
 
-function LocationSearchInput({
-  tripId,
-  value,
-  onChange,
-  placeholder,
-}: {
-  tripId: string;
-  value: string;
-  onChange: (val: string) => void;
-  placeholder?: string;
+function LocationSearchInput({ tripId, value, onChange, placeholder }: {
+  tripId: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
   const [sessionToken] = useState(() => crypto.randomUUID());
   const [query, setQuery] = useState(value);
@@ -77,18 +64,12 @@ function LocationSearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
-  // Keep local query in sync if parent resets value (e.g. "Same as From")
-  useEffect(() => {
-    setQuery(value);
-  }, [value]);
+  useEffect(() => { setQuery(value); }, [value]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       const t = e.target as Node;
-      if (!inputRef.current?.contains(t) && !dropdownRef.current?.contains(t)) {
-        setShowDropdown(false);
-      }
+      if (!inputRef.current?.contains(t) && !dropdownRef.current?.contains(t)) setShowDropdown(false);
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -101,29 +82,20 @@ function LocationSearchInput({
       const params = new URLSearchParams({ q: q.trim(), sessionToken, tripId });
       const res = await fetch(`/api/places/search?${params}`);
       const json = await res.json() as { ok: boolean; data?: { suggestions: MapboxSuggestion[] } };
-      if (json.ok && json.data) {
-        setSuggestions(json.data.suggestions);
-        setShowDropdown(json.data.suggestions.length > 0);
-        setActiveIndex(-1);
-      }
+      if (json.ok && json.data) { setSuggestions(json.data.suggestions); setShowDropdown(json.data.suggestions.length > 0); setActiveIndex(-1); }
     } catch { /* ignore */ } finally { setLoading(false); }
   }, [tripId, sessionToken]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
-    setQuery(val);
-    onChange(val); // allow free-text
+    setQuery(val); onChange(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => { void fetchSuggestions(val); }, 400);
   }
 
   function handleSelect(s: MapboxSuggestion) {
-    const text = s.name;
-    setQuery(text);
-    onChange(text);
-    setSuggestions([]);
-    setShowDropdown(false);
-    setActiveIndex(-1);
+    setQuery(s.name); onChange(s.name);
+    setSuggestions([]); setShowDropdown(false); setActiveIndex(-1);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -140,50 +112,27 @@ function LocationSearchInput({
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
-      <input
-        ref={inputRef}
-        type="text"
-        value={query}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
+      <input ref={inputRef} type="text" value={query} onChange={handleChange} onKeyDown={handleKeyDown}
         onFocus={() => { if (suggestions.length > 0) setShowDropdown(true); }}
-        placeholder={placeholder}
-        className={inputCls}
-        style={inputStyle}
-        autoComplete="off"
-      />
-      {loading && (
-        <Loader2 className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 animate-spin" />
-      )}
-      {!loading && query && (
-        <button
-          type="button"
-          onMouseDown={(e) => { e.preventDefault(); setQuery(''); onChange(''); setSuggestions([]); setShowDropdown(false); }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-stone-400 hover:text-stone-600"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      )}
-
+        placeholder={placeholder} className={inputCls} style={inputStyle} autoComplete="off" />
+      {loading
+        ? <Loader2 className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 animate-spin" />
+        : query && <button type="button"
+            onMouseDown={(e) => { e.preventDefault(); setQuery(''); onChange(''); setSuggestions([]); setShowDropdown(false); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-stone-400 hover:text-stone-600">
+            <X className="w-3 h-3" />
+          </button>
+      }
       {showDropdown && suggestions.length > 0 && (
-        <ul
-          ref={dropdownRef}
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-52 overflow-y-auto rounded-xl border bg-white shadow-lg"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <ul ref={dropdownRef} className="absolute left-0 right-0 top-full z-50 mt-1 max-h-52 overflow-y-auto rounded-xl border bg-white shadow-lg" style={{ borderColor: 'var(--color-border)' }}>
           {suggestions.map((s, i) => (
             <li key={s.mapbox_id}>
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); handleSelect(s); }}
-                className={`flex w-full items-start gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${i === activeIndex ? 'bg-teal-50' : 'hover:bg-stone-50'}`}
-              >
+              <button type="button" onMouseDown={(e) => { e.preventDefault(); handleSelect(s); }}
+                className={`flex w-full items-start gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${i === activeIndex ? 'bg-teal-50' : 'hover:bg-stone-50'}`}>
                 <MapPin className="mt-0.5 w-3.5 h-3.5 flex-shrink-0 text-stone-400" />
                 <div className="min-w-0">
                   <p className="font-medium text-stone-800 truncate">{s.name}</p>
-                  {s.full_address && (
-                    <p className="text-xs text-stone-400 truncate">{s.full_address}</p>
-                  )}
+                  {s.full_address && <p className="text-xs text-stone-400 truncate">{s.full_address}</p>}
                 </div>
               </button>
             </li>
@@ -195,181 +144,49 @@ function LocationSearchInput({
 }
 
 // ---------------------------------------------------------------------------
-// TransportCard
-// ---------------------------------------------------------------------------
-
-function TransportCard({
-  booking,
-  canEdit,
-  tripId,
-  onDeleted,
-}: {
-  booking: TransportBooking;
-  canEdit: boolean;
-  tripId: string;
-  onDeleted: () => void;
-}) {
-  const router = useRouter();
-  const [expanded, setExpanded] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [, startTransition] = useTransition();
-  const loadingToast = useLoadingToast();
-  const colors = TYPE_COLORS[booking.transport_type];
-
-  async function handleDelete() {
-    if (!confirm('Delete this transport booking? The linked expense will also be removed.')) return;
-    setDeleting(true);
-    const resolve = loadingToast('Deleting…');
-    const result = await deleteTransportBooking(booking.id);
-    setDeleting(false);
-    if (result.ok) {
-      resolve('Deleted', 'success');
-      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.places, TRIP_REFRESH_SECTIONS.activity]);
-      startTransition(() => router.refresh());
-      onDeleted();
-    } else {
-      resolve(result.error ?? 'Failed', 'error');
-    }
-  }
-
-  return (
-    <div className="section-shell flex flex-col gap-0 overflow-hidden">
-      <div
-        className="flex items-center gap-3 p-4 cursor-pointer"
-        onClick={() => setExpanded((v) => !v)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } }}
-      >
-        <div
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
-          style={{ backgroundColor: colors.bg, color: colors.text }}
-        >
-          {transportIcon(booking.transport_type)}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.text }}>
-              {transportLabel(booking.transport_type)}
-            </span>
-            {booking.provider && (
-              <span className="text-sm font-semibold text-stone-800 truncate">{booking.provider}</span>
-            )}
-          </div>
-          {(booking.from_location || booking.to_location) && (
-            <p className="text-xs text-stone-500 mt-0.5 truncate">
-              {booking.from_location && booking.to_location
-                ? `${booking.from_location} → ${booking.to_location}`
-                : booking.from_location ?? booking.to_location}
-            </p>
-          )}
-          {booking.departure_date && (
-            <p className="text-xs text-stone-400 mt-0.5">
-              {formatDate(booking.departure_date)}
-              {booking.departure_time ? ` · ${formatTime(booking.departure_time)}` : ''}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {booking.cost != null && booking.cost > 0 && (
-            <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">
-              {formatCost(booking.cost, booking.currency)}
-            </span>
-          )}
-          {expanded ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
-        </div>
-      </div>
-
-      {expanded && (
-        <div className="border-t px-4 pb-4 pt-3 space-y-2" style={{ borderColor: 'var(--color-border-muted)' }}>
-          {booking.arrival_date && (
-            <div className="flex items-center gap-2 text-xs text-stone-600">
-              <CalendarDays className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-              <span>
-                Arrives {formatDate(booking.arrival_date)}
-                {booking.arrival_time ? ` · ${formatTime(booking.arrival_time)}` : ''}
-              </span>
-            </div>
-          )}
-          {booking.reference_code && (
-            <div className="flex items-center gap-2 text-xs text-stone-600">
-              <Hash className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-              <span className="font-mono">{booking.reference_code}</span>
-            </div>
-          )}
-          {booking.note && (
-            <div className="flex items-start gap-2 text-xs text-stone-600">
-              <AlignLeft className="w-3.5 h-3.5 text-stone-400 flex-shrink-0 mt-0.5" />
-              <span>{booking.note}</span>
-            </div>
-          )}
-
-          {canEdit && (
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
-              >
-                <Trash2 className="w-3 h-3" />
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// AddTransportDialog
+// Transport booking form (shared by add + edit dialogs)
 // ---------------------------------------------------------------------------
 
 const TRANSPORT_TYPES: TransportType[] = ['rent', 'bus', 'plane'];
-
 const TYPE_PLACEHOLDERS: Record<TransportType, { provider: string; from: string; to: string; ref: string }> = {
   rent: { provider: 'e.g. Hertz, local agency', from: 'Pick-up location', to: 'Drop-off location', ref: 'e.g. ABC123' },
   bus: { provider: 'e.g. Phuong Trang', from: 'Departure city / station', to: 'Arrival city / station', ref: 'e.g. BK-9921' },
   plane: { provider: 'e.g. VietJet, Vietnam Airlines', from: 'Origin airport', to: 'Destination airport', ref: 'e.g. VJ123 / PNR' },
 };
 
-function AddTransportDialog({
+function TransportForm({
   tripId,
-  currency,
-  onSaved,
+  initial,
+  onSave,
   onClose,
+  title,
 }: {
   tripId: string;
-  currency: string;
-  onSaved: () => void;
+  initial?: Partial<TransportBooking>;
+  onSave: (input: TransportBookingInput) => Promise<void>;
   onClose: () => void;
+  title: string;
 }) {
-  const router = useRouter();
-  const [type, setType] = useState<TransportType>('plane');
-  const [provider, setProvider] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [depDate, setDepDate] = useState('');
-  const [depTime, setDepTime] = useState('');
-  const [arrDate, setArrDate] = useState('');
-  const [arrTime, setArrTime] = useState('');
-  const [cost, setCost] = useState('');
-  const [refCode, setRefCode] = useState('');
-  const [note, setNote] = useState('');
+  const [type, setType] = useState<TransportType>(initial?.transport_type ?? 'plane');
+  const [provider, setProvider] = useState(initial?.provider ?? '');
+  const [from, setFrom] = useState(initial?.from_location ?? '');
+  const [to, setTo] = useState(initial?.to_location ?? '');
+  const [depDate, setDepDate] = useState(initial?.departure_date ?? '');
+  const [depTime, setDepTime] = useState(initial?.departure_time ?? '');
+  const [arrDate, setArrDate] = useState(initial?.arrival_date ?? '');
+  const [arrTime, setArrTime] = useState(initial?.arrival_time ?? '');
+  const [refCode, setRefCode] = useState(initial?.reference_code ?? '');
+  const [note, setNote] = useState(initial?.note ?? '');
   const [saving, setSaving] = useState(false);
-  const [, startTransition] = useTransition();
-  const loadingToast = useLoadingToast();
 
   const ph = TYPE_PLACEHOLDERS[type];
+  const inputCls = 'w-full rounded-lg border px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white';
+  const inputStyle = { borderColor: 'var(--color-border)', color: 'var(--color-text)' };
+  const labelCls = 'block text-xs font-medium text-stone-500 mb-1';
 
   async function handleSave() {
     setSaving(true);
-    const resolve = loadingToast('Saving booking…');
-    const result = await addTransportBooking({
-      tripId,
+    await onSave({
       transport_type: type,
       provider: provider.trim() || null,
       from_location: from.trim() || null,
@@ -378,28 +195,14 @@ function AddTransportDialog({
       departure_time: depTime || null,
       arrival_date: arrDate || null,
       arrival_time: arrTime || null,
-      cost: cost ? parseNumericInput(cost) : null,
-      currency,
       reference_code: refCode.trim() || null,
       note: note.trim() || null,
     });
     setSaving(false);
-    if (result.ok) {
-      resolve('Booking saved!', 'success');
-      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.places, TRIP_REFRESH_SECTIONS.activity]);
-      startTransition(() => router.refresh());
-      onSaved();
-    } else {
-      resolve(result.error ?? 'Failed to save', 'error');
-    }
   }
 
-  const inputCls = 'w-full rounded-lg border px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white';
-  const inputStyle = { borderColor: 'var(--color-border)', color: 'var(--color-text)' };
-  const labelCls = 'block text-xs font-medium text-stone-500 mb-1';
-
   return (
-    <Dialog title="Add transport booking" onClose={onClose} maxWidth="max-w-lg">
+    <Dialog title={title} onClose={onClose} maxWidth="max-w-lg">
       <div className="space-y-5">
         {/* Type selector */}
         <div className="flex gap-2">
@@ -407,16 +210,10 @@ function AddTransportDialog({
             const c = TYPE_COLORS[t];
             const active = type === t;
             return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setType(t)}
+              <button key={t} type="button" onClick={() => setType(t)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all"
-                style={active
-                  ? { backgroundColor: c.bg, color: c.text, boxShadow: '0 0 0 2px currentColor' }
-                  : { backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }
-                }
-              >
+                style={active ? { backgroundColor: c.bg, color: c.text, boxShadow: '0 0 0 2px currentColor' }
+                  : { backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
                 {transportIcon(t, 'w-4 h-4')}
                 {transportLabel(t)}
               </button>
@@ -424,37 +221,23 @@ function AddTransportDialog({
           })}
         </div>
 
-        {/* From / To with Mapbox search */}
+        {/* From / To */}
         <div className="space-y-3">
           <div>
             <label className={labelCls}>From</label>
-            <LocationSearchInput
-              tripId={tripId}
-              value={from}
-              onChange={setFrom}
-              placeholder={ph.from}
-            />
+            <LocationSearchInput tripId={tripId} value={from} onChange={setFrom} placeholder={ph.from} />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className={labelCls + ' mb-0'}>To</label>
               {from.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setTo(from)}
-                  className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:text-teal-700 font-medium"
-                >
-                  <ArrowRight className="w-3 h-3" />
-                  Same as From
+                <button type="button" onClick={() => setTo(from)}
+                  className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:text-teal-700 font-medium">
+                  <ArrowRight className="w-3 h-3" /> Same as From
                 </button>
               )}
             </div>
-            <LocationSearchInput
-              tripId={tripId}
-              value={to}
-              onChange={setTo}
-              placeholder={ph.to}
-            />
+            <LocationSearchInput tripId={tripId} value={to} onChange={setTo} placeholder={ph.to} />
           </div>
         </div>
 
@@ -482,7 +265,7 @@ function AddTransportDialog({
           </div>
         </div>
 
-        {/* Provider + ref — optional */}
+        {/* Provider + ref */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Provider <span className="text-stone-400 font-normal">(optional)</span></label>
@@ -494,52 +277,21 @@ function AddTransportDialog({
           </div>
         </div>
 
-        {/* Cost */}
-        <div>
-          <label className={labelCls}>
-            Cost ({currency})
-            <span className="text-stone-400 font-normal ml-1">— creates an expense entry</span>
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            className={inputCls}
-            style={inputStyle}
-            value={cost}
-            onChange={(e) => setCost(formatNumericInput(e.target.value, { allowDecimals: false }))}
-            placeholder="0"
-          />
-        </div>
-
         {/* Note */}
         <div>
           <label className={labelCls}>Note <span className="text-stone-400 font-normal">(optional)</span></label>
-          <textarea
-            rows={2}
-            className={inputCls + ' resize-none'}
-            style={inputStyle}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Seat numbers, luggage allowance, pickup instructions…"
-          />
+          <textarea rows={2} className={inputCls + ' resize-none'} style={inputStyle} value={note}
+            onChange={(e) => setNote(e.target.value)} placeholder="Seat numbers, luggage allowance, pickup instructions…" />
         </div>
 
         {/* Actions */}
         <div className="flex gap-2 justify-end pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="inline-flex items-center gap-1 text-sm px-4 py-2 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
-          >
+          <button type="button" onClick={onClose} disabled={saving}
+            className="inline-flex items-center gap-1 text-sm px-4 py-2 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors">
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors font-medium"
-          >
+          <button type="button" onClick={handleSave} disabled={saving}
+            className="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors font-medium">
             <Check className="w-3.5 h-3.5" />
             Save booking
           </button>
@@ -550,29 +302,193 @@ function AddTransportDialog({
 }
 
 // ---------------------------------------------------------------------------
+// TransportCard — accommodation-style flat card
+// ---------------------------------------------------------------------------
+
+function TransportCard({
+  booking,
+  expenses,
+  canEdit,
+  tripId,
+  onDeleted,
+  onUpdated,
+}: {
+  booking: TransportBooking;
+  expenses: PlaceExpenseHistoryEntry[];
+  canEdit: boolean;
+  tripId: string;
+  onDeleted: () => void;
+  onUpdated: (updated: TransportBooking) => void;
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
+  const colors = TYPE_COLORS[booking.transport_type];
+
+  async function handleDelete() {
+    if (!confirm('Delete this transport booking?')) return;
+    setDeleting(true);
+    const resolve = loadingToast('Deleting…');
+    const result = await deleteTransportBooking(booking.id);
+    setDeleting(false);
+    if (result.ok) {
+      resolve('Deleted', 'success');
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.places, TRIP_REFRESH_SECTIONS.activity]);
+      startTransition(() => router.refresh());
+      onDeleted();
+    } else {
+      resolve(result.error ?? 'Failed', 'error');
+    }
+  }
+
+  async function handleUpdate(input: TransportBookingInput) {
+    const resolve = loadingToast('Saving…');
+    const result = await updateTransportBooking(booking.id, input);
+    if (result.ok) {
+      resolve('Saved!', 'success');
+      setEditing(false);
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.places, TRIP_REFRESH_SECTIONS.activity]);
+      startTransition(() => router.refresh());
+      onUpdated({ ...booking, ...input });
+    } else {
+      resolve(result.error ?? 'Failed', 'error');
+    }
+  }
+
+  return (
+    <>
+      {editing && (
+        <TransportForm tripId={tripId} initial={booking} onSave={handleUpdate} onClose={() => setEditing(false)} title="Edit transport booking" />
+      )}
+
+      <div className="section-shell relative flex flex-col gap-3 p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+        {/* Type badge */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+            style={{ backgroundColor: colors.bg, color: colors.text }}>
+            {transportIcon(booking.transport_type)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.text }}>
+                {transportLabel(booking.transport_type)}
+              </span>
+              {booking.provider && (
+                <span className="text-sm font-semibold text-stone-800">{booking.provider}</span>
+              )}
+            </div>
+            {booking.reference_code && (
+              <p className="text-xs text-stone-400 font-mono">{booking.reference_code}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Route */}
+        {(booking.from_location || booking.to_location) && (
+          <div className="flex items-center gap-2 text-sm">
+            {booking.from_location && (
+              <span className="font-medium text-stone-700 truncate">{booking.from_location}</span>
+            )}
+            {booking.from_location && booking.to_location && (
+              <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 text-stone-400" />
+            )}
+            {booking.to_location && (
+              <span className="font-medium text-stone-700 truncate">{booking.to_location}</span>
+            )}
+          </div>
+        )}
+
+        {/* Dates */}
+        <div className="flex flex-wrap gap-2">
+          {booking.departure_date && (
+            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ backgroundColor: '#F0FDF4', color: '#15803D' }}>
+              <CalendarDays className="w-3.5 h-3.5" />
+              {booking.transport_type === 'rent' ? 'Pick-up: ' : 'Departs: '}
+              {formatDate(booking.departure_date)}
+              {booking.departure_time && ` · ${formatTime(booking.departure_time)}`}
+            </span>
+          )}
+          {booking.arrival_date && (
+            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ backgroundColor: '#FFF7ED', color: '#C2410C' }}>
+              <Clock className="w-3.5 h-3.5" />
+              {booking.transport_type === 'rent' ? 'Return: ' : 'Arrives: '}
+              {formatDate(booking.arrival_date)}
+              {booking.arrival_time && ` · ${formatTime(booking.arrival_time)}`}
+            </span>
+          )}
+        </div>
+
+        {/* Note */}
+        {booking.note && (
+          <p className="text-xs text-stone-500 flex items-start gap-1.5">
+            <AlignLeft className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-stone-400" />
+            {booking.note}
+          </p>
+        )}
+
+        {/* Linked expenses */}
+        {expenses.length > 0 && (
+          <PlaceExpenseSummary expenses={expenses} label="Transport spending" />
+        )}
+
+        {/* Actions */}
+        {canEdit && (
+          <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }}>
+            <button onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors"
+              style={{ color: 'var(--color-text-subtle)', backgroundColor: 'var(--color-bg-subtle)' }}>
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
+            <button onClick={handleDelete} disabled={deleting}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
+              <Trash2 className="w-3 h-3" /> Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // TransportSection
 // ---------------------------------------------------------------------------
 
 interface TransportSectionProps {
   bookings: TransportBooking[];
+  expensesByBookingId: Record<string, PlaceExpenseHistoryEntry[]>;
   tripId: string;
-  currency: string;
   canEdit: boolean;
 }
 
-export function TransportSection({ bookings: initialBookings, tripId, currency, canEdit }: TransportSectionProps) {
+export function TransportSection({ bookings: initialBookings, expensesByBookingId, tripId, canEdit }: TransportSectionProps) {
+  const router = useRouter();
   const [bookings, setBookings] = useState(initialBookings);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
+
+  async function handleAdd(input: TransportBookingInput) {
+    const resolve = loadingToast('Saving booking…');
+    const result = await addTransportBooking(tripId, input);
+    if (result.ok) {
+      resolve('Booking saved!', 'success');
+      setDialogOpen(false);
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.places, TRIP_REFRESH_SECTIONS.activity]);
+      startTransition(() => router.refresh());
+    } else {
+      resolve(result.error ?? 'Failed to save', 'error');
+    }
+  }
 
   return (
     <>
       {dialogOpen && (
-        <AddTransportDialog
-          tripId={tripId}
-          currency={currency}
-          onSaved={() => setDialogOpen(false)}
-          onClose={() => setDialogOpen(false)}
-        />
+        <TransportForm tripId={tripId} onSave={handleAdd} onClose={() => setDialogOpen(false)} title="Add transport booking" />
       )}
 
       <div className="section-shell mt-4 mb-6 p-5">
@@ -593,26 +509,25 @@ export function TransportSection({ bookings: initialBookings, tripId, currency, 
           </div>
 
           {canEdit && (
-            <button
-              onClick={() => setDialogOpen(true)}
+            <button onClick={() => setDialogOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors"
-              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add
+              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
+              <Plus className="w-3.5 h-3.5" /> Add
             </button>
           )}
         </div>
 
         {bookings.length > 0 && (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {bookings.map((b) => (
               <TransportCard
                 key={b.id}
                 booking={b}
+                expenses={expensesByBookingId[b.id] ?? []}
                 canEdit={canEdit}
                 tripId={tripId}
                 onDeleted={() => setBookings((prev) => prev.filter((x) => x.id !== b.id))}
+                onUpdated={(updated) => setBookings((prev) => prev.map((x) => x.id === updated.id ? updated : x))}
               />
             ))}
           </div>
@@ -625,24 +540,33 @@ export function TransportSection({ bookings: initialBookings, tripId, currency, 
 // ---------------------------------------------------------------------------
 // TransportSectionTrigger — shown when no bookings but canEdit
 // ---------------------------------------------------------------------------
-export function TransportSectionTrigger({ tripId, currency }: { tripId: string; currency: string }) {
+export function TransportSectionTrigger({ tripId }: { tripId: string }) {
+  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
+
+  async function handleAdd(input: TransportBookingInput) {
+    const resolve = loadingToast('Saving booking…');
+    const result = await addTransportBooking(tripId, input);
+    if (result.ok) {
+      resolve('Booking saved!', 'success');
+      setDialogOpen(false);
+      emitTripSectionRefresh(tripId, [TRIP_REFRESH_SECTIONS.places, TRIP_REFRESH_SECTIONS.activity]);
+      startTransition(() => router.refresh());
+    } else {
+      resolve(result.error ?? 'Failed to save', 'error');
+    }
+  }
 
   return (
     <>
       {dialogOpen && (
-        <AddTransportDialog
-          tripId={tripId}
-          currency={currency}
-          onSaved={() => setDialogOpen(false)}
-          onClose={() => setDialogOpen(false)}
-        />
+        <TransportForm tripId={tripId} onSave={handleAdd} onClose={() => setDialogOpen(false)} title="Add transport booking" />
       )}
       <div className="mt-2 mb-6">
-        <button
-          onClick={() => setDialogOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border border-dashed border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-500 transition-colors"
-        >
+        <button onClick={() => setDialogOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border border-dashed border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-500 transition-colors">
           <Plus className="w-4 h-4" />
           Add transport booking (flight, bus, car rental)
         </button>

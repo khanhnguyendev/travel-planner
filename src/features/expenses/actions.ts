@@ -29,6 +29,7 @@ export interface CreateExpenseInput {
   splits: SplitInput[];
   receiptPath?: string | null;
   placeId?: string | null;
+  transportBookingId?: string | null;
 }
 
 export interface UpdateExpenseInput {
@@ -89,7 +90,7 @@ export async function createExpense(
     return { ok: false, error: 'Not authenticated' };
   }
 
-  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, paidFromPool, splits, receiptPath, placeId } = input;
+  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, paidFromPool, splits, receiptPath, placeId, transportBookingId } = input;
 
   // Caller must be editor or above
   const callerRole = await requireEditor(tripId, user.id);
@@ -136,6 +137,7 @@ export async function createExpense(
       category: category ?? null,
       receipt_path: receiptPath ?? null,
       place_id: placeId ?? null,
+      transport_booking_id: transportBookingId ?? null,
     })
     .select('id')
     .single();

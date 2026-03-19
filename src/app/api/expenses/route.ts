@@ -130,6 +130,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       note: note ?? null,
       receipt_path: receiptPath ?? null,
       place_id: null,
+      transport_booking_id: null,
     })
     .select('id')
     .single();

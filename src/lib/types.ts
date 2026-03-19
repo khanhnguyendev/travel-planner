@@ -145,7 +145,8 @@ export interface Expense {
   note: string | null;
   category: string | null;
   receipt_path: string | null;
-  place_id: string | null;       // optional link to a place in the same trip
+  place_id: string | null;                // optional link to a place in the same trip
+  transport_booking_id: string | null;    // optional link to a transport booking
   created_at: string;
   updated_at: string;
 }
@@ -195,11 +196,8 @@ export interface TransportBooking {
   departure_time: string | null;
   arrival_date: string | null;
   arrival_time: string | null;
-  cost: number | null;
-  currency: string;
   reference_code: string | null;
   note: string | null;
-  expense_id: string | null;
   created_at: string;
   updated_at: string;
 }

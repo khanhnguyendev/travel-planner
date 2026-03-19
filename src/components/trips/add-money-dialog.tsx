@@ -7,7 +7,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import { BudgetIncomeForm } from '@/components/trips/budget-income-form';
 import type { MemberWithProfile } from '@/features/members/queries';
-import type { Place } from '@/lib/types';
+import type { Place, TransportBooking } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
@@ -19,6 +19,7 @@ interface AddMoneyDialogProps {
   members: MemberWithProfile[];
   currentUserId: string;
   places?: Place[];
+  transportBookings?: TransportBooking[];
   budgetCurrency: string;
   canManageBudget: boolean;
   poolBalance?: number;
@@ -36,6 +37,7 @@ export function AddMoneyDialog({
   members,
   currentUserId,
   places,
+  transportBookings,
   budget,
   budgetCurrency,
   canManageBudget,
@@ -149,6 +151,7 @@ export function AddMoneyDialog({
                 members={members}
                 currentUserId={currentUserId}
                 places={places}
+                transportBookings={transportBookings}
                 poolBalance={poolBalance}
                 poolCurrency={budgetCurrency}
                 onSuccess={handleSuccess}
