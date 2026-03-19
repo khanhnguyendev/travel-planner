@@ -257,7 +257,8 @@ export function ExpenseSummaryCard({
   const [expanded, setExpanded] = useState(false);
 
   const containerClassName = cn(
-    'group relative min-w-0 overflow-hidden rounded-[1.1rem] border bg-white transition-all',
+    'group relative min-w-0 overflow-hidden border bg-white transition-all',
+    compact ? 'rounded-[1rem]' : 'rounded-[1.1rem] shadow-[0_10px_24px_rgba(87,67,40,0.05)]',
     selected
       ? 'border-teal-400 ring-2 ring-teal-400/30'
       : 'border-stone-200/80',

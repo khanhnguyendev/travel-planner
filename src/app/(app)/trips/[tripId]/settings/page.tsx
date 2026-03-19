@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, Settings } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { TripSettingsForm } from '@/components/trips/trip-settings-form';
 import type { Metadata } from 'next';
@@ -32,6 +33,24 @@ export default async function TripSettingsPage({
   const canManage = ['owner', 'admin'].includes(role);
   if (!canManage) redirect(`/trips/${tripId}`);
 
+  // Check if expenses or contributions exist in the current budget currency.
+  // If they do, we disable currency changes to avoid data disappearing.
+  const admin = createAdminClient();
+  const currency = trip.budget_currency || 'VND';
+  const [{ count: expenseCount }, { count: contribCount }] = await Promise.all([
+    admin
+      .from('expenses')
+      .select('id', { count: 'exact', head: true })
+      .eq('trip_id', tripId)
+      .eq('currency', currency),
+    admin
+      .from('budget_contributions')
+      .select('id', { count: 'exact', head: true })
+      .eq('trip_id', tripId)
+      .eq('currency', currency),
+  ]);
+  const hasCurrencyData = (expenseCount ?? 0) > 0 || (contribCount ?? 0) > 0;
+
   return (
     <div className="animate-in fade-in duration-300">
       <PageHeader
@@ -59,7 +78,7 @@ export default async function TripSettingsPage({
             Changes are saved per section.
           </p>
         </div>
-        <TripSettingsForm trip={trip} isOwner={role === 'owner'} />
+        <TripSettingsForm trip={trip} isOwner={role === 'owner'} hasCurrencyData={hasCurrencyData} />
       </div>
     </div>
   );

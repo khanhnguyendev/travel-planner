@@ -61,7 +61,6 @@ const ROLE_OPTIONS: TripRole[] = ['admin', 'editor', 'viewer'];
 
 function MemberRow({
   m,
-  tripId,
   currentUserId,
   canManage,
   balanceNet,
@@ -71,7 +70,6 @@ function MemberRow({
   onRemove,
 }: {
   m: MemberWithProfile;
-  tripId: string;
   currentUserId: string;
   canManage: boolean;
   balanceNet: number | undefined;
@@ -283,7 +281,6 @@ export function MemberList({
         <MemberRow
           key={m.id}
           m={m}
-          tripId={tripId}
           currentUserId={currentUserId}
           canManage={canManage}
           balanceNet={balanceMap?.get(m.user_id)}

@@ -6,6 +6,7 @@ import { Globe, Lock, AlertTriangle } from 'lucide-react';
 import { updateTrip, updateTripDates, updateTripBudget, archiveTrip } from '@/features/trips/actions';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { useToast } from '@/components/ui/toast';
+import { formatDate } from '@/lib/format';
 import type { Trip } from '@/lib/types';
 
 const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'];
@@ -13,6 +14,7 @@ const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'];
 interface TripSettingsFormProps {
   trip: Trip;
   isOwner: boolean;
+  hasCurrencyData: boolean;
 }
 
 // -------------------------------------------------------
@@ -171,42 +173,106 @@ function DatesSection({ trip }: { trip: Trip }) {
     }
   }
 
+  function formatShortDate(value: string) {
+    return formatDate(new Date(`${value}T00:00:00`));
+  }
+
+  const hasBothDates = Boolean(startDate && endDate);
+  const rangeLabel = hasBothDates
+    ? `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`
+    : startDate
+      ? `Starts ${formatShortDate(startDate)}`
+      : endDate
+        ? `Ends ${formatShortDate(endDate)}`
+        : 'Dates flexible';
+
+  const durationLabel = hasBothDates
+    ? (() => {
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T00:00:00`);
+        const diffDays = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+        const nights = Math.max(diffDays - 1, 0);
+        return `${diffDays} day${diffDays === 1 ? '' : 's'} · ${nights} night${nights === 1 ? '' : 's'}`;
+      })()
+    : 'These dates shape the planning window across the trip.';
+
   return (
     <Section title="Dates" description="Planning window for this trip.">
-      <div className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Start date">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              max={endDate || undefined}
-              className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
-            />
-          </Field>
-          <Field label="End date">
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              min={startDate || undefined}
-              className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
-            />
-          </Field>
+      <div className="space-y-4">
+        <div
+          className="rounded-[1.35rem] border px-4 py-4 sm:px-5"
+          style={{
+            borderColor: 'rgba(13, 148, 136, 0.12)',
+            background: 'linear-gradient(145deg, rgba(240, 253, 250, 0.88), rgba(255, 255, 255, 0.94))',
+          }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Current range
+          </p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-lg font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>
+                {rangeLabel}
+              </p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                {durationLabel}
+              </p>
+            </div>
+            <span
+              className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+              style={{ backgroundColor: 'rgba(255,255,255,0.82)', color: 'var(--color-text-muted)' }}
+            >
+              Applies to overview, plan, and place scheduling
+            </span>
+          </div>
         </div>
+
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+          <div className="rounded-[1.25rem] bg-stone-950/[0.03] p-4">
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Start date
+              </span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                max={endDate || undefined}
+                className="mt-3 min-h-[46px] w-full rounded-full border px-4 text-sm outline-none focus:ring-2 focus:ring-teal-500"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
+              />
+            </label>
+          </div>
+
+          <div className="rounded-[1.25rem] bg-stone-950/[0.03] p-4">
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                End date
+              </span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate || undefined}
+                className="mt-3 min-h-[46px] w-full rounded-full border px-4 text-sm outline-none focus:ring-2 focus:ring-teal-500"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
+              />
+            </label>
+          </div>
+
+          <div className="flex items-stretch lg:items-end">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || isRefreshing}
+              className="btn-primary min-h-[46px] w-full px-4 text-sm disabled:opacity-60 lg:w-auto lg:min-w-[132px]"
+            >
+              {saving ? 'Saving…' : 'Save dates'}
+            </button>
+          </div>
+        </div>
+
         {error && <p className="text-sm" style={{ color: 'var(--color-error)' }}>{error}</p>}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || isRefreshing}
-            className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
-          >
-            {saving ? 'Saving…' : 'Save dates'}
-          </button>
-        </div>
       </div>
     </Section>
   );
@@ -294,7 +360,7 @@ function VisibilitySection({ trip }: { trip: Trip }) {
 // MoneySection
 // -------------------------------------------------------
 
-function MoneySection({ trip }: { trip: Trip }) {
+function MoneySection({ trip, hasCurrencyData }: { trip: Trip; hasCurrencyData: boolean }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [isRefreshing, startRefreshTransition] = useTransition();
@@ -320,31 +386,47 @@ function MoneySection({ trip }: { trip: Trip }) {
   return (
     <Section title="Money" description="Default currency used for expenses, budget, and contributions.">
       <div className="space-y-4">
-        <Field label="Default currency" hint="Controls which expenses and income count toward the budget. Existing records keep their own currency.">
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
-          >
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+        <Field label="Default currency" hint="Controls which expenses and income count toward the budget.">
+          {hasCurrencyData ? (
+            <div className="space-y-2">
+              <span
+                className="inline-block rounded-xl border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-muted)', color: 'var(--color-text)' }}
+              >
+                {currency}
+              </span>
+              <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                Currency cannot be changed while expenses or income contributions exist in {currency}. Delete all {currency} records first if you need to switch currencies.
+              </p>
+            </div>
+          ) : (
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
+            >
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
         </Field>
-        {changed && (
+        {!hasCurrencyData && changed && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
             ⚠️ Changing currency will <strong>reset your budget cap</strong> to none. Existing expenses and income contributions are not affected — they keep their original currency.
           </div>
         )}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || isRefreshing || !changed}
-            className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
-          >
-            {saving ? 'Saving…' : 'Save currency'}
-          </button>
-        </div>
+        {!hasCurrencyData && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || isRefreshing || !changed}
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save currency'}
+            </button>
+          </div>
+        )}
       </div>
     </Section>
   );
@@ -408,14 +490,14 @@ function DangerSection({ trip, isOwner }: { trip: Trip; isOwner: boolean }) {
 // TripSettingsForm
 // -------------------------------------------------------
 
-export function TripSettingsForm({ trip, isOwner }: TripSettingsFormProps) {
+export function TripSettingsForm({ trip, isOwner, hasCurrencyData }: TripSettingsFormProps) {
   return (
     <div className="space-y-5">
       <GeneralSection trip={trip} />
       <AppearanceSection trip={trip} />
       <DatesSection trip={trip} />
       <VisibilitySection trip={trip} />
-      <MoneySection trip={trip} />
+      <MoneySection trip={trip} hasCurrencyData={hasCurrencyData} />
       <DangerSection trip={trip} isOwner={isOwner} />
     </div>
   );
