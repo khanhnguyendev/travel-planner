@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
@@ -50,9 +50,7 @@ function CollapsedRow({
 }) {
   const emoji = expense.category ? EXPENSE_CATEGORY_EMOJIS[expense.category] : null;
   const payerName = expense.paid_by_profile.display_name ?? 'Unknown';
-  const date = expense.expense_date
-    ? formatDate(expense.expense_date)
-    : formatDate(expense.created_at);
+  const date = formatDateTime(expense.expense_date ?? expense.created_at);
   const splitCount = expense.splits.length;
   const previewSplits = expense.splits.slice(0, 3);
 
@@ -203,9 +201,7 @@ function ExpandedPanel({
       {/* Footer: date + place + receipt + detail link */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
-          {expense.expense_date
-            ? formatDate(expense.expense_date)
-            : formatDateTime(expense.created_at)}
+          {formatDateTime(expense.expense_date ?? expense.created_at)}
         </span>
 
         {linkedPlaceName && (
