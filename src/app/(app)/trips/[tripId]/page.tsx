@@ -563,6 +563,12 @@ export default async function TripDetailPage({
       .filter((balance) => balance.currency === balanceCurrency)
       .map((balance) => [balance.userId, balance.net])
   );
+  // Add income contributions to each member's balance
+  for (const c of contributions) {
+    if (c.currency === balanceCurrency) {
+      memberBalanceMap.set(c.user_id, (memberBalanceMap.get(c.user_id) ?? 0) + c.amount);
+    }
+  }
   const sortedCrewMembers = [...members].sort((a, b) => {
     if (a.user_id === currentUserId) return -1;
     if (b.user_id === currentUserId) return 1;
