@@ -19,6 +19,7 @@ interface BudgetEditorProps {
   budgetCurrency: string;
   canManage: boolean;
   totalSpent: number;
+  poolSpent: number;
   members: MemberWithProfile[];
   contributions: BudgetContribution[];
   actionSlot?: ReactNode;
@@ -30,6 +31,7 @@ export function BudgetEditor({
   budgetCurrency,
   canManage,
   totalSpent,
+  poolSpent,
   members,
   contributions,
   actionSlot,
@@ -48,6 +50,7 @@ export function BudgetEditor({
   const incomeByCurrency = contributions.filter((c) => c.currency === activeCurrency);
   const totalIncome = incomeByCurrency.reduce((sum, c) => sum + c.amount, 0);
   const hasIncome = totalIncome > 0;
+  const poolBalance = totalIncome - poolSpent;
 
   // Contributors for display — group by user and sum amounts in the trip currency
   const contributorTotals = incomeByCurrency.reduce<Map<string, number>>((acc, c) => {
@@ -159,8 +162,8 @@ export function BudgetEditor({
 
   const budgetAmount = budget ?? 0;
   const pct = hasBudget ? Math.min((totalSpent / budgetAmount) * 100, 100) : 0;
-  const remaining = hasBudget ? budgetAmount - totalSpent : totalIncome - totalSpent;
-  const overBudget = hasBudget ? totalSpent > budgetAmount : false;
+  const capRemaining = budgetAmount - totalSpent;
+  const overBudget = hasBudget && totalSpent > budgetAmount;
   const barColor = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#14B8A6';
 
   return (
@@ -189,11 +192,22 @@ export function BudgetEditor({
 
           {/* Income section */}
           {hasIncome ? (
-            <div className="mt-2">
-              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                Income collected: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
-              </span>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <div className="mt-2 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                  Income: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
+                </span>
+                <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                  Pool used: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}
+                >
+                  Pool balance: {formatCurrency(poolBalance, activeCurrency)}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
                 {Array.from(contributorTotals.entries()).map(([uid, total]) => (
                   <span
                     key={uid}
@@ -241,26 +255,13 @@ export function BudgetEditor({
               style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
             >
               {overBudget
-                ? `${formatCurrency(Math.abs(remaining), budgetCurrency)} over cap`
-                : `${formatCurrency(remaining, budgetCurrency)} remaining`}
+                ? `${formatCurrency(Math.abs(capRemaining), budgetCurrency)} over cap`
+                : `${formatCurrency(capRemaining, budgetCurrency)} remaining`}
             </span>
           </div>
         </>
       )}
 
-      {/* Spend summary when no cap but income exists */}
-      {!hasBudget && hasIncome && (
-        <div className="mt-3 flex flex-wrap gap-3">
-          <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-            {formatCurrency(totalSpent, activeCurrency)} spent
-          </span>
-          <span className="text-xs" style={{ color: remaining >= 0 ? 'var(--color-text-subtle)' : '#EF4444' }}>
-            {remaining >= 0
-              ? `${formatCurrency(remaining, activeCurrency)} remaining in pool`
-              : `${formatCurrency(Math.abs(remaining), activeCurrency)} over income`}
-          </span>
-        </div>
-      )}
     </div>
   );
 }

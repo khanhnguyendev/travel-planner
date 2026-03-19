@@ -35,6 +35,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
+import { TripMobileActionDock } from '@/components/trips/trip-mobile-action-dock';
 import { TripDatesEditor } from '@/components/trips/trip-dates-editor';
 import { InviteLinkButton } from '@/components/members/invite-link-button';
 import { JoinRequestButton } from '@/components/members/join-request-button';
@@ -536,6 +537,10 @@ export default async function TripDetailPage({
   for (const expense of expenses) {
     totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
   }
+  // Pool-paid expenses: deduct from the shared income pool
+  const poolSpent = expensesWithSplits
+    .filter((e) => e.paid_from_pool && e.currency === (trip.budget_currency || 'VND'))
+    .reduce((sum, e) => sum + e.amount, 0);
   const recentExpenses = expensesWithSplits.slice(0, 5);
   const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
   const memberBalanceMap = new Map(
@@ -743,6 +748,7 @@ export default async function TripDetailPage({
               budgetCurrency={trip.budget_currency}
               canManage={canManage}
               totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
+              poolSpent={poolSpent}
               members={members}
               contributions={contributions}
               actionSlot={canEdit ? (
@@ -754,6 +760,9 @@ export default async function TripDetailPage({
                   budget={trip.budget}
                   budgetCurrency={trip.budget_currency}
                   canManageBudget={canManage}
+                  poolBalance={contributions
+                    .filter((c) => c.currency === trip.budget_currency)
+                    .reduce((sum, c) => sum + c.amount, 0) - poolSpent}
                   triggerLabel="Add money"
                   triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
                 />
@@ -927,6 +936,18 @@ export default async function TripDetailPage({
         </div>
       </section>
 
+      <TripMobileActionDock
+        tripId={tripId}
+        canEdit={canEdit}
+        members={members}
+        currentUserId={currentUserId}
+        places={places}
+        categories={categories}
+        budget={trip.budget}
+        budgetCurrency={trip.budget_currency}
+        canManageBudget={canManage}
+      />
+
       <TabBar activeTab={activeTab} tripId={tripId} tabs={visibleTabs} />
 
       {activeTab === 'places' && (
@@ -940,10 +961,6 @@ export default async function TripDetailPage({
             initialUserVotes={userVotes}
             reviewsByPlaceId={reviewsByPlaceId}
             placeExpensesByPlaceId={placeExpensesByPlaceId}
-            members={members}
-            budget={trip.budget}
-            budgetCurrency={trip.budget_currency}
-            canManageBudget={canManage}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}
             currentUserId={currentUserId}

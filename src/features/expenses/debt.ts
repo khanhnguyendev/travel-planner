@@ -29,7 +29,11 @@ export function calculateMemberBalances(
 
   for (const expense of expenses) {
     const cur = expense.currency;
-    getUser(cur, expense.paid_by_user_id).paid += expense.amount;
+    // Pool expenses: pool pays, no individual payer gets credit.
+    // Personal expenses: payer fronted the money and is owed back.
+    if (!expense.paid_from_pool) {
+      getUser(cur, expense.paid_by_user_id).paid += expense.amount;
+    }
     for (const split of expense.splits) {
       getUser(cur, split.user_id).share += split.amount_owed;
     }

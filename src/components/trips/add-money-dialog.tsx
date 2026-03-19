@@ -18,6 +18,7 @@ interface AddMoneyDialogProps {
   places?: Place[];
   budgetCurrency: string;
   canManageBudget: boolean;
+  poolBalance?: number;
   initialTab?: MoneyTab;
   triggerLabel?: string;
   triggerClassName?: string;
@@ -33,6 +34,7 @@ export function AddMoneyDialog({
   budget,
   budgetCurrency,
   canManageBudget,
+  poolBalance,
   initialTab,
   triggerLabel = 'Add money',
   triggerClassName,
@@ -116,6 +118,8 @@ export function AddMoneyDialog({
                 members={members}
                 currentUserId={currentUserId}
                 places={places}
+                poolBalance={poolBalance}
+                poolCurrency={budgetCurrency}
                 onSuccess={() => setOpen(false)}
                 onCancel={() => setOpen(false)}
               />

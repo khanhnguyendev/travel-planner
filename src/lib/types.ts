@@ -137,6 +137,7 @@ export interface Expense {
   id: string;
   trip_id: string;
   paid_by_user_id: string;
+  paid_from_pool: boolean;       // true = pool paid; payer gets no individual credit
   title: string;
   amount: number;
   currency: string;
@@ -305,11 +306,12 @@ export type Database = {
       };
       expenses: {
         Row: R<Expense>;
-        Insert: R<Omit<Expense, 'id' | 'created_at' | 'updated_at' | 'category'> & {
+        Insert: R<Omit<Expense, 'id' | 'created_at' | 'updated_at' | 'category' | 'paid_from_pool'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
           category?: string | null;
+          paid_from_pool?: boolean;
         }>;
         Update: R<Partial<Omit<Expense, 'id' | 'created_at'>>>;
         Relationships: [];

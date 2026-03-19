@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, MapPin, PencilLine } from 'lucide-react';
+import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, MapPin, PencilLine, Wallet, User } from 'lucide-react';
 import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place } from '@/lib/types';
@@ -46,6 +46,9 @@ interface ExpenseFormProps {
   members: MemberWithProfile[];
   currentUserId: string;
   places?: Place[];
+  /** Available balance in the shared pool (income − pool expenses). */
+  poolBalance?: number;
+  poolCurrency?: string;
   /** Called on successful save (dialog mode). Uses router if not provided. */
   onSuccess?: () => void;
   /** Called on cancel (dialog mode). Uses router.back() if not provided. */
@@ -137,10 +140,11 @@ function InputField({
 // Main component
 // -------------------------------------------------------
 
-export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuccess, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ tripId, members, currentUserId, places = [], poolBalance, poolCurrency, onSuccess, onCancel }: ExpenseFormProps) {
   const router = useRouter();
 
   // Form fields
+  const [paidFromPool, setPaidFromPool] = useState(false);
   const [title, setTitle] = useState('');
   const [subjectMode, setSubjectMode] = useState<ExpenseSubjectMode>('manual');
   const [category, setCategory] = useState<string | null>(null);
@@ -352,6 +356,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
       expenseDate: expenseDate ? new Date(expenseDate).toISOString() : null,
       note: note.trim() || null,
       paidByUserId,
+      paidFromPool,
       splits: splitInputs,
       receiptPath: uploadedReceiptPath ?? null,
       placeId: placeId ?? null,
@@ -573,28 +578,76 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], onSuc
         />
       </div>
 
-      {/* Paid by */}
+      {/* Payment method toggle */}
       <div>
-        <Label htmlFor="paidBy">Paid by</Label>
-        <select
-          id="paidBy"
-          value={paidByUserId}
-          onChange={(e) => setPaidByUserId(e.target.value)}
-          className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
-          style={{
-            borderColor: 'var(--color-border)',
-            backgroundColor: 'white',
-            color: 'var(--color-text)',
-          }}
+        <Label>Payment method</Label>
+        <div
+          className="grid grid-cols-2 rounded-[1rem] p-1 gap-1"
+          style={{ backgroundColor: 'var(--color-bg-subtle)' }}
         >
-          {members.map((m) => (
-            <option key={m.user_id} value={m.user_id}>
-              {m.profile.display_name ?? m.user_id}
-              {m.user_id === currentUserId ? ' (you)' : ''}
-            </option>
-          ))}
-        </select>
+          <button
+            type="button"
+            onClick={() => setPaidFromPool(false)}
+            className="flex min-h-[52px] items-center gap-2.5 rounded-[0.85rem] px-3 py-2.5 text-left text-sm font-semibold transition-colors"
+            style={{
+              backgroundColor: !paidFromPool ? 'white' : 'transparent',
+              color: !paidFromPool ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              boxShadow: !paidFromPool ? '0 4px 16px rgba(15,23,42,0.06)' : 'none',
+            }}
+          >
+            <User className="h-4 w-4 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold leading-tight">Paid by someone</p>
+              <p className="text-xs font-normal opacity-70">Member fronts the money</p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaidFromPool(true)}
+            className="flex min-h-[52px] items-center gap-2.5 rounded-[0.85rem] px-3 py-2.5 text-left text-sm font-semibold transition-colors"
+            style={{
+              backgroundColor: paidFromPool ? 'white' : 'transparent',
+              color: paidFromPool ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              boxShadow: paidFromPool ? '0 4px 16px rgba(15,23,42,0.06)' : 'none',
+            }}
+          >
+            <Wallet className="h-4 w-4 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold leading-tight">From pool</p>
+              <p className="text-xs font-normal opacity-70">
+                {poolBalance !== undefined && poolCurrency
+                  ? `${formatCurrency(poolBalance, poolCurrency)} available`
+                  : 'Use shared budget'}
+              </p>
+            </div>
+          </button>
+        </div>
       </div>
+
+      {/* Paid by — only shown for personal payments */}
+      {!paidFromPool && (
+        <div>
+          <Label htmlFor="paidBy">Paid by</Label>
+          <select
+            id="paidBy"
+            value={paidByUserId}
+            onChange={(e) => setPaidByUserId(e.target.value)}
+            className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'white',
+              color: 'var(--color-text)',
+            }}
+          >
+            {members.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.profile.display_name ?? m.user_id}
+                {m.user_id === currentUserId ? ' (you)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Note */}
       <div>

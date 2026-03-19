@@ -25,6 +25,7 @@ export interface CreateExpenseInput {
   note?: string | null;
   category?: string | null;
   paidByUserId: string;
+  paidFromPool?: boolean;
   splits: SplitInput[];
   receiptPath?: string | null;
   placeId?: string | null;
@@ -88,7 +89,7 @@ export async function createExpense(
     return { ok: false, error: 'Not authenticated' };
   }
 
-  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, splits, receiptPath, placeId } = input;
+  const { tripId, title, amount, currency, expenseDate, note, category, paidByUserId, paidFromPool, splits, receiptPath, placeId } = input;
 
   // Caller must be editor or above
   const callerRole = await requireEditor(tripId, user.id);
@@ -126,6 +127,7 @@ export async function createExpense(
     .insert({
       trip_id: tripId,
       paid_by_user_id: paidByUserId,
+      paid_from_pool: paidFromPool ?? false,
       title,
       amount,
       currency,
