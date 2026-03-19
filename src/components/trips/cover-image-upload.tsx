@@ -168,10 +168,10 @@ export function CoverImageUpload({
           if (!busy) inputRef.current?.click();
         }}
         className={cn(
-          'absolute z-10 inline-flex items-center justify-center rounded-full shadow-sm transition-all',
+          'absolute inline-flex items-center justify-center rounded-full shadow-sm transition-all',
           identityMode
-            ? 'right-4 top-4 h-11 w-11 bg-white/90 text-stone-700 backdrop-blur-sm hover:bg-white'
-            : 'left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 bg-white/90 text-stone-700 opacity-0 group-hover:opacity-100'
+            ? 'right-4 top-4 z-20 h-11 w-11 bg-white/90 text-stone-700 backdrop-blur-sm hover:bg-white'
+            : 'left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 bg-white/90 text-stone-700 opacity-0 group-hover:opacity-100'
         )}
         aria-label={previewUrl ? 'Change cover image' : 'Add cover image'}
         title={previewUrl ? 'Change cover image' : 'Add cover image'}
@@ -185,10 +185,10 @@ export function CoverImageUpload({
           type="button"
           onClick={handleRemove}
           className={cn(
-            'absolute z-10 transition-all',
+            'absolute transition-all',
             identityMode
-              ? 'right-[4.25rem] top-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-stone-950/60 text-white backdrop-blur-sm hover:bg-red-600'
-              : 'top-3 right-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium opacity-0 group-hover:opacity-100 hover:bg-red-600'
+              ? 'right-[4.25rem] top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-stone-950/60 text-white backdrop-blur-sm hover:bg-red-600'
+              : 'top-3 right-3 z-10 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium opacity-0 group-hover:opacity-100 hover:bg-red-600'
           )}
           style={identityMode ? undefined : { backgroundColor: 'rgba(0,0,0,0.55)', color: 'white' }}
           aria-label="Remove cover image"
