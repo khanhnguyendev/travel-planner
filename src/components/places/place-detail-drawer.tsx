@@ -110,6 +110,7 @@ function ScheduleEditor({
   tripId,
   tripStartDate,
   tripEndDate,
+  affectsStops,
 }: {
   place: Place;
   allPlaces: Place[];
@@ -117,6 +118,7 @@ function ScheduleEditor({
   tripId: string;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
+  affectsStops: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -174,8 +176,8 @@ function ScheduleEditor({
         TRIP_REFRESH_SECTIONS.places,
         TRIP_REFRESH_SECTIONS.timeline,
         TRIP_REFRESH_SECTIONS.map,
-        TRIP_REFRESH_SECTIONS.stops,
         TRIP_REFRESH_SECTIONS.activity,
+        ...(affectsStops ? [TRIP_REFRESH_SECTIONS.stops] : []),
       ]);
       startRefreshTransition(() => {
         router.refresh();
@@ -246,7 +248,7 @@ function ScheduleEditor({
               {hasSchedule || savedBackupPlace ? 'Edit schedule' : 'Add schedule'}
             </button>
             {hasSchedule && allPlaces && allPlaces.length > 1 && (
-              <SwapPlaceButton place={place} allPlaces={allPlaces} tripId={tripId} />
+              <SwapPlaceButton place={place} allPlaces={allPlaces} tripId={tripId} affectsStops={affectsStops} />
             )}
           </div>
         )}
@@ -577,6 +579,7 @@ export function PlaceDetailDrawer({
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const loadingToastDrawer = useLoadingToast();
+  const affectsStops = category?.category_type !== 'accommodation';
   const refreshSignature = [
     place.id,
     place.visit_date ?? '',
@@ -609,8 +612,8 @@ export function PlaceDetailDrawer({
         TRIP_REFRESH_SECTIONS.places,
         TRIP_REFRESH_SECTIONS.timeline,
         TRIP_REFRESH_SECTIONS.map,
-        TRIP_REFRESH_SECTIONS.stops,
         TRIP_REFRESH_SECTIONS.activity,
+        ...(affectsStops ? [TRIP_REFRESH_SECTIONS.stops] : []),
       ]);
       onDeleted?.();
       onClose();
@@ -739,7 +742,7 @@ export function PlaceDetailDrawer({
           {/* Schedule + backup */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
-            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripId={tripId} tripStartDate={tripStartDate} tripEndDate={tripEndDate} />
+            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripId={tripId} tripStartDate={tripStartDate} tripEndDate={tripEndDate} affectsStops={affectsStops} />
           </div>
 
           {/* Check-in / Check-out (editors only, only if place has a visit date) */}
@@ -750,6 +753,7 @@ export function PlaceDetailDrawer({
                 place={place}
                 allDayPlaces={allPlaces.filter((p) => p.visit_date === place.visit_date)}
                 tripId={tripId}
+                affectsStops={affectsStops}
               />
             </div>
           )}

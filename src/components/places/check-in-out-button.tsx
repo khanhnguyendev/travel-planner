@@ -13,6 +13,7 @@ interface CheckInOutButtonProps {
   place: Place;
   allDayPlaces: Place[]; // all places on the same visit_date (for cascade count preview)
   tripId: string;
+  affectsStops?: boolean;
 }
 
 type Step = 'idle' | 'picking-checkin' | 'picking-checkout' | 'cascade-prompt';
@@ -22,7 +23,7 @@ function toLocalDatetimeValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButtonProps) {
+export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = true }: CheckInOutButtonProps) {
   const router = useRouter();
   const isCheckedIn = Boolean(place.actual_checkin_at);
   const isCheckedOut = Boolean(place.actual_checkout_at);
@@ -41,8 +42,8 @@ export function CheckInOutButton({ place, allDayPlaces, tripId }: CheckInOutButt
       TRIP_REFRESH_SECTIONS.places,
       TRIP_REFRESH_SECTIONS.timeline,
       TRIP_REFRESH_SECTIONS.map,
-      TRIP_REFRESH_SECTIONS.stops,
       TRIP_REFRESH_SECTIONS.activity,
+      ...(affectsStops ? [TRIP_REFRESH_SECTIONS.stops] : []),
     ]);
     startRefreshTransition(() => {
       router.refresh();

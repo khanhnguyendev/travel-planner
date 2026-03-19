@@ -13,6 +13,7 @@ interface SwapPlaceButtonProps {
   place: Place;       // the place being replaced
   allPlaces: Place[]; // all other places in the trip to pick from
   tripId: string;
+  affectsStops?: boolean;
 }
 
 function formatScheduleLabel(p: Place): string {
@@ -27,7 +28,7 @@ function formatScheduleLabel(p: Place): string {
   return parts.join(' · ');
 }
 
-export function SwapPlaceButton({ place, allPlaces, tripId }: SwapPlaceButtonProps) {
+export function SwapPlaceButton({ place, allPlaces, tripId, affectsStops = true }: SwapPlaceButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -61,8 +62,8 @@ export function SwapPlaceButton({ place, allPlaces, tripId }: SwapPlaceButtonPro
       TRIP_REFRESH_SECTIONS.places,
       TRIP_REFRESH_SECTIONS.timeline,
       TRIP_REFRESH_SECTIONS.map,
-      TRIP_REFRESH_SECTIONS.stops,
       TRIP_REFRESH_SECTIONS.activity,
+      ...(affectsStops ? [TRIP_REFRESH_SECTIONS.stops] : []),
     ]);
     startRefreshTransition(() => router.refresh());
   }

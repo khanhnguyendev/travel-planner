@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
 
@@ -48,7 +48,7 @@ export function useTripSectionRefresh({
   sections,
   signature,
 }: UseTripSectionRefreshOptions) {
-  const targets = normalizeSections(sections);
+  const targets = useMemo(() => normalizeSections(sections), [sections]);
   const [pendingSignature, setPendingSignature] = useState<string | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const isRefreshing = pendingSignature === signature;
@@ -61,24 +61,31 @@ export function useTripSectionRefresh({
 
       const activeSignature = signature;
       setPendingSignature(activeSignature);
-
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
-
-      timeoutRef.current = window.setTimeout(() => {
-        setPendingSignature((current) => (current === activeSignature ? null : current));
-      }, 5000);
     }
 
     window.addEventListener(TRIP_SECTION_REFRESH_EVENT, handleRefresh as EventListener);
     return () => {
       window.removeEventListener(TRIP_SECTION_REFRESH_EVENT, handleRefresh as EventListener);
+    };
+  }, [signature, targets, tripId]);
+
+  useEffect(() => {
+    if (!pendingSignature) return;
+
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = window.setTimeout(() => {
+      setPendingSignature((current) => (current === pendingSignature ? null : current));
+    }, 5000);
+
+    return () => {
       if (timeoutRef.current) {
         window.clearTimeout(timeoutRef.current);
       }
     };
-  }, [signature, targets, tripId]);
+  }, [pendingSignature]);
 
   return isRefreshing;
 }

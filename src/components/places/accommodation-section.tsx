@@ -62,7 +62,6 @@ function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
         TRIP_REFRESH_SECTIONS.places,
         TRIP_REFRESH_SECTIONS.timeline,
         TRIP_REFRESH_SECTIONS.map,
-        TRIP_REFRESH_SECTIONS.stops,
         TRIP_REFRESH_SECTIONS.activity,
       ]);
       startRefreshTransition(() => {
