@@ -456,3 +456,11 @@ svg {
   animation: shimmer 1.4s linear infinite;
   border-radius: var(--radius-lg);
 }
+
+@media (max-width: 639px) {
+  [role="dialog"] input,
+  [role="dialog"] select,
+  [role="dialog"] textarea {
+    font-size: 16px;
+  }
+}
