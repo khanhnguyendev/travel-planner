@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logActivity } from '@/lib/activity';
 import type { ActionResult } from '@/features/auth/actions';
 import type { TripRole } from '@/lib/types';
 
@@ -227,6 +228,8 @@ export async function acceptInvite(
 
   await admin.from('trip_invites').update({ status: 'accepted' }).eq('id', invite.id);
 
+  void logActivity({ tripId: invite.trip_id, userId: user.id, action: 'member.join', meta: { role: invite.role } });
+
   revalidatePath(`/trips/${invite.trip_id}/members`);
   return { ok: true, data: { tripId: invite.trip_id, role: invite.role as TripRole } };
 }
@@ -340,6 +343,8 @@ export async function removeMember(
     return { ok: false, error: 'Failed to remove member' };
   }
 
+  void logActivity({ tripId, userId: user.id, action: 'member.remove', meta: { removedUserId: userId } });
+
   revalidatePath(`/trips/${tripId}/members`);
   return { ok: true, data: undefined };
 }
@@ -440,6 +445,8 @@ export async function approveJoinRequest(
     console.error('approveJoinRequest error:', error);
     return { ok: false, error: 'Failed to approve request' };
   }
+
+  void logActivity({ tripId, userId, action: 'member.join', meta: { approvedBy: user.id } });
 
   revalidatePath(`/trips/${tripId}/members`);
   revalidatePath(`/trips/${tripId}`);
