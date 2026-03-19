@@ -24,12 +24,12 @@ export function PlaceMapLinks({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex min-w-0 flex-wrap items-center gap-2', className)}>
       <a
         href={googleMapsUrl(place)}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
+        className="inline-flex max-w-full items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
         title="Open in Google Maps"
       >
         <Map className="h-3.5 w-3.5" />
@@ -40,7 +40,7 @@ export function PlaceMapLinks({
         href={vietmapUrl(place)}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
+        className="inline-flex max-w-full items-center gap-1 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
         title="Open in Vietmap"
       >
         <Navigation className="h-3.5 w-3.5" />

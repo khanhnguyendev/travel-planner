@@ -53,7 +53,7 @@ export function TripMobileActionDock({
   return (
     <>
       {showAddPlace && (
-        <Dialog title="Add a place" onClose={() => setShowAddPlace(false)} maxWidth="max-w-lg">
+        <Dialog title="Add a place" onClose={() => setShowAddPlace(false)} maxWidth="sm:max-w-lg">
           <AddPlaceForm
             tripId={tripId}
             categories={categories}

@@ -384,7 +384,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
   // -------------------------------------------------------
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="min-w-0 space-y-5 overflow-x-hidden sm:space-y-6">
       {/* Error banner */}
       {error && (
         <div
@@ -399,7 +399,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
       )}
 
       {/* Expense subject */}
-      <div className="rounded-[1.35rem] border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)' }}>
+      <div className="min-w-0 rounded-[1.35rem] border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)' }}>
         <div className="mb-4">
           <Label>Expense title source</Label>
           {places.length > 0 ? (
@@ -581,10 +581,10 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
       {/* Payment method toggle */}
       <div>
         <Label>Payment method</Label>
-        <div
-          className="grid grid-cols-2 rounded-[1rem] p-1 gap-1"
-          style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-        >
+      <div
+        className="grid grid-cols-1 gap-1 rounded-[1rem] p-1 sm:grid-cols-2"
+        style={{ backgroundColor: 'var(--color-bg-subtle)' }}
+      >
           <button
             type="button"
             onClick={() => setPaidFromPool(false)}
@@ -669,7 +669,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
 
       {/* Splits */}
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Label>Splits</Label>
           <button
             type="button"
@@ -695,57 +695,57 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
             return (
               <div
                 key={i}
-                className="flex items-center gap-2 p-3 rounded-xl"
+                className="rounded-xl p-3"
                 style={{ backgroundColor: 'var(--color-bg-subtle)' }}
               >
-                {/* Member select */}
-                <select
-                  value={row.userId}
-                  onChange={(e) => updateSplitUser(i, e.target.value)}
-                  className="flex-1 rounded-lg border px-2 py-1.5 text-sm outline-none"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'white',
-                    color: 'var(--color-text)',
-                    minWidth: 0,
-                  }}
-                >
-                  {memberOptions.map((m) => (
-                    <option key={m.user_id} value={m.user_id}>
-                      {m.profile.display_name ?? m.user_id}
-                      {m.user_id === currentUserId ? ' (you)' : ''}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Amount */}
-                <input
-                  type="number"
-                  value={row.amountOwed}
-                  onChange={(e) => updateSplitAmount(i, e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  className="w-20 sm:w-28 rounded-lg border px-2 py-1.5 text-sm outline-none text-right flex-shrink-0"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'white',
-                    color: 'var(--color-text)',
-                  }}
-                />
-
-                {/* Remove */}
-                {splits.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeSplitRow(i)}
-                    className="p-1.5 rounded-lg transition-colors hover:bg-red-100"
-                    style={{ color: 'var(--color-text-subtle)' }}
-                    title="Remove split"
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                  <select
+                    value={row.userId}
+                    onChange={(e) => updateSplitUser(i, e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm outline-none"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'white',
+                      color: 'var(--color-text)',
+                    }}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                    {memberOptions.map((m) => (
+                      <option key={m.user_id} value={m.user_id}>
+                        {m.profile.display_name ?? m.user_id}
+                        {m.user_id === currentUserId ? ' (you)' : ''}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="flex items-center gap-2 sm:flex-shrink-0">
+                    <input
+                      type="number"
+                      value={row.amountOwed}
+                      onChange={(e) => updateSplitAmount(i, e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-right text-sm outline-none sm:w-28 sm:flex-none"
+                      style={{
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'white',
+                        color: 'var(--color-text)',
+                      }}
+                    />
+
+                    {splits.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSplitRow(i)}
+                        className="rounded-lg p-1.5 transition-colors hover:bg-red-100"
+                        style={{ color: 'var(--color-text-subtle)' }}
+                        title="Remove split"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })}

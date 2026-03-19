@@ -170,7 +170,7 @@ export function PlacesSection({
     <div className="space-y-4 sm:space-y-5">
       {/* Dialogs */}
       {showAddCategory && editor && (
-        <Dialog title="Add category" onClose={() => setShowAddCategory(false)} maxWidth="max-w-sm">
+        <Dialog title="Add category" onClose={() => setShowAddCategory(false)} maxWidth="sm:max-w-sm">
           <AddCategoryForm
             tripId={tripId}
             onCreated={(cat) => { handleCategoryCreated(cat); setShowAddCategory(false); }}
@@ -180,7 +180,7 @@ export function PlacesSection({
       )}
 
       {showAddPlace && editor && (
-        <Dialog title="Add a place" onClose={() => setShowAddPlace(false)} maxWidth="max-w-lg">
+        <Dialog title="Add a place" onClose={() => setShowAddPlace(false)} maxWidth="sm:max-w-lg">
           <AddPlaceForm
             tripId={tripId}
             categories={categories}

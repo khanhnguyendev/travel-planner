@@ -71,8 +71,8 @@ export function InviteLinkButton({
       </button>
 
       {open && (
-        <Dialog title="Share invite link" onClose={() => setOpen(false)} maxWidth="max-w-sm">
-          <div className="space-y-5">
+        <Dialog title="Share invite link" onClose={() => setOpen(false)} maxWidth="sm:max-w-sm">
+          <div className="min-w-0 space-y-5 overflow-x-hidden">
             <div className="rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}>
               Invite links are the only sharing method right now. Generate a link, then send it manually in chat or any messaging app.
             </div>
@@ -124,13 +124,13 @@ export function InviteLinkButton({
             {inviteUrl && (
               <div className="space-y-2">
                 <div
-                  className="flex items-center gap-2 p-3 rounded-xl border"
+                  className="flex min-w-0 flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center"
                   style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-subtle)' }}
                 >
-                  <p className="text-xs text-stone-600 flex-1 truncate font-mono">{inviteUrl}</p>
+                  <p className="min-w-0 flex-1 break-all text-xs text-stone-600 font-mono">{inviteUrl}</p>
                   <button
                     onClick={handleCopy}
-                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0"
+                    className="inline-flex w-full items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:w-auto sm:flex-shrink-0"
                     style={{
                       backgroundColor: copied ? '#D1FAE5' : 'white',
                       color: copied ? '#065F46' : 'var(--color-text-muted)',

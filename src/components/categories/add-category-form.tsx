@@ -72,8 +72,8 @@ export function AddCategoryForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="min-w-0 space-y-3 overflow-x-hidden">
+      <div className="grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-2">
         {/* Icon (emoji) input */}
         <input
           type="text"
@@ -98,7 +98,7 @@ export function AddCategoryForm({
           placeholder="Category name"
           maxLength={60}
           required
-          className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+          className="min-w-0 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
           style={{
             borderColor: 'var(--color-border)',
             '--tw-ring-color': 'var(--color-primary)',
@@ -157,11 +157,11 @@ export function AddCategoryForm({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
         <button
           type="submit"
           disabled={isPending}
-          className="btn-primary inline-flex items-center gap-1.5 text-sm"
+          className="btn-primary inline-flex w-full items-center justify-center gap-1.5 text-sm sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           {isPending ? 'Adding…' : 'Add category'}
@@ -171,7 +171,7 @@ export function AddCategoryForm({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex items-center gap-1 text-sm px-3 py-2 rounded-lg transition-colors"
+            className="inline-flex w-full items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors sm:w-auto"
             style={{ color: 'var(--color-text-muted)' }}
           >
             <X className="w-4 h-4" />

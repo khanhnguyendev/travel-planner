@@ -42,7 +42,7 @@ export function AddExpenseDialog({
       </button>
 
       {open && (
-        <Dialog title="Add expense" onClose={() => setOpen(false)} maxWidth="max-w-xl">
+        <Dialog title="Add expense" onClose={() => setOpen(false)} maxWidth="sm:max-w-xl">
           <ExpenseForm
             tripId={tripId}
             members={members}

@@ -231,8 +231,8 @@ function ScheduleEditor({
 
   // Compact editing layout: date + from + to all in one row
   return (
-    <div className="space-y-2 p-3 rounded-xl border border-stone-200 bg-stone-50">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <label className="block text-xs font-medium text-stone-500 mb-1">Start date</label>
           <input
@@ -257,7 +257,7 @@ function ScheduleEditor({
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <label className="block text-xs font-medium text-stone-500 mb-1">From</label>
           <input
@@ -294,11 +294,11 @@ function ScheduleEditor({
           </select>
         </div>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <button
           onClick={handleSave}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-teal-700 disabled:opacity-50 sm:w-auto"
         >
           <Check className="w-3.5 h-3.5" />
           Save
@@ -306,7 +306,7 @@ function ScheduleEditor({
         <button
           onClick={() => setEditing(false)}
           disabled={pending}
-          className="text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
+          className="w-full rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-600 transition-colors hover:bg-stone-100 sm:w-auto"
         >
           Cancel
         </button>
@@ -583,23 +583,18 @@ export function PlaceDetailDrawer({
       />
 
       <div
-        className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4"
+        className="fixed inset-0 z-[120] flex items-center justify-center overflow-x-hidden px-2 py-3 sm:p-4"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
       <aside
-        className="relative w-full rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[95dvh] sm:max-h-[90dvh]"
+        className="relative mx-auto flex max-h-[92dvh] w-full min-w-0 max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-[1.5rem] sm:max-h-[90dvh] sm:max-w-4xl"
         style={{ backgroundColor: 'var(--color-bg)' }}
         role="dialog"
         aria-modal="true"
         aria-label={place.name}
       >
-        {/* Mobile drag handle */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-stone-200" />
-        </div>
-
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="flex items-start justify-between border-b p-4 sm:p-5" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex-1 min-w-0 pr-3">
             {(() => {
               const meta = place.metadata_json as { place?: string } | null;
@@ -654,7 +649,7 @@ export function PlaceDetailDrawer({
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="min-w-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden p-4 sm:space-y-6 sm:p-5">
           {/* Rating + price */}
           {(place.rating != null || place.price_level != null) && (
             <div className="flex items-center gap-4 flex-wrap">

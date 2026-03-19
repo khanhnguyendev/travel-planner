@@ -174,7 +174,7 @@ useEffect(() => {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="min-w-0 space-y-4 overflow-x-hidden sm:space-y-5">
       {/* Search input */}
       <div>
         <label htmlFor="place-search" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text)' }}>
@@ -246,7 +246,7 @@ useEffect(() => {
           {/* Place preview card */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide mb-2 text-stone-400">Preview</p>
-            <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-1.5">
+            <div className="min-w-0 space-y-1.5 rounded-xl border border-stone-200 bg-stone-50 p-4">
               <p className="font-bold text-base text-stone-800 leading-snug">{selected.name}</p>
               {(selected.full_address ?? selected.place_formatted) && (
                 <div className="flex items-start gap-1.5">
@@ -345,7 +345,7 @@ useEffect(() => {
               Visit schedule <span className="text-xs font-normal text-stone-400">(optional)</span>
             </p>
             <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="relative">
                   <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
                   <input type="date" value={visitDate} onChange={(e) => { setVisitDate(e.target.value); if (!e.target.value) setVisitDateEnd(''); }} disabled={isPending}
@@ -360,7 +360,7 @@ useEffect(() => {
                     className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
                   <input type="time" value={visitTimeFrom} onChange={(e) => setVisitTimeFrom(e.target.value)} disabled={isPending}
@@ -388,19 +388,19 @@ useEffect(() => {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
         {selected && localCategories.length === 0 ? (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
+          <div className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             Create a category to continue
           </div>
         ) : selected ? (
-          <button type="submit" disabled={isPending} className="btn-primary inline-flex items-center gap-2 text-sm disabled:opacity-50">
+          <button type="submit" disabled={isPending} className="btn-primary inline-flex w-full items-center justify-center gap-2 text-sm disabled:opacity-50 sm:w-auto">
             {isPending ? (<><Loader2 className="w-4 h-4 animate-spin" />Adding…</>) : 'Add place'}
           </button>
         ) : null}
         {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1 text-sm px-3 py-2 rounded-lg transition-colors" style={{ color: 'var(--color-text-muted)' }}>
+          <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex w-full items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors sm:w-auto" style={{ color: 'var(--color-text-muted)' }}>
             <X className="w-4 h-4" />
             Cancel
           </button>
@@ -409,7 +409,7 @@ useEffect(() => {
       </form>
 
       {showCategoryDialog && (
-        <Dialog title="New category" onClose={() => setShowCategoryDialog(false)}>
+        <Dialog title="New category" onClose={() => setShowCategoryDialog(false)} maxWidth="sm:max-w-md">
           <AddCategoryForm
             tripId={tripId}
             onCreated={(cat) => {
