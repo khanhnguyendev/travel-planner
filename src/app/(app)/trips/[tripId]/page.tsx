@@ -439,6 +439,7 @@ export default async function TripDetailPage({
   );
   const accommodationPlaces = places.filter((place) => accommodationCategoryIds.has(place.category_id));
   const planningPlaces = places.filter((place) => !accommodationCategoryIds.has(place.category_id));
+  const primaryAccommodation = accommodationPlaces[0] ?? null;
   const stopPointers = getStopPointers(planningPlaces);
   const planningScheduledPlaces = planningPlaces.filter((place) => place.visit_date);
   const scheduledPlacesCount = places.filter((place) => place.visit_date).length;
@@ -735,14 +736,9 @@ export default async function TripDetailPage({
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <p>
-                      This is a public trip preview. Places, map, and timeline stay visible here, while invites, comments, votes, and spending remain member-only.
+                      This is a public trip preview. Places, map, and timeline stay visible here, while live crew activity, trip stops, votes, comments, and spending remain member-only.
                     </p>
                   </div>
-                  <JoinRequestButton
-                    tripId={tripId}
-                    isAuthenticated={!!user}
-                    alreadyRequested={joinRequested}
-                  />
                 </div>
               )}
 
@@ -762,32 +758,43 @@ export default async function TripDetailPage({
                 </p>
               </div>
 
-              <BudgetEditor
-                tripId={tripId}
-                budget={trip.budget}
-                budgetCurrency={trip.budget_currency}
-                canManage={canManage}
-                totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
-                poolSpent={poolSpent}
-                members={members}
-                contributions={contributions}
-                actionSlot={canEdit ? (
-                  <AddMoneyDialog
-                    tripId={tripId}
-                    members={members}
-                    currentUserId={currentUserId}
-                    places={places}
-                    budget={trip.budget}
-                    budgetCurrency={trip.budget_currency}
-                    canManageBudget={canManage}
-                    poolBalance={contributions
-                      .filter((c) => c.currency === trip.budget_currency)
-                      .reduce((sum, c) => sum + c.amount, 0) - poolSpent}
-                    triggerLabel="Add money"
-                    triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
-                  />
-                ) : null}
-              />
+              {isMember ? (
+                <BudgetEditor
+                  tripId={tripId}
+                  budget={trip.budget}
+                  budgetCurrency={trip.budget_currency}
+                  canManage={canManage}
+                  totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
+                  poolSpent={poolSpent}
+                  members={members}
+                  contributions={contributions}
+                  actionSlot={canEdit ? (
+                    <AddMoneyDialog
+                      tripId={tripId}
+                      members={members}
+                      currentUserId={currentUserId}
+                      places={places}
+                      budget={trip.budget}
+                      budgetCurrency={trip.budget_currency}
+                      canManageBudget={canManage}
+                      poolBalance={contributions
+                        .filter((c) => c.currency === trip.budget_currency)
+                        .reduce((sum, c) => sum + c.amount, 0) - poolSpent}
+                      triggerLabel="Add money"
+                      triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+                    />
+                  ) : null}
+                />
+              ) : (
+                <div className="rounded-[1.25rem] bg-white/72 px-4 py-4">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                    Shared money stays private
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    Budget caps, pooled funds, contributors, balances, and transaction history only appear after you join the crew.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -837,7 +844,7 @@ export default async function TripDetailPage({
             <div className="mb-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Crew
+                  {isMember ? 'Crew' : 'Join this trip'}
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
@@ -863,7 +870,14 @@ export default async function TripDetailPage({
               />
             ) : (
               <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                Join the trip to vote, comment, add places, manage crew, and track shared spending.
+                <p>
+                  Sign in to vote, comment, add places, manage crew, and unlock shared money for this trip.
+                </p>
+                <JoinRequestButton
+                  tripId={tripId}
+                  isAuthenticated={!!user}
+                  alreadyRequested={joinRequested}
+                />
               </div>
             )}
             </div>
@@ -871,7 +885,7 @@ export default async function TripDetailPage({
         </div>
       </section>
 
-      {accommodationPlaces.length > 0 && (
+      {isMember && accommodationPlaces.length > 0 && (
         <TripSectionRefreshBoundary
           tripId={tripId}
           sections={TRIP_REFRESH_SECTIONS.places}
@@ -898,54 +912,84 @@ export default async function TripDetailPage({
         </TripSectionRefreshBoundary>
       )}
 
-      <TripSectionRefreshBoundary
-        tripId={tripId}
-        sections={TRIP_REFRESH_SECTIONS.stops}
-        signature={stopsSignature}
-        label="Updating trip stops"
-      >
+      {!isMember && primaryAccommodation && (
         <section className="section-shell mt-4 p-4 sm:p-5">
           <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm" style={{ color: '#EA580C' }}>
+                <MapPin className="h-4 w-4" />
+              </div>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                  Trip stops
+                  Stay
                 </p>
+                <h2 className="text-lg font-semibold section-title" style={{ color: 'var(--color-text)' }}>
+                  Accommodation arranged
+                </h2>
               </div>
             </div>
-
-            <div className="grid gap-3 lg:grid-cols-3">
-              <StopSpotlightCard
-                label="Previous stop"
-                place={stopPointers.previous}
-                emptyLabel="None yet"
-                tone="previous"
-                canEdit={canEdit}
-                allDayPlaces={stopPointers.previous?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
-                tripId={tripId}
-              />
-              <StopSpotlightCard
-                label="Current"
-                place={stopPointers.current}
-                emptyLabel={planningScheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
-                tone="current"
-                canEdit={canEdit}
-                allDayPlaces={stopPointers.current?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
-                tripId={tripId}
-              />
-              <StopSpotlightCard
-                label="Next stop"
-                place={stopPointers.next}
-                emptyLabel={planningScheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
-                tone="next"
-                canEdit={canEdit}
-                allDayPlaces={stopPointers.next?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
-                tripId={tripId}
-              />
+            <div className="rounded-[1.25rem] bg-white/72 px-4 py-4">
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                {primaryAccommodation.name}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                Stay details, map shortcuts, and check-in timing stay private to trip members.
+              </p>
             </div>
           </div>
         </section>
-      </TripSectionRefreshBoundary>
+      )}
+
+      {isMember && (
+        <TripSectionRefreshBoundary
+          tripId={tripId}
+          sections={TRIP_REFRESH_SECTIONS.stops}
+          signature={stopsSignature}
+          label="Updating trip stops"
+        >
+          <section className="section-shell mt-4 p-4 sm:p-5">
+            <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                    Trip stops
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-3">
+                <StopSpotlightCard
+                  label="Previous stop"
+                  place={stopPointers.previous}
+                  emptyLabel="None yet"
+                  tone="previous"
+                  canEdit={canEdit}
+                  allDayPlaces={stopPointers.previous?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.previous!.visit_date) : []}
+                  tripId={tripId}
+                />
+                <StopSpotlightCard
+                  label="Current"
+                  place={stopPointers.current}
+                  emptyLabel={planningScheduledPlaces.length > 0 ? 'No stop today' : 'Not scheduled'}
+                  tone="current"
+                  canEdit={canEdit}
+                  allDayPlaces={stopPointers.current?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.current!.visit_date) : []}
+                  tripId={tripId}
+                />
+                <StopSpotlightCard
+                  label="Next stop"
+                  place={stopPointers.next}
+                  emptyLabel={planningScheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
+                  tone="next"
+                  canEdit={canEdit}
+                  allDayPlaces={stopPointers.next?.visit_date ? planningPlaces.filter((p) => p.visit_date === stopPointers.next!.visit_date) : []}
+                  tripId={tripId}
+                />
+              </div>
+            </div>
+          </section>
+        </TripSectionRefreshBoundary>
+      )}
 
       <TripMobileActionDock
         tripId={tripId}
