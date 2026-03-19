@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Car, Bus, Plane, Plus, X, Check, Trash2, ChevronDown, ChevronUp,
-  CalendarDays, Hash, AlignLeft, ArrowRight,
+  CalendarDays, Hash, AlignLeft, ArrowRight, Search, Loader2, MapPin,
 } from 'lucide-react';
 import type { TransportBooking, TransportType } from '@/lib/types';
+import type { MapboxSuggestion } from '@/features/places/mapbox';
 import { addTransportBooking, deleteTransportBooking } from '@/features/transport/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
@@ -48,6 +49,148 @@ function formatTime(t: string) {
 
 function formatCost(amount: number, currency: string) {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+}
+
+// ---------------------------------------------------------------------------
+// LocationSearchInput
+// ---------------------------------------------------------------------------
+
+function LocationSearchInput({
+  tripId,
+  value,
+  onChange,
+  placeholder,
+}: {
+  tripId: string;
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) {
+  const [sessionToken] = useState(() => crypto.randomUUID());
+  const [query, setQuery] = useState(value);
+  const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLUListElement>(null);
+
+  // Keep local query in sync if parent resets value (e.g. "Same as From")
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      const t = e.target as Node;
+      if (!inputRef.current?.contains(t) && !dropdownRef.current?.contains(t)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const fetchSuggestions = useCallback(async (q: string) => {
+    if (q.trim().length < 2) { setSuggestions([]); setShowDropdown(false); return; }
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ q: q.trim(), sessionToken, tripId });
+      const res = await fetch(`/api/places/search?${params}`);
+      const json = await res.json() as { ok: boolean; data?: { suggestions: MapboxSuggestion[] } };
+      if (json.ok && json.data) {
+        setSuggestions(json.data.suggestions);
+        setShowDropdown(json.data.suggestions.length > 0);
+        setActiveIndex(-1);
+      }
+    } catch { /* ignore */ } finally { setLoading(false); }
+  }, [tripId, sessionToken]);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setQuery(val);
+    onChange(val); // allow free-text
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { void fetchSuggestions(val); }, 400);
+  }
+
+  function handleSelect(s: MapboxSuggestion) {
+    const text = s.name;
+    setQuery(text);
+    onChange(text);
+    setSuggestions([]);
+    setShowDropdown(false);
+    setActiveIndex(-1);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex((p) => Math.min(p + 1, suggestions.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((p) => Math.max(p - 1, 0)); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (activeIndex >= 0 && suggestions[activeIndex]) handleSelect(suggestions[activeIndex]); }
+    else if (e.key === 'Escape') { setShowDropdown(false); setActiveIndex(-1); }
+  }
+
+  const inputCls = 'w-full rounded-lg border pl-8 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white';
+  const inputStyle = { borderColor: 'var(--color-border)', color: 'var(--color-text)' };
+
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onFocus={() => { if (suggestions.length > 0) setShowDropdown(true); }}
+        placeholder={placeholder}
+        className={inputCls}
+        style={inputStyle}
+        autoComplete="off"
+      />
+      {loading && (
+        <Loader2 className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 animate-spin" />
+      )}
+      {!loading && query && (
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); setQuery(''); onChange(''); setSuggestions([]); setShowDropdown(false); }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-stone-400 hover:text-stone-600"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
+
+      {showDropdown && suggestions.length > 0 && (
+        <ul
+          ref={dropdownRef}
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-52 overflow-y-auto rounded-xl border bg-white shadow-lg"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          {suggestions.map((s, i) => (
+            <li key={s.mapbox_id}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(s); }}
+                className={`flex w-full items-start gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${i === activeIndex ? 'bg-teal-50' : 'hover:bg-stone-50'}`}
+              >
+                <MapPin className="mt-0.5 w-3.5 h-3.5 flex-shrink-0 text-stone-400" />
+                <div className="min-w-0">
+                  <p className="font-medium text-stone-800 truncate">{s.name}</p>
+                  {s.full_address && (
+                    <p className="text-xs text-stone-400 truncate">{s.full_address}</p>
+                  )}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -280,11 +423,16 @@ function AddTransportDialog({
           })}
         </div>
 
-        {/* From / To */}
+        {/* From / To with Mapbox search */}
         <div className="space-y-3">
           <div>
             <label className={labelCls}>From</label>
-            <input className={inputCls} style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value)} placeholder={ph.from} />
+            <LocationSearchInput
+              tripId={tripId}
+              value={from}
+              onChange={setFrom}
+              placeholder={ph.from}
+            />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -300,7 +448,12 @@ function AddTransportDialog({
                 </button>
               )}
             </div>
-            <input className={inputCls} style={inputStyle} value={to} onChange={(e) => setTo(e.target.value)} placeholder={ph.to} />
+            <LocationSearchInput
+              tripId={tripId}
+              value={to}
+              onChange={setTo}
+              placeholder={ph.to}
+            />
           </div>
         </div>
 
