@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2, MapPin } from 'lucide-react';
+import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2, MapPin, Wallet } from 'lucide-react';
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
 import type { TripRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
@@ -231,19 +231,29 @@ export function ExpenseDetail({
           <div className="flex-1 min-w-0">
             {/* Meta */}
             <div className="flex items-center gap-4 flex-wrap mt-1">
-              <span
-                className="inline-flex items-center gap-1.5 text-sm"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                <Avatar
-                  user={{
-                    display_name: paidByName,
-                    avatar_url: expense.paid_by_profile.avatar_url ?? null,
-                  }}
-                  size="sm"
-                />
-                Paid by <strong className="ml-0.5" style={{ color: 'var(--color-text)' }}>{paidByName}</strong>
-              </span>
+              {expense.paid_from_pool ? (
+                <span
+                  className="inline-flex items-center gap-1.5 text-sm font-medium"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  <Wallet className="w-4 h-4" />
+                  Paid from shared pool
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1.5 text-sm"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  <Avatar
+                    user={{
+                      display_name: paidByName,
+                      avatar_url: expense.paid_by_profile.avatar_url ?? null,
+                    }}
+                    size="sm"
+                  />
+                  Paid by <strong className="ml-0.5" style={{ color: 'var(--color-text)' }}>{paidByName}</strong>
+                </span>
+              )}
               <span
                 className="inline-flex items-center gap-1.5 text-sm"
                 style={{ color: 'var(--color-text-muted)' }}

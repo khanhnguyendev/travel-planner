@@ -74,6 +74,10 @@ export function calculateDebts(expenses: ExpenseWithSplits[]): DebtSummary[] {
   const balancesByCurrency = new Map<string, Map<string, number>>();
 
   for (const expense of expenses) {
+    // Pool expenses have no individual payer — skip them entirely.
+    // They don't create person-to-person debts; they only affect the shared pool balance.
+    if (expense.paid_from_pool) continue;
+
     const currency = expense.currency;
 
     if (!balancesByCurrency.has(currency)) {

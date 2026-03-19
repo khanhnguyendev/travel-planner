@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Receipt, User, Plus, Trash2, CheckSquare, X, MapPin } from 'lucide-react';
+import { Receipt, User, Plus, Trash2, CheckSquare, X, MapPin, Wallet } from 'lucide-react';
 import type { Expense } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { deleteExpense } from '@/features/expenses/actions';
@@ -238,10 +238,15 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
                       <CurrencyPill currency={expense.currency} />
                     </div>
                     <div className="flex items-center gap-2 text-xs text-stone-400">
-                      <User className="w-3 h-3 flex-shrink-0" />
+                      {expense.paid_from_pool
+                        ? <Wallet className="w-3 h-3 flex-shrink-0 text-teal-500" />
+                        : <User className="w-3 h-3 flex-shrink-0" />}
                       <span className="truncate">
                         {expense.expense_date ? formatDate(expense.expense_date) : formatDate(expense.created_at)}
                       </span>
+                      {expense.paid_from_pool && (
+                        <span className="font-semibold text-teal-600">Pool</span>
+                      )}
                       {expense.category && <span className="truncate text-stone-500">{expense.category}</span>}
                     </div>
                     {expense.place_id && placeNameById[expense.place_id] && (
