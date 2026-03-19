@@ -23,14 +23,15 @@ import { getJoinRequests, getMembers, hasRequestedJoin } from '@/features/member
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
-import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
+import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
-import { formatCurrency, formatDate, formatDateAndTime, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
 import { TripTimeline } from '@/components/places/trip-timeline';
 import { MapTabClient } from '@/components/places/map-tab-client';
 import { DebtSummary } from '@/components/expenses/debt-summary';
+import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 import { Avatar } from '@/components/ui/avatar';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
@@ -416,12 +417,11 @@ export default async function TripDetailPage({
   const { tab: tabParam } = await searchParams;
   const user = await getSession();
 
-  const [trip, role, members, categories, expenses, contributions] = await Promise.all([
+  const [trip, role, members, categories, contributions] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getMembers(tripId),
     getCategories(tripId),
-    getExpenses(tripId),
     getBudgetContributions(tripId),
   ]);
 
@@ -549,7 +549,7 @@ export default async function TripDetailPage({
     });
   }
   const totalsByCurrency: Record<string, number> = {};
-  for (const expense of expenses) {
+  for (const expense of expensesWithSplits) {
     totalsByCurrency[expense.currency] = (totalsByCurrency[expense.currency] ?? 0) + expense.amount;
   }
   // Pool-paid expenses: deduct from the shared income pool
@@ -624,8 +624,8 @@ export default async function TripDetailPage({
     Array.from(memberBalanceMap.entries()).map(([userId, net]) => `${userId}:${net}`).join(','),
   ]);
   const expensesSignature = buildRefreshSignature([
-    expenses.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}:${expense.expense_date ?? ''}`).join(','),
-    expensesWithSplits.map((expense) => `${expense.id}:${expense.splits.length}:${expense.paid_by_user_id}:${expense.expense_date ?? ''}`).join(','),
+    expensesWithSplits.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}:${expense.expense_date ?? ''}`).join(','),
+    expensesWithSplits.map((expense) => `${expense.id}:${expense.splits.length}:${expense.paid_by_user_id}:${expense.title}:${expense.place_id ?? ''}`).join(','),
   ]);
   const activitySignature = buildRefreshSignature(
     activityEntries.map((entry) => `${entry.id}:${entry.action}:${entry.created_at}`)
@@ -869,39 +869,14 @@ export default async function TripDetailPage({
                 ) : (
                   <div className="space-y-2">
                     {recentExpenses.map((expense, index) => (
-                      <Link
+                      <ExpenseSummaryCard
                         key={expense.id}
+                        expense={expense}
+                        linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
                         href={`/trips/${tripId}/expenses/${expense.id}`}
-                        className={`${index >= 3 ? 'hidden lg:flex' : 'flex'} flex-col items-start gap-3 rounded-[1.2rem] bg-white/70 px-3 py-3 transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between`}
-                      >
-                        <div className="min-w-0 w-full flex-1">
-                          <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                            {expense.title}
-                          </p>
-                          <p className="mt-1 truncate text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                            {expense.paid_by_profile.display_name ?? 'Member'}
-                            {expense.category ? ` · ${expense.category}` : ''}
-                            {' · '}
-                            {expense.expense_date
-                              ? formatDateAndTime(expense.expense_date, expense.created_at)
-                              : formatDateTime(expense.created_at)}
-                          </p>
-                          {expense.place_id && placeNameById[expense.place_id] && (
-                            <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                              <MapPin className="h-3 w-3" />
-                              {placeNameById[expense.place_id]}
-                            </p>
-                          )}
-                        </div>
-                        <div className="w-full text-left sm:w-auto sm:text-right">
-                          <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                            {formatCurrency(expense.amount, expense.currency)}
-                          </p>
-                          <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                            {expense.splits.length} split{expense.splits.length === 1 ? '' : 's'}
-                          </p>
-                        </div>
-                      </Link>
+                        compact
+                        className={index >= 3 ? 'hidden lg:block' : undefined}
+                      />
                     ))}
                   </div>
                 )}
@@ -1184,7 +1159,9 @@ export default async function TripDetailPage({
                     Shared expenses
                   </h2>
                   <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    {expenses.length > 0 ? `${expenses.length} expense entries across ${Object.keys(totalsByCurrency).length} currencies` : 'No expenses added yet'}
+                    {expensesWithSplits.length > 0
+                      ? `${expensesWithSplits.length} expense entries with payer, split crew, place, and time details`
+                      : 'No expenses added yet'}
                   </p>
                 </div>
 
@@ -1204,7 +1181,7 @@ export default async function TripDetailPage({
                 </div>
               </div>
 
-              {expenses.length === 0 ? (
+              {expensesWithSplits.length === 0 ? (
                 <div className="rounded-[1.5rem] bg-stone-950/[0.03] px-4 py-8 text-center">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
                     <Receipt className="h-6 w-6" style={{ color: 'var(--color-text-subtle)' }} />
@@ -1218,30 +1195,14 @@ export default async function TripDetailPage({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {expenses.slice(0, 4).map((expense) => (
-                    <Link
+                  {expensesWithSplits.slice(0, 4).map((expense) => (
+                    <ExpenseSummaryCard
                       key={expense.id}
+                      expense={expense}
+                      linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
                       href={`/trips/${tripId}/expenses/${expense.id}`}
-                      className="mini-stat flex min-h-[56px] items-center justify-between gap-3 px-4 py-3 transition-transform hover:-translate-y-0.5"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                          {expense.title}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                          {expense.category ?? 'General'}{expense.expense_date ? ` · ${expense.expense_date}` : ''}
-                        </p>
-                        {expense.place_id && placeNameById[expense.place_id] && (
-                          <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                            <MapPin className="h-3 w-3" />
-                            {placeNameById[expense.place_id]}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                        {formatCurrency(expense.amount, expense.currency)}
-                      </span>
-                    </Link>
+                      compact
+                    />
                   ))}
                 </div>
               )}

@@ -1,68 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Receipt, User, Plus, Trash2, CheckSquare, X, MapPin, Wallet } from 'lucide-react';
-import type { Expense } from '@/lib/types';
-import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
+import { Receipt, Plus, Trash2, CheckSquare, X } from 'lucide-react';
 import { deleteExpense } from '@/features/expenses/actions';
+import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { useLoadingToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
-
-const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
-  'Accommodation': '🛏️',
-  'Entertainment': '🎤',
-  'Groceries': '🛒',
-  'Healthcare': '🦷',
-  'Insurance': '🧯',
-  'Rent & Charges': '🏠',
-  'Restaurants & Bars': '🍔',
-  'Shopping': '🛍️',
-  'Transport': '🚕',
-  'Other': '🤚',
-};
+import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 
 interface ExpenseListProps {
-  expenses: Expense[];
+  expenses: ExpenseWithSplits[];
   tripId: string;
   placeNameById?: Record<string, string>;
   canEdit?: boolean;
-}
-
-function ReceiptThumbnail({ receiptPath }: { receiptPath: string }) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) return null;
-
-  const publicUrl = `${supabaseUrl}/storage/v1/object/public/receipts/${receiptPath}`;
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={publicUrl}
-      alt="Receipt"
-      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-      onError={(e) => {
-        (e.currentTarget as HTMLImageElement).style.display = 'none';
-      }}
-    />
-  );
-}
-
-function CurrencyPill({ currency }: { currency: string }) {
-  return (
-    <span
-      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
-      style={{
-        backgroundColor: 'var(--color-bg-subtle)',
-        color: 'var(--color-text-muted)',
-      }}
-    >
-      {currency}
-    </span>
-  );
 }
 
 export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById = {}, canEdit }: ExpenseListProps) {
@@ -73,11 +27,9 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const loadingToast = useLoadingToast();
 
-  function expenseMoment(expense: Expense) {
-    return expense.expense_date
-      ? formatDateAndTime(expense.expense_date, expense.created_at)
-      : formatDateTime(expense.created_at);
-  }
+  useEffect(() => {
+    setExpenses(initialExpenses);
+  }, [initialExpenses]);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -229,7 +181,7 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
           const isDeleting = deleting.has(expense.id);
 
           return (
-            <div key={expense.id} className="relative flex items-stretch gap-2">
+            <div key={expense.id} className="group relative flex items-stretch gap-2">
               {/* Checkbox in select mode */}
               {selectMode && (
                 <button
@@ -253,57 +205,16 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
               <Link
                 href={selectMode ? '#' : `/trips/${tripId}/expenses/${expense.id}`}
                 onClick={selectMode ? (e) => { e.preventDefault(); toggleSelect(expense.id); } : undefined}
-                className={cn(
-                  'card card-hover flex flex-1 items-center gap-4 p-4 group transition-all',
-                  'hover:scale-[1.01] hover:shadow-md',
-                  'flex-col sm:flex-row min-h-[72px]',
-                  isSelected && 'ring-2 ring-teal-500',
-                  isDeleting && 'opacity-50 pointer-events-none'
-                )}
+                className="flex-1"
               >
-                <div className="flex items-center gap-4 w-full sm:w-auto sm:flex-1 min-w-0">
-                  {expense.receipt_path ? (
-                    <ReceiptThumbnail receiptPath={expense.receipt_path} />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: 'var(--color-primary-light)' }}
-                    >
-                      {expense.category && EXPENSE_CATEGORY_EMOJIS[expense.category]
-                        ? <span className="text-xl leading-none">{EXPENSE_CATEGORY_EMOJIS[expense.category]}</span>
-                        : <Receipt className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-semibold text-sm truncate text-stone-800">{expense.title}</span>
-                      <CurrencyPill currency={expense.currency} />
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-stone-400">
-                      {expense.paid_from_pool
-                        ? <Wallet className="w-3 h-3 flex-shrink-0 text-teal-500" />
-                        : <User className="w-3 h-3 flex-shrink-0" />}
-                      <span className="truncate">
-                        {expenseMoment(expense)}
-                      </span>
-                      {expense.paid_from_pool && (
-                        <span className="font-semibold text-teal-600">Pool</span>
-                      )}
-                      {expense.category && <span className="truncate text-stone-500">{expense.category}</span>}
-                    </div>
-                    {expense.place_id && placeNameById[expense.place_id] && (
-                      <div className="mt-1 flex items-center gap-1.5 text-xs text-stone-500">
-                        <MapPin className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{placeNameById[expense.place_id]}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full sm:w-auto text-left sm:text-right flex-shrink-0">
-                  <span className="font-bold text-lg sm:text-base" style={{ color: 'var(--color-primary)' }}>
-                    {formatCurrency(expense.amount, expense.currency)}
-                  </span>
-                </div>
+                <ExpenseSummaryCard
+                  expense={expense}
+                  linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
+                  compact
+                  selected={isSelected}
+                  disabled={isDeleting}
+                  className={cn(selectMode && 'cursor-pointer', isDeleting && 'pointer-events-none')}
+                />
               </Link>
 
               {/* Quick delete — visible on hover, hidden in select mode */}

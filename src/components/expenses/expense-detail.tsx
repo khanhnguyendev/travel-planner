@@ -1,17 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2, MapPin, Wallet } from 'lucide-react';
+import { Pencil, Trash2, Receipt, CheckCircle2 } from 'lucide-react';
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
 import type { TripRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
-import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
+import { formatCurrency } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 import { Avatar } from '@/components/ui/avatar';
+import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 
 interface ExpenseDetailProps {
   expense: ExpenseWithSplits;
@@ -202,11 +202,6 @@ export function ExpenseDetail({
     }
   }
 
-  const paidByName = expense.paid_by_profile.display_name ?? 'Unknown member';
-  const expenseDate = expense.expense_date
-    ? formatDateAndTime(expense.expense_date, expense.created_at)
-    : formatDateTime(expense.created_at);
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <PageHeader
@@ -219,107 +214,23 @@ export function ExpenseDetail({
         ]}
       />
 
-      {/* Header card */}
-      <div className="card p-6">
-        {/* Teal accent bar */}
-        <div
-          className="h-1.5 rounded-t-2xl -mx-6 -mt-6 mb-5"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        />
+      <div className="space-y-4">
+        <ExpenseSummaryCard expense={expense} linkedPlaceName={linkedPlaceName} />
 
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            {/* Meta */}
-            <div className="flex items-center gap-4 flex-wrap mt-1">
-              {expense.paid_from_pool ? (
-                <span
-                  className="inline-flex items-center gap-1.5 text-sm font-medium"
-                  style={{ color: 'var(--color-primary)' }}
-                >
-                  <Wallet className="w-4 h-4" />
-                  Paid from shared pool
-                </span>
-              ) : (
-                <span
-                  className="inline-flex items-center gap-1.5 text-sm"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  <Avatar
-                    user={{
-                      display_name: paidByName,
-                      avatar_url: expense.paid_by_profile.avatar_url ?? null,
-                    }}
-                    size="sm"
-                  />
-                  Paid by <strong className="ml-0.5" style={{ color: 'var(--color-text)' }}>{paidByName}</strong>
-                </span>
-              )}
-              <span
-                className="inline-flex items-center gap-1.5 text-sm"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                <Calendar className="w-4 h-4" />
-                {expenseDate}
-              </span>
-              {expense.category && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-sm px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
-                >
-                  {expense.category}
-                </span>
-              )}
-              {linkedPlaceName && (
-                <Link
-                  href={`/trips/${tripId}?tab=places`}
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm"
-                  style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}
-                >
-                  <MapPin className="h-3.5 w-3.5" />
-                  {linkedPlaceName}
-                </Link>
-              )}
+        <div className="card p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+                Expense actions
+              </p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                Update the details or remove this entry from the shared ledger.
+              </p>
             </div>
-          </div>
-
-          {/* Amount */}
-          <div className="text-right flex-shrink-0">
-            <div
-              className="text-3xl font-bold"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              {formatCurrency(expense.amount, expense.currency)}
-            </div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-              {expense.currency}
-            </div>
-          </div>
-        </div>
-
-        {/* Note */}
-        {expense.note && (
-          <div
-            className="mt-4 flex items-start gap-2 p-3 rounded-xl text-sm"
-            style={{
-              backgroundColor: 'var(--color-bg-subtle)',
-              color: 'var(--color-text-muted)',
-            }}
-          >
-            <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            {expense.note}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div
-          className="flex items-center gap-2 mt-5 pt-5 border-t"
-          style={{ borderColor: 'var(--color-border-muted)' }}
-        >
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <a
             href={`/trips/${tripId}/expenses/${expense.id}/edit`}
-            className={cn(
-              'inline-flex items-center gap-1.5 btn-secondary text-sm min-h-[44px]'
-            )}
+            className={cn('inline-flex min-h-[44px] items-center justify-center gap-1.5 btn-secondary text-sm')}
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
@@ -328,14 +239,15 @@ export function ExpenseDetail({
             onClick={handleDelete}
             disabled={isDeleting}
             className={cn(
-              'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-              'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200',
+              'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
             <Trash2 className="w-3.5 h-3.5" />
             {isDeleting ? 'Deleting…' : 'Delete'}
           </button>
+            </div>
+          </div>
         </div>
       </div>
 

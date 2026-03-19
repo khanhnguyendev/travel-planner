@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
 import { getTrip, getUserRole } from '@/features/trips/queries';
-import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
+import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { getMembers } from '@/features/members/queries';
 import { getPlaces } from '@/features/places/queries';
 import { ExpenseList } from '@/components/expenses/expense-list';
@@ -32,10 +32,9 @@ export default async function ExpensesPage({
   const { tripId } = await params;
   const user = await requireSession();
 
-  const [trip, role, expenses, expensesWithSplits, members, places] = await Promise.all([
+  const [trip, role, expensesWithSplits, members, places] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
-    getExpenses(tripId),
     getExpensesWithSplits(tripId),
     getMembers(tripId),
     getPlaces(tripId),
@@ -49,7 +48,7 @@ export default async function ExpensesPage({
 
   // Compute totals per currency
   const totals: Record<string, number> = {};
-  for (const exp of expenses) {
+  for (const exp of expensesWithSplits) {
     totals[exp.currency] = (totals[exp.currency] ?? 0) + exp.amount;
   }
   const totalEntries = Object.entries(totals);
@@ -73,7 +72,7 @@ export default async function ExpensesPage({
     </Link>
   ) : null;
   const expensesSignature = [
-    expenses.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}`).join(','),
+    expensesWithSplits.map((expense) => `${expense.id}:${expense.amount}:${expense.currency}:${expense.created_at}`).join(','),
     expensesWithSplits.map((expense) => `${expense.id}:${expense.splits.length}:${expense.paid_by_user_id}`).join(','),
   ].join('|');
 
@@ -98,7 +97,7 @@ export default async function ExpensesPage({
         {/* Summary row */}
         {totalEntries.length > 0 && (
           <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--color-text-muted)' }}>
-            {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
+            {expensesWithSplits.length} {expensesWithSplits.length === 1 ? 'expense' : 'expenses'} &middot;{' '}
             {totalEntries
               .map(([cur, amt]) => formatCurrency(amt, cur))
               .join(' + ')}
@@ -115,7 +114,7 @@ export default async function ExpensesPage({
         )}
 
         {/* List */}
-        <ExpenseList expenses={expenses} tripId={tripId} placeNameById={placeNameById} canEdit={canEdit} />
+        <ExpenseList expenses={expensesWithSplits} tripId={tripId} placeNameById={placeNameById} canEdit={canEdit} />
       </TripSectionRefreshBoundary>
     </div>
   );
