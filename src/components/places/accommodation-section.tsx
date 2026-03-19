@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BedDouble, CalendarDays, Pencil, Check, X } from 'lucide-react';
+import { BedDouble, CalendarDays, Pencil, Check, X, Sparkles } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { updatePlaceSchedule } from '@/features/places/actions';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
@@ -35,6 +35,46 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
     weekday: 'short', month: 'short', day: 'numeric',
   });
+}
+
+function getTodayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getAccommodationStatus(place: Place): 'current' | 'upcoming' | 'completed' {
+  const now = Date.now();
+  const todayKey = getTodayKey();
+
+  if (place.actual_checkin_at) {
+    const actualCheckin = new Date(place.actual_checkin_at).getTime();
+    const actualCheckout = place.actual_checkout_at ? new Date(place.actual_checkout_at).getTime() : null;
+
+    if (!Number.isNaN(actualCheckin) && actualCheckin <= now && (!actualCheckout || Number.isNaN(actualCheckout) || actualCheckout > now)) {
+      return 'current';
+    }
+
+    if (actualCheckout && !Number.isNaN(actualCheckout) && actualCheckout <= now) {
+      return 'completed';
+    }
+  }
+
+  if (place.visit_date && place.checkout_date) {
+    if (todayKey < place.visit_date) return 'upcoming';
+    if (todayKey > place.checkout_date) return 'completed';
+    return 'current';
+  }
+
+  if (place.visit_date) {
+    if (todayKey < place.visit_date) return 'upcoming';
+    if (todayKey > place.visit_date) return 'completed';
+    return 'current';
+  }
+
+  return 'upcoming';
 }
 
 function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
@@ -154,14 +194,28 @@ function AccommodationCard({
   canEdit: boolean;
   onClick: () => void;
 }) {
+  const stayStatus = getAccommodationStatus(place);
+  const isCurrentStay = stayStatus === 'current';
+
   return (
     <div
-      className="section-shell flex cursor-pointer flex-col gap-3 p-4 transition-all hover:-translate-y-1 hover:shadow-xl"
+      className={`section-shell relative flex cursor-pointer flex-col gap-3 p-4 transition-all hover:-translate-y-1 hover:shadow-xl ${isCurrentStay ? 'pulse-soft' : ''}`}
+      style={isCurrentStay ? { boxShadow: '0 0 0 1px rgba(13, 148, 136, 0.18), 0 18px 50px rgba(13, 148, 136, 0.12)' } : undefined}
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
     >
+      {isCurrentStay && (
+        <>
+          <div className="pointer-events-none absolute inset-0 rounded-[inherit] border border-teal-400/45" />
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700">
+            <Sparkles className="h-3 w-3" />
+            Current stay
+          </span>
+        </>
+      )}
+
       {/* Name */}
       <div>
         <h3 className="font-semibold text-base leading-snug text-stone-800">{place.name}</h3>
