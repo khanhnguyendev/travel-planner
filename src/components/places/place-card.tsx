@@ -18,6 +18,7 @@ interface PlaceCardProps {
   comments?: PlaceComment[];
   placeExpenses?: PlaceExpenseHistoryEntry[];
   canVote?: boolean;
+  previewMode?: boolean;
   isNext?: boolean;
   onClick?: () => void;
   onLocationTagClick?: (tag: string) => void;
@@ -66,6 +67,7 @@ export function PlaceCard({
   comments = [],
   placeExpenses = [],
   canVote = true,
+  previewMode = false,
   isNext = false,
   onClick,
   onLocationTagClick,
@@ -170,7 +172,7 @@ export function PlaceCard({
         )}
 
         {/* Note + comment previews */}
-        {(place.note || comments.length > 0) && (
+        {!previewMode && (place.note || comments.length > 0) && (
           <div className="flex flex-col gap-1">
             {place.note && (
               <p className="flex items-start gap-1.5 text-xs text-amber-700 leading-snug line-clamp-2">
@@ -189,12 +191,12 @@ export function PlaceCard({
           </div>
         )}
 
-        {placeExpenses.length > 0 && (
+        {!previewMode && placeExpenses.length > 0 && (
           <PlaceExpenseSummary expenses={placeExpenses} />
         )}
 
         {/* Schedule */}
-        {hasSchedule && (
+        {!previewMode && hasSchedule && (
           <div
             className="flex items-center gap-2 flex-wrap rounded-[1rem] border-l-2 px-3 py-2"
             style={{ backgroundColor: '#F0FDFA', borderLeftColor: '#0D9488' }}
@@ -228,25 +230,24 @@ export function PlaceCard({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Map buttons + Votes */}
-        <div
-          className="space-y-2 border-t pt-2"
-          style={{ borderColor: 'var(--color-border-muted)' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Map links */}
-          <PlaceMapLinks place={place} />
+        {!previewMode && (
+          <div
+            className="space-y-2 border-t pt-2"
+            style={{ borderColor: 'var(--color-border-muted)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PlaceMapLinks place={place} />
 
-          {/* Votes */}
-          <VoteButtons
-            tripId={tripId}
-            placeId={place.id}
-            upvotes={voteSummary?.upvotes ?? 0}
-            downvotes={voteSummary?.downvotes ?? 0}
-            userVote={userVote}
-            canVote={canVote}
-          />
-        </div>
+            <VoteButtons
+              tripId={tripId}
+              placeId={place.id}
+              upvotes={voteSummary?.upvotes ?? 0}
+              downvotes={voteSummary?.downvotes ?? 0}
+              userVote={userVote}
+              canVote={canVote}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

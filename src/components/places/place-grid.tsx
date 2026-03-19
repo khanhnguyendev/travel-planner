@@ -27,6 +27,7 @@ interface PlaceGridProps {
   canComment: boolean;
   showExpenseHistory?: boolean;
   canEdit?: boolean;
+  previewMode?: boolean;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
   onAddPlace?: () => void;
@@ -55,6 +56,7 @@ export function PlaceGrid({
   canComment,
   showExpenseHistory = false,
   canEdit = false,
+  previewMode = false,
   tripStartDate,
   tripEndDate,
   onAddPlace,
@@ -188,7 +190,14 @@ export function PlaceGrid({
                         placeExpenses={placeExpensesByPlaceId[place.id] ?? []}
                         canVote={!selectMode && canVote}
                         isNext={place.id === nextPlaceId}
-                        onClick={selectMode ? () => onToggleSelect?.(place.id) : () => setOpenPlaceId(place.id)}
+                        previewMode={previewMode}
+                        onClick={
+                          previewMode
+                            ? undefined
+                            : selectMode
+                              ? () => onToggleSelect?.(place.id)
+                              : () => setOpenPlaceId(place.id)
+                        }
                         onLocationTagClick={selectMode ? undefined : onLocationTagClick}
                       />
                     </div>
@@ -201,7 +210,7 @@ export function PlaceGrid({
       </div>
 
       {/* Detail drawer */}
-      {openPlace && (
+      {openPlace && !previewMode && (
         <PlaceDetailDrawer
           place={openPlace}
           reviews={reviewsByPlaceId[openPlace.id] ?? []}

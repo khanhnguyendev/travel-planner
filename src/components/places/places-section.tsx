@@ -30,6 +30,7 @@ interface PlacesSectionProps {
   canComment: boolean;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
+  previewMode?: boolean;
 }
 
 const canEdit = (role: TripRole) =>
@@ -60,6 +61,7 @@ export function PlacesSection({
   canComment,
   tripStartDate,
   tripEndDate,
+  previewMode = false,
 }: PlacesSectionProps) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -225,7 +227,7 @@ export function PlacesSection({
         </Dialog>
       )}
 
-      {planningPlaces.length >= 2 && (
+      {!previewMode && planningPlaces.length >= 2 && (
         <VoteLeaderboard places={planningPlaces} voteSummaries={voteSummaries} categories={planningCategories} />
       )}
 
@@ -366,6 +368,7 @@ export function PlacesSection({
         canEdit={editor}
         tripStartDate={tripStartDate}
         tripEndDate={tripEndDate}
+        previewMode={previewMode}
         onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
         onPlaceDeleted={handlePlaceDeleted}
         selectMode={selectMode}

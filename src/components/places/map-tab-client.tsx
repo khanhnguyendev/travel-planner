@@ -21,6 +21,7 @@ interface MapTabClientProps {
   currentUserId: string;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
+  previewMode?: boolean;
 }
 
 export function MapTabClient({
@@ -38,6 +39,7 @@ export function MapTabClient({
   currentUserId,
   tripStartDate,
   tripEndDate,
+  previewMode = false,
 }: MapTabClientProps) {
   const [openPlace, setOpenPlace] = useState<Place | null>(null);
 
@@ -52,7 +54,7 @@ export function MapTabClient({
         onPlaceClick={setOpenPlace}
       />
 
-      {openPlace && (
+      {openPlace && !previewMode && (
         <PlaceDetailDrawer
           place={openPlace}
           reviews={reviewsByPlaceId[openPlace.id] ?? []}

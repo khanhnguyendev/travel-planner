@@ -110,6 +110,19 @@ export function TripTabsShell({
   const [activeTab, setActiveTab] = useState<TripTabValue>(initialActiveTab);
   const deferredActiveTab = useDeferredValue(activeTab);
   const isSwitching = deferredActiveTab !== activeTab;
+  const previewMode = !canComment;
+  const accommodationCategoryIds = useMemo(
+    () => new Set(categories.filter((category) => category.category_type === 'accommodation').map((category) => category.id)),
+    [categories]
+  );
+  const visiblePlaces = useMemo(
+    () => previewMode ? places.filter((place) => !accommodationCategoryIds.has(place.category_id)) : places,
+    [accommodationCategoryIds, places, previewMode]
+  );
+  const visibleCategories = useMemo(
+    () => previewMode ? categories.filter((category) => category.category_type !== 'accommodation') : categories,
+    [categories, previewMode]
+  );
 
   const activeTabLabel = useMemo(
     () => TAB_ITEMS.find((tab) => tab.value === activeTab)?.label ?? 'Tab',
@@ -189,8 +202,8 @@ export function TripTabsShell({
                 <PlacesSection
                   tripId={tripId}
                   role={resolvedRole}
-                  initialPlaces={places}
-                  initialCategories={categories}
+                  initialPlaces={visiblePlaces}
+                  initialCategories={visibleCategories}
                   initialVoteSummaries={voteSummaries}
                   initialUserVotes={userVotes}
                   reviewsByPlaceId={reviewsByPlaceId}
@@ -202,6 +215,7 @@ export function TripTabsShell({
                   canComment={canComment}
                   tripStartDate={tripStartDate}
                   tripEndDate={tripEndDate}
+                  previewMode={previewMode}
                 />
               </TripSectionRefreshBoundary>
             </div>
@@ -216,8 +230,8 @@ export function TripTabsShell({
             >
               <div className="section-shell mb-5 overflow-hidden p-4 sm:p-6">
                 <TripTimeline
-                  places={places}
-                  categories={categories}
+                  places={visiblePlaces}
+                  categories={visibleCategories}
                   tripId={tripId}
                   currentUserId={currentUserId}
                   canEdit={canEdit}
@@ -231,6 +245,7 @@ export function TripTabsShell({
                   commentAuthors={commentAuthors}
                   tripStartDate={tripStartDate}
                   tripEndDate={tripEndDate}
+                  previewMode={previewMode}
                 />
               </div>
             </TripSectionRefreshBoundary>
@@ -246,8 +261,8 @@ export function TripTabsShell({
               <div className="section-shell mb-5 overflow-hidden p-3 sm:p-4">
                 <MapTabClient
                   tripId={tripId}
-                  places={places}
-                  categories={categories}
+                  places={visiblePlaces}
+                  categories={visibleCategories}
                   canVote={canVote}
                   canComment={canComment}
                   voteSummaries={voteSummaries}
@@ -259,6 +274,7 @@ export function TripTabsShell({
                   currentUserId={currentUserId}
                   tripStartDate={tripStartDate}
                   tripEndDate={tripEndDate}
+                  previewMode={previewMode}
                 />
               </div>
             </TripSectionRefreshBoundary>
@@ -302,7 +318,7 @@ export function TripTabsShell({
                           tripId={tripId}
                           members={members}
                           currentUserId={currentUserId}
-                          places={places}
+                          places={visiblePlaces}
                           triggerClassName="w-full justify-center sm:w-auto"
                         />
                       )}

@@ -22,6 +22,7 @@ interface TripTimelineProps {
   commentAuthors: Record<string, string>;
   tripStartDate?: string | null;
   tripEndDate?: string | null;
+  previewMode?: boolean;
 }
 
 function formatDayHeader(dateStr: string): string {
@@ -60,10 +61,11 @@ function CategoryBadge({ category }: { category: Category | undefined }) {
 interface PlaceRowProps {
   place: Place;
   category: Category | undefined;
+  previewMode?: boolean;
   onClick?: (place: Place) => void;
 }
 
-function PlaceRow({ place, category, onClick }: PlaceRowProps) {
+function PlaceRow({ place, category, previewMode = false, onClick }: PlaceRowProps) {
   const timeLabel = formatTimeRange(place.visit_time_from, place.visit_time_to);
   const isBackup = !!place.backup_place_id;
 
@@ -73,14 +75,15 @@ function PlaceRow({ place, category, onClick }: PlaceRowProps) {
       className="flex min-h-[0] w-full flex-col gap-2 rounded-xl p-2.5 text-left transition-colors hover:bg-[var(--color-bg-muted)] sm:flex-row sm:items-start sm:gap-3 sm:p-3"
       style={{ backgroundColor: 'var(--color-bg-subtle)' }}
     >
-      {/* Time */}
-      <div
-        className="mt-0.5 flex items-center gap-1 text-[11px] flex-shrink-0 sm:w-24 sm:text-xs md:w-28"
-        style={{ color: 'var(--color-text-subtle)' }}
-      >
-        <Clock className="w-3 h-3 flex-shrink-0" />
-        <span>{timeLabel}</span>
-      </div>
+      {!previewMode && (
+        <div
+          className="mt-0.5 flex items-center gap-1 text-[11px] flex-shrink-0 sm:w-24 sm:text-xs md:w-28"
+          style={{ color: 'var(--color-text-subtle)' }}
+        >
+          <Clock className="w-3 h-3 flex-shrink-0" />
+          <span>{timeLabel}</span>
+        </div>
+      )}
 
       {/* Name + badges */}
       <div className="flex-1 min-w-0">
@@ -109,6 +112,11 @@ function PlaceRow({ place, category, onClick }: PlaceRowProps) {
             <CategoryBadge category={category} />
           </div>
         )}
+        {previewMode && place.address && (
+          <p className="mt-1 text-xs leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+            {place.address}
+          </p>
+        )}
       </div>
     </button>
   );
@@ -130,6 +138,7 @@ export function TripTimeline({
   commentAuthors,
   tripStartDate,
   tripEndDate,
+  previewMode = false,
 }: TripTimelineProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -179,6 +188,11 @@ export function TripTimeline({
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {previewMode && (
+        <div className="rounded-[1.2rem] bg-stone-950/[0.03] px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          Public preview keeps the plan lightweight. You can browse which places are in the plan without revealing exact trip timing.
+        </div>
+      )}
       {/* Scheduled section */}
       {scheduled.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center">
@@ -186,6 +200,29 @@ export function TripTimeline({
           <p className="text-sm text-stone-500">
             No places scheduled yet — add visit dates to your places
           </p>
+        </div>
+      ) : previewMode ? (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="font-semibold text-sm text-stone-800">Scheduled places</h3>
+            <span
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white"
+              style={{ backgroundColor: '#0D9488' }}
+            >
+              {scheduled.length}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {scheduled.map((place) => (
+              <PlaceRow
+                key={place.id}
+                place={place}
+                category={categoryMap.get(place.category_id)}
+                previewMode
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="relative">
@@ -226,6 +263,7 @@ export function TripTimeline({
                         key={place.id}
                         place={place}
                         category={categoryMap.get(place.category_id)}
+                        previewMode={previewMode}
                         onClick={(p) => setOpenPlaceId(p.id)}
                       />
                     ))}
@@ -258,6 +296,7 @@ export function TripTimeline({
                 key={place.id}
                 place={place}
                 category={categoryMap.get(place.category_id)}
+                previewMode={previewMode}
                 onClick={(p) => setOpenPlaceId(p.id)}
               />
             ))}
@@ -266,7 +305,7 @@ export function TripTimeline({
       )}
 
       {/* Place detail drawer */}
-      {openPlace && (
+      {openPlace && !previewMode && (
         <PlaceDetailDrawer
           place={openPlace}
           reviews={reviewsByPlaceId[openPlace.id] ?? []}
