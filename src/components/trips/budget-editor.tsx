@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil } from 'lucide-react';
-import { updateTripBudget } from '@/features/trips/actions';
-import { formatCurrency } from '@/lib/format';
+import { Pencil, Trash2 } from 'lucide-react';
+import { updateTripBudget, deleteContribution } from '@/features/trips/actions';
+import { formatCurrency, formatDate } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { BudgetContribution } from '@/lib/types';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
@@ -45,6 +45,7 @@ export function BudgetEditor({
   const [pending, setPending] = useState(false);
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const hasBudget = budget != null;
   const activeCurrency = budgetCurrency || 'VND';
 
@@ -55,12 +56,6 @@ export function BudgetEditor({
   const totalIncome = incomeByCurrency.reduce((sum, c) => sum + c.amount, 0);
   const hasIncome = totalIncome > 0;
   const poolBalance = totalIncome - poolSpent;
-
-  // Contributors for display — group by user and sum amounts in the trip currency
-  const contributorTotals = incomeByCurrency.reduce<Map<string, number>>((acc, c) => {
-    acc.set(c.user_id, (acc.get(c.user_id) ?? 0) + c.amount);
-    return acc;
-  }, new Map());
 
   async function handleSave() {
     const parsed = value ? parseFloat(value) : null;
@@ -88,6 +83,20 @@ export function BudgetEditor({
     setCurrency(activeCurrency);
     setError(null);
     setEditing(false);
+  }
+
+  async function handleDeleteContribution(id: string) {
+    if (!confirm('Remove this income entry?')) return;
+    setDeletingId(id);
+    const result = await deleteContribution(id);
+    setDeletingId(null);
+    if (!result.ok) {
+      alert(result.error);
+    } else {
+      startRefreshTransition(() => {
+        router.refresh();
+      });
+    }
   }
 
   if (editing) {
@@ -177,66 +186,95 @@ export function BudgetEditor({
     <div className="relative mt-4 overflow-hidden rounded-xl" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
       <div className="px-4 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          {/* Budget cap row */}
-          <div className="flex items-center gap-2">
-            <span className="break-words text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-              {hasBudget ? `Budget cap: ${formatCurrency(budgetAmount, budgetCurrency)}` : 'No budget cap set'}
-            </span>
-            {canManage && (
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                disabled={isRefreshing}
-                className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
-                title="Edit budget cap"
-              >
-                <Pencil className="h-3 w-3" style={{ color: 'var(--color-text-subtle)' }} />
-              </button>
+          <div className="min-w-0 flex-1">
+            {/* Budget cap row */}
+            <div className="flex items-center gap-2">
+              <span className="break-words text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                {hasBudget ? `Budget cap: ${formatCurrency(budgetAmount, budgetCurrency)}` : 'No budget cap set'}
+              </span>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  disabled={isRefreshing}
+                  className="rounded p-1 transition-colors hover:bg-black/5 cursor-pointer"
+                  title="Edit budget cap"
+                >
+                  <Pencil className="h-3 w-3" style={{ color: 'var(--color-text-subtle)' }} />
+                </button>
+              )}
+            </div>
+
+            {/* Income section */}
+            {hasIncome ? (
+              <div className="mt-2 space-y-2">
+                {/* Summary row */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                    Income: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
+                  </span>
+                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                    Pool used: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
+                  </span>
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}
+                  >
+                    Pool balance: {formatCurrency(poolBalance, activeCurrency)}
+                  </span>
+                </div>
+
+                {/* Individual contribution rows */}
+                <div className="space-y-1">
+                  {incomeByCurrency.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+                      style={{ backgroundColor: 'var(--color-bg-muted)' }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
+                          {nameMap.get(c.user_id) ?? 'Member'}
+                        </span>
+                        {c.note && (
+                          <span className="ml-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                            · {c.note}
+                          </span>
+                        )}
+                        <span className="ml-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                          · {formatDate(c.created_at)}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold flex-shrink-0" style={{ color: '#0F766E' }}>
+                        +{formatCurrency(c.amount, c.currency)}
+                      </span>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteContribution(c.id)}
+                          disabled={deletingId === c.id}
+                          className="flex-shrink-0 rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
+                          title="Remove income entry"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
+                No income recorded yet. Use Add money to track who funded the trip.
+              </p>
             )}
           </div>
 
-          {/* Income section */}
-          {hasIncome ? (
-            <div className="mt-2 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                  Income: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
-                </span>
-                <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                  Pool used: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
-                </span>
-                <span
-                  className="text-xs font-semibold"
-                  style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}
-                >
-                  Pool balance: {formatCurrency(poolBalance, activeCurrency)}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {Array.from(contributorTotals.entries()).map(([uid, total]) => (
-                  <span
-                    key={uid}
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                    style={{ backgroundColor: 'var(--color-bg-muted)', color: 'var(--color-text-muted)' }}
-                  >
-                    {nameMap.get(uid) ?? 'Member'} +{formatCurrency(total, activeCurrency)}
-                  </span>
-                ))}
-              </div>
+          {(canManage || actionSlot) && (
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              {actionSlot}
             </div>
-          ) : (
-            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
-              No income recorded yet. Use Add money to track who funded the trip.
-            </p>
           )}
-        </div>
-
-        {(canManage || actionSlot) && (
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-            {actionSlot}
-          </div>
-        )}
         </div>
 
         {/* Progress bar — only when budget cap is set */}

@@ -349,6 +349,55 @@ export async function addBudgetContribution(
 }
 
 // -------------------------------------------------------
+// deleteContribution
+// -------------------------------------------------------
+
+export async function deleteContribution(
+  contributionId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const admin = createAdminClient();
+
+  // Fetch the contribution to get tripId for permission check
+  const { data: contrib } = await admin
+    .from('budget_contributions')
+    .select('trip_id')
+    .eq('id', contributionId)
+    .single();
+
+  if (!contrib) return { ok: false, error: 'Contribution not found' };
+
+  const { data: memberData } = await admin
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', contrib.trip_id)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  const { error } = await admin
+    .from('budget_contributions')
+    .delete()
+    .eq('id', contributionId);
+
+  if (error) {
+    console.error('deleteContribution error:', error);
+    return { ok: false, error: 'Failed to delete contribution' };
+  }
+
+  revalidatePath(`/trips/${contrib.trip_id}`);
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
 // archiveTrip
 // -------------------------------------------------------
 
