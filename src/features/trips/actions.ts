@@ -337,20 +337,6 @@ export async function addBudgetContribution(
     return { ok: false, error: 'Failed to record contribution' };
   }
 
-  // Update running budget total on the trip
-  const { data: tripData } = await admin
-    .from('trips')
-    .select('budget, budget_currency')
-    .eq('id', tripId)
-    .single();
-  const trip = tripData as { budget: number | null; budget_currency: string } | null;
-  const currentBudget = trip?.budget ?? 0;
-
-  await admin
-    .from('trips')
-    .update({ budget: currentBudget + amount, budget_currency: currency })
-    .eq('id', tripId);
-
   void logActivity({
     tripId,
     userId: user.id,

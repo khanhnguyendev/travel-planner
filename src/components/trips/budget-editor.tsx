@@ -44,13 +44,16 @@ export function BudgetEditor({
 
   const nameMap = new Map(members.map((m) => [m.user_id, m.profile.display_name ?? 'Member']));
 
+  // Income = sum of all contributions in the trip currency
+  const incomeByCurrency = contributions.filter((c) => c.currency === activeCurrency);
+  const totalIncome = incomeByCurrency.reduce((sum, c) => sum + c.amount, 0);
+  const hasIncome = totalIncome > 0;
+
   // Contributors for display — group by user and sum amounts in the trip currency
-  const contributorTotals = contributions
-    .filter((c) => c.currency === activeCurrency)
-    .reduce<Map<string, number>>((acc, c) => {
-      acc.set(c.user_id, (acc.get(c.user_id) ?? 0) + c.amount);
-      return acc;
-    }, new Map());
+  const contributorTotals = incomeByCurrency.reduce<Map<string, number>>((acc, c) => {
+    acc.set(c.user_id, (acc.get(c.user_id) ?? 0) + c.amount);
+    return acc;
+  }, new Map());
 
   async function handleSave() {
     const parsed = value ? parseFloat(value) : null;
@@ -156,7 +159,7 @@ export function BudgetEditor({
 
   const budgetAmount = budget ?? 0;
   const pct = hasBudget ? Math.min((totalSpent / budgetAmount) * 100, 100) : 0;
-  const remaining = hasBudget ? budgetAmount - totalSpent : 0;
+  const remaining = hasBudget ? budgetAmount - totalSpent : totalIncome - totalSpent;
   const overBudget = hasBudget ? totalSpent > budgetAmount : false;
   const barColor = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#14B8A6';
 
@@ -166,7 +169,8 @@ export function BudgetEditor({
       style={{ backgroundColor: 'var(--color-bg-subtle)' }}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
+          {/* Budget cap row */}
           <div className="flex items-center gap-2">
             <span className="break-words text-sm font-medium" style={{ color: 'var(--color-text)' }}>
               {hasBudget ? `Budget cap: ${formatCurrency(budgetAmount, budgetCurrency)}` : 'No budget cap set'}
@@ -183,23 +187,27 @@ export function BudgetEditor({
             )}
           </div>
 
-          {contributorTotals.size > 0 ? (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {Array.from(contributorTotals.entries()).map(([uid, total]) => (
-                <span
-                  key={uid}
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                  style={{ backgroundColor: 'var(--color-bg-muted)', color: 'var(--color-text-muted)' }}
-                >
-                  {nameMap.get(uid) ?? 'Member'} +{formatCurrency(total, activeCurrency)}
-                </span>
-              ))}
+          {/* Income section */}
+          {hasIncome ? (
+            <div className="mt-2">
+              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                Income collected: <span className="font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
+              </span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {Array.from(contributorTotals.entries()).map(([uid, total]) => (
+                  <span
+                    key={uid}
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    style={{ backgroundColor: 'var(--color-bg-muted)', color: 'var(--color-text-muted)' }}
+                  >
+                    {nameMap.get(uid) ?? 'Member'} +{formatCurrency(total, activeCurrency)}
+                  </span>
+                ))}
+              </div>
             </div>
           ) : (
             <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
-              {hasBudget
-                ? 'No income recorded yet. Use Add money to start tracking contributions.'
-                : 'Use Add money to record who funded the trip and track the budget.'}
+              No income recorded yet. Use Add money to track who funded the trip.
             </p>
           )}
         </div>
@@ -211,6 +219,7 @@ export function BudgetEditor({
         )}
       </div>
 
+      {/* Progress bar — only when budget cap is set */}
       {hasBudget && (
         <>
           <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
@@ -222,7 +231,7 @@ export function BudgetEditor({
 
           <div className="mt-2 grid grid-cols-1 gap-1 sm:flex sm:items-center sm:justify-between sm:gap-3">
             <span className="break-words text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-              {Math.round(pct)}% used
+              {Math.round(pct)}% of cap used
             </span>
             <span className="break-words text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
               {formatCurrency(totalSpent, budgetCurrency)} spent
@@ -232,11 +241,25 @@ export function BudgetEditor({
               style={{ color: overBudget ? '#EF4444' : 'var(--color-text-subtle)' }}
             >
               {overBudget
-                ? `${formatCurrency(Math.abs(remaining), budgetCurrency)} over budget`
+                ? `${formatCurrency(Math.abs(remaining), budgetCurrency)} over cap`
                 : `${formatCurrency(remaining, budgetCurrency)} remaining`}
             </span>
           </div>
         </>
+      )}
+
+      {/* Spend summary when no cap but income exists */}
+      {!hasBudget && hasIncome && (
+        <div className="mt-3 flex flex-wrap gap-3">
+          <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+            {formatCurrency(totalSpent, activeCurrency)} spent
+          </span>
+          <span className="text-xs" style={{ color: remaining >= 0 ? 'var(--color-text-subtle)' : '#EF4444' }}>
+            {remaining >= 0
+              ? `${formatCurrency(remaining, activeCurrency)} remaining in pool`
+              : `${formatCurrency(Math.abs(remaining), activeCurrency)} over income`}
+          </span>
+        </div>
       )}
     </div>
   );

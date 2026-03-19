@@ -539,10 +539,7 @@ export default async function TripDetailPage({
   const recentExpenses = expensesWithSplits.slice(0, 5);
   const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
   const memberBalanceMap = new Map(
-    calculateMemberBalances(expensesWithSplits, {
-      contributions: contributions.map((c) => ({ userId: c.user_id, amount: c.amount, currency: c.currency })),
-      memberUserIds: members.map((member) => member.user_id),
-    })
+    calculateMemberBalances(expensesWithSplits)
       .filter((balance) => balance.currency === balanceCurrency)
       .map((balance) => [balance.userId, balance.net])
   );

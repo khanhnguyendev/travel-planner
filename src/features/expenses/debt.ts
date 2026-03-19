@@ -10,24 +10,13 @@ export interface MemberBalance {
 }
 
 /**
- * Calculate net balance per member per currency.
- * Supports multiple budget contributors via the `contributions` option.
- * Each contributor gets +credit for their funded amount, split equally among all members.
- * Legacy single-payer options are still accepted for backward compatibility.
+ * Calculate net balance per member per currency based on expense splits.
+ * Positive net = member is owed money back.
+ * Negative net = member owes others money.
  */
 export function calculateMemberBalances(
-  expenses: ExpenseWithSplits[],
-  options?: {
-    contributions?: Array<{ userId: string; amount: number; currency: string }>;
-    memberUserIds?: string[];
-    // Legacy single-payer (used when contributions not provided)
-    budgetAmount?: number | null;
-    budgetCurrency?: string;
-    budgetPayerUserId?: string | null;
-  }
+  expenses: ExpenseWithSplits[]
 ): MemberBalance[] {
-  const { contributions, memberUserIds = [], budgetAmount, budgetCurrency, budgetPayerUserId } = options ?? {};
-
   // currency → userId → { paid, share }
   const byCurrency = new Map<string, Map<string, { paid: number; share: number }>>();
 
@@ -38,25 +27,6 @@ export function calculateMemberBalances(
     return map.get(userId)!;
   }
 
-  if (contributions && contributions.length > 0 && memberUserIds.length > 0) {
-    // Multi-funder: each contribution credits the contributor, cost shared equally
-    for (const c of contributions) {
-      const perPerson = c.amount / memberUserIds.length;
-      getUser(c.currency, c.userId).paid += c.amount;
-      for (const uid of memberUserIds) {
-        getUser(c.currency, uid).share += perPerson;
-      }
-    }
-  } else if (budgetAmount && budgetAmount > 0 && budgetCurrency && budgetPayerUserId && memberUserIds.length > 0) {
-    // Legacy single-payer fallback
-    const perPerson = budgetAmount / memberUserIds.length;
-    getUser(budgetCurrency, budgetPayerUserId).paid += budgetAmount;
-    for (const uid of memberUserIds) {
-      getUser(budgetCurrency, uid).share += perPerson;
-    }
-  }
-
-  // Apply actual expenses
   for (const expense of expenses) {
     const cur = expense.currency;
     getUser(cur, expense.paid_by_user_id).paid += expense.amount;

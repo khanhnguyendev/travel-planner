@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Users, ArrowLeft } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/queries';
+import { getTrip, getUserRole } from '@/features/trips/queries';
 import { getMembers, getPendingInvites, getJoinRequests } from '@/features/members/queries';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
@@ -41,22 +41,17 @@ export default async function MembersPage({
   const { tripId } = await params;
   const user = await requireSession();
 
-  const [trip, role, members, pendingInvites, expensesWithSplits, contributions] = await Promise.all([
+  const [trip, role, members, pendingInvites, expensesWithSplits] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getMembers(tripId),
     getPendingInvites(tripId),
     getExpensesWithSplits(tripId),
-    getBudgetContributions(tripId),
   ]);
 
   const budgetCurrency = trip?.budget_currency ?? 'VND';
-  const memberUserIds = members.map((m) => m.user_id);
   const balanceMap = new Map(
-    calculateMemberBalances(expensesWithSplits, {
-      contributions: contributions.map((c) => ({ userId: c.user_id, amount: c.amount, currency: c.currency })),
-      memberUserIds,
-    })
+    calculateMemberBalances(expensesWithSplits)
       .filter((b) => b.currency === budgetCurrency)
       .map((b) => [b.userId, b.net])
   );
