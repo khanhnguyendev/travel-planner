@@ -11,19 +11,22 @@ export interface MemberBalance {
 
 /**
  * Calculate net balance per member per currency.
- * Optionally includes a budget contribution: the budget payer starts with
- * +budget credit, split equally as a debt among all other members.
+ * Supports multiple budget contributors via the `contributions` option.
+ * Each contributor gets +credit for their funded amount, split equally among all members.
+ * Legacy single-payer options are still accepted for backward compatibility.
  */
 export function calculateMemberBalances(
   expenses: ExpenseWithSplits[],
   options?: {
+    contributions?: Array<{ userId: string; amount: number; currency: string }>;
+    memberUserIds?: string[];
+    // Legacy single-payer (used when contributions not provided)
     budgetAmount?: number | null;
     budgetCurrency?: string;
     budgetPayerUserId?: string | null;
-    memberUserIds?: string[];
   }
 ): MemberBalance[] {
-  const { budgetAmount, budgetCurrency, budgetPayerUserId, memberUserIds = [] } = options ?? {};
+  const { contributions, memberUserIds = [], budgetAmount, budgetCurrency, budgetPayerUserId } = options ?? {};
 
   // currency → userId → { paid, share }
   const byCurrency = new Map<string, Map<string, { paid: number; share: number }>>();
@@ -35,10 +38,18 @@ export function calculateMemberBalances(
     return map.get(userId)!;
   }
 
-  // Apply budget contribution: payer funded the trip, others owe equal shares
-  if (budgetAmount && budgetAmount > 0 && budgetCurrency && budgetPayerUserId && memberUserIds.length > 0) {
+  if (contributions && contributions.length > 0 && memberUserIds.length > 0) {
+    // Multi-funder: each contribution credits the contributor, cost shared equally
+    for (const c of contributions) {
+      const perPerson = c.amount / memberUserIds.length;
+      getUser(c.currency, c.userId).paid += c.amount;
+      for (const uid of memberUserIds) {
+        getUser(c.currency, uid).share += perPerson;
+      }
+    }
+  } else if (budgetAmount && budgetAmount > 0 && budgetCurrency && budgetPayerUserId && memberUserIds.length > 0) {
+    // Legacy single-payer fallback
     const perPerson = budgetAmount / memberUserIds.length;
-    // Payer: paid = budgetAmount, share = perPerson (their own portion)
     getUser(budgetCurrency, budgetPayerUserId).paid += budgetAmount;
     for (const uid of memberUserIds) {
       getUser(budgetCurrency, uid).share += perPerson;

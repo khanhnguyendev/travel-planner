@@ -176,6 +176,15 @@ export async function createExpense(
       .eq('id', expenseId);
   }
 
+  void logActivity({
+    tripId,
+    userId: user.id,
+    action: 'expense.add',
+    entityType: 'expense',
+    entityId: expenseId,
+    meta: { title, amount, currency },
+  });
+
   revalidatePath(`/trips/${tripId}/expenses`);
 
   return { ok: true, data: { expenseId } };

@@ -17,7 +17,10 @@ export type ActivityAction =
   | 'category.add'
   | 'member.join'
   | 'place.checkin'
-  | 'place.checkout';
+  | 'place.checkout'
+  | 'budget.contribute'
+  | 'member.join'
+  | 'member.remove';
 
 export async function logActivity(params: {
   tripId: string;

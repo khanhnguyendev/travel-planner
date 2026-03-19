@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession } from '@/features/auth/session';
-import type { Trip, TripRole } from '@/lib/types';
+import type { Trip, TripRole, BudgetContribution } from '@/lib/types';
 
 export interface TripWithRole extends Trip {
   myRole: TripRole;
@@ -85,4 +86,23 @@ export async function getUserRole(
   if (error) return null;
 
   return ((data as unknown as { role: string }) ?.role as TripRole) ?? null;
+}
+
+/**
+ * Returns all budget contributions for a trip, ordered by creation time.
+ */
+export async function getBudgetContributions(tripId: string): Promise<BudgetContribution[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('budget_contributions')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getBudgetContributions error:', error);
+    return [];
+  }
+
+  return (data ?? []) as unknown as BudgetContribution[];
 }

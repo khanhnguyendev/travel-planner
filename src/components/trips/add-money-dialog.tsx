@@ -16,13 +16,13 @@ interface AddMoneyDialogProps {
   members: MemberWithProfile[];
   currentUserId: string;
   places?: Place[];
-  budget: number | null;
   budgetCurrency: string;
-  budgetPayerUserId: string | null;
   canManageBudget: boolean;
   initialTab?: MoneyTab;
   triggerLabel?: string;
   triggerClassName?: string;
+  // kept for dialog title logic
+  budget?: number | null;
 }
 
 export function AddMoneyDialog({
@@ -32,14 +32,13 @@ export function AddMoneyDialog({
   places,
   budget,
   budgetCurrency,
-  budgetPayerUserId,
   canManageBudget,
   initialTab,
   triggerLabel = 'Add money',
   triggerClassName,
 }: AddMoneyDialogProps) {
   const [open, setOpen] = useState(false);
-  const defaultTab = initialTab ?? (canManageBudget && budget == null ? 'income' : 'expense');
+  const defaultTab = initialTab ?? (canManageBudget ? 'income' : 'expense');
   const [activeTab, setActiveTab] = useState<MoneyTab>(defaultTab);
 
   function handleOpen() {
@@ -105,10 +104,9 @@ export function AddMoneyDialog({
             {activeTab === 'income' && canManageBudget ? (
               <BudgetIncomeForm
                 tripId={tripId}
-                budget={budget}
                 budgetCurrency={budgetCurrency}
-                budgetPayerUserId={budgetPayerUserId}
                 members={members}
+                currentUserId={currentUserId}
                 onSuccess={() => setOpen(false)}
                 onCancel={() => setOpen(false)}
               />

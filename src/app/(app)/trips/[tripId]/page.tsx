@@ -18,7 +18,7 @@ import {
   Users,
 } from 'lucide-react';
 import { getSession } from '@/features/auth/session';
-import { getTrip, getUserRole } from '@/features/trips/queries';
+import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/queries';
 import { getJoinRequests, getMembers, hasRequestedJoin } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
@@ -408,12 +408,13 @@ export default async function TripDetailPage({
   const { tab: tabParam } = await searchParams;
   const user = await getSession();
 
-  const [trip, role, members, categories, expenses] = await Promise.all([
+  const [trip, role, members, categories, expenses, contributions] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getMembers(tripId),
     getCategories(tripId),
     getExpenses(tripId),
+    getBudgetContributions(tripId),
   ]);
 
   if (!trip) {
@@ -539,9 +540,7 @@ export default async function TripDetailPage({
   const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
   const memberBalanceMap = new Map(
     calculateMemberBalances(expensesWithSplits, {
-      budgetAmount: trip.budget,
-      budgetCurrency: trip.budget_currency,
-      budgetPayerUserId: trip.budget_payer_user_id,
+      contributions: contributions.map((c) => ({ userId: c.user_id, amount: c.amount, currency: c.currency })),
       memberUserIds: members.map((member) => member.user_id),
     })
       .filter((balance) => balance.currency === balanceCurrency)
@@ -745,10 +744,10 @@ export default async function TripDetailPage({
               tripId={tripId}
               budget={trip.budget}
               budgetCurrency={trip.budget_currency}
-              budgetPayerUserId={trip.budget_payer_user_id}
               canManage={canManage}
               totalSpent={totalsByCurrency[trip.budget_currency] ?? 0}
               members={members}
+              contributions={contributions}
               actionSlot={canEdit ? (
                 <AddMoneyDialog
                   tripId={tripId}
@@ -757,7 +756,6 @@ export default async function TripDetailPage({
                   places={places}
                   budget={trip.budget}
                   budgetCurrency={trip.budget_currency}
-                  budgetPayerUserId={trip.budget_payer_user_id}
                   canManageBudget={canManage}
                   triggerLabel="Add money"
                   triggerClassName="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
@@ -948,7 +946,6 @@ export default async function TripDetailPage({
             members={members}
             budget={trip.budget}
             budgetCurrency={trip.budget_currency}
-            budgetPayerUserId={trip.budget_payer_user_id}
             canManageBudget={canManage}
             commentsByPlaceId={commentsByPlaceId}
             commentAuthors={commentAuthors}

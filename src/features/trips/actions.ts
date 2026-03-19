@@ -280,6 +280,89 @@ export async function updateTripBudget(
 }
 
 // -------------------------------------------------------
+// addBudgetContribution
+// -------------------------------------------------------
+
+export async function addBudgetContribution(
+  tripId: string,
+  amount: number,
+  currency: string,
+  userId: string,
+  note?: string | null
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  if (!amount || amount <= 0) return { ok: false, error: 'Amount must be positive' };
+
+  const admin = createAdminClient();
+
+  // Verify caller is an accepted member (editor or above can contribute)
+  const { data: memberData } = await admin
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin', 'editor'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  // Validate that userId is an accepted member of the trip
+  const { data: targetData } = await admin
+    .from('trip_members')
+    .select('user_id')
+    .eq('trip_id', tripId)
+    .eq('user_id', userId)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  if (!targetData) return { ok: false, error: 'Selected user is not a member of this trip' };
+
+  // Insert contribution row
+  const { error: contribError } = await admin.from('budget_contributions').insert({
+    trip_id: tripId,
+    user_id: userId,
+    amount,
+    currency,
+    note: note ?? null,
+  });
+
+  if (contribError) {
+    console.error('addBudgetContribution insert error:', contribError);
+    return { ok: false, error: 'Failed to record contribution' };
+  }
+
+  // Update running budget total on the trip
+  const { data: tripData } = await admin
+    .from('trips')
+    .select('budget, budget_currency')
+    .eq('id', tripId)
+    .single();
+  const trip = tripData as { budget: number | null; budget_currency: string } | null;
+  const currentBudget = trip?.budget ?? 0;
+
+  await admin
+    .from('trips')
+    .update({ budget: currentBudget + amount, budget_currency: currency })
+    .eq('id', tripId);
+
+  void logActivity({
+    tripId,
+    userId: user.id,
+    action: 'budget.contribute',
+    meta: { amount, currency, contributorUserId: userId, note: note ?? null },
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
 // archiveTrip
 // -------------------------------------------------------
 

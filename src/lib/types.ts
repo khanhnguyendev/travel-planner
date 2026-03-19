@@ -169,6 +169,16 @@ export interface PlaceExpenseHistoryEntry {
   }>;
 }
 
+export interface BudgetContribution {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  note: string | null;
+  created_at: string;
+}
+
 export interface TripActivity {
   id: string;
   trip_id: string;
@@ -301,6 +311,12 @@ export type Database = {
           category?: string | null;
         }>;
         Update: R<Partial<Omit<Expense, 'id' | 'created_at'>>>;
+        Relationships: [];
+      };
+      budget_contributions: {
+        Row: R<BudgetContribution>;
+        Insert: R<Omit<BudgetContribution, 'id' | 'created_at'> & { id?: string; created_at?: string }>;
+        Update: R<Partial<Omit<BudgetContribution, 'id' | 'created_at'>>>;
         Relationships: [];
       };
       trip_activity: {

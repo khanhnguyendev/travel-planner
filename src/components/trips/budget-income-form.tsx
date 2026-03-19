@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { updateTripBudget } from '@/features/trips/actions';
+import { addBudgetContribution } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import type { MemberWithProfile } from '@/features/members/queries';
 
@@ -14,33 +14,28 @@ const CURRENCIES = ['VND', 'USD', 'EUR', 'GBP', 'JPY', 'THB'];
 
 interface BudgetIncomeFormProps {
   tripId: string;
-  budget: number | null;
   budgetCurrency: string;
-  budgetPayerUserId: string | null;
   members: MemberWithProfile[];
+  currentUserId: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function BudgetIncomeForm({
   tripId,
-  budget,
   budgetCurrency,
-  budgetPayerUserId,
   members,
+  currentUserId,
   onSuccess,
   onCancel,
 }: BudgetIncomeFormProps) {
   const [value, setValue] = useState('');
   const [currency, setCurrency] = useState(budgetCurrency || 'VND');
-  const [payerUserId, setPayerUserId] = useState(budgetPayerUserId ?? members[0]?.user_id ?? '');
+  const [contributorId, setContributorId] = useState(currentUserId || members[0]?.user_id || '');
+  const [note, setNote] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
-
-  const hasBudget = budget != null;
-  const activeCurrency = budgetCurrency || 'VND';
-  const showPayerField = !hasBudget || !budgetPayerUserId;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,25 +45,15 @@ export function BudgetIncomeForm({
       setError('Please enter a valid positive number');
       return;
     }
-
-    const nextPayerUserId = hasBudget
-      ? (budgetPayerUserId ?? payerUserId)
-      : payerUserId;
-
-    if (!nextPayerUserId) {
-      setError('Please select who funded the budget');
+    if (!contributorId) {
+      setError('Please select who is adding the funds');
       return;
     }
 
     setPending(true);
     setError(null);
-    const resolve = loadingToast(hasBudget ? 'Adding income…' : 'Setting budget…');
-    const result = await updateTripBudget(
-      tripId,
-      (budget ?? 0) + parsed,
-      hasBudget ? activeCurrency : currency,
-      nextPayerUserId
-    );
+    const resolve = loadingToast('Adding income…');
+    const result = await addBudgetContribution(tripId, parsed, currency, contributorId, note || null);
     setPending(false);
 
     if (!result.ok) {
@@ -77,16 +62,14 @@ export function BudgetIncomeForm({
       return;
     }
 
-    resolve(hasBudget ? 'Income added!' : 'Budget set!', 'success');
+    resolve('Income added!', 'success');
     onSuccess?.();
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-[1rem] bg-stone-950/[0.03] px-4 py-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-        {hasBudget
-          ? `Add more funds directly into the shared trip budget in ${activeCurrency}. Existing expenses stay unchanged.`
-          : 'Set the starting shared budget for this trip before the crew begins logging expenses.'}
+        Record funds added to the shared trip budget. Each contribution is tracked separately.
       </div>
 
       <div className="space-y-1.5">
@@ -118,62 +101,66 @@ export function BudgetIncomeForm({
             />
           </div>
 
-          {hasBudget ? (
-            <div
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border px-3 text-sm font-medium sm:w-auto sm:min-w-[96px]"
-              style={{
-                borderColor: 'var(--color-border)',
-                backgroundColor: 'white',
-                color: 'var(--color-text)',
-              }}
-            >
-              {activeCurrency}
-            </div>
-          ) : (
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="min-h-[44px] w-full rounded-xl border px-3 py-2.5 text-sm outline-none sm:w-auto sm:min-w-[96px]"
-              style={{
-                borderColor: 'var(--color-border)',
-                backgroundColor: 'white',
-                color: 'var(--color-text)',
-              }}
-            >
-              {CURRENCIES.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-
-      {showPayerField && (
-        <div>
-          <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            Funded by
-          </label>
           <select
-            value={payerUserId}
-            onChange={(e) => setPayerUserId(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border px-3 py-2.5 text-sm outline-none"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="min-h-[44px] w-full rounded-xl border px-3 py-2.5 text-sm outline-none sm:w-auto sm:min-w-[96px]"
             style={{
               borderColor: 'var(--color-border)',
               backgroundColor: 'white',
               color: 'var(--color-text)',
             }}
           >
-            {members.map((member) => (
-              <option key={member.user_id} value={member.user_id}>
-                {member.profile.display_name ?? member.user_id}
-              </option>
+            {CURRENCIES.map((option) => (
+              <option key={option} value={option}>{option}</option>
             ))}
           </select>
-          <p className="mt-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-            The person who put the money into the trip fund.
-          </p>
         </div>
-      )}
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Added by
+        </label>
+        <select
+          value={contributorId}
+          onChange={(e) => setContributorId(e.target.value)}
+          className="w-full min-h-[44px] rounded-xl border px-3 py-2.5 text-sm outline-none"
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'white',
+            color: 'var(--color-text)',
+          }}
+        >
+          {members.map((member) => (
+            <option key={member.user_id} value={member.user_id}>
+              {member.profile.display_name ?? member.user_id}
+              {member.user_id === currentUserId ? ' (you)' : ''}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+          The person putting this money into the trip fund.
+        </p>
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Note <span className="font-normal text-stone-400">(optional)</span>
+        </label>
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="e.g. Initial deposit, Transport fund…"
+          className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'white',
+            color: 'var(--color-text)',
+          }}
+        />
+      </div>
 
       {error && (
         <p className="text-sm" style={{ color: 'var(--color-error)' }}>
@@ -188,7 +175,7 @@ export function BudgetIncomeForm({
           className="btn-primary inline-flex w-full items-center justify-center gap-2 disabled:opacity-60 sm:w-auto"
         >
           <Check className="h-4 w-4" />
-          {pending ? 'Saving…' : hasBudget ? 'Add income' : 'Set budget'}
+          {pending ? 'Saving…' : 'Add income'}
         </button>
         <button
           type="button"

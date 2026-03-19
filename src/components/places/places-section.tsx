@@ -28,7 +28,6 @@ interface PlacesSectionProps {
   members: MemberWithProfile[];
   budget: number | null;
   budgetCurrency: string;
-  budgetPayerUserId: string | null;
   canManageBudget: boolean;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
@@ -63,7 +62,6 @@ export function PlacesSection({
   members,
   budget,
   budgetCurrency,
-  budgetPayerUserId,
   canManageBudget,
   commentsByPlaceId,
   commentAuthors,
@@ -211,7 +209,6 @@ export function PlacesSection({
             places={places}
             budget={budget}
             budgetCurrency={budgetCurrency}
-            budgetPayerUserId={budgetPayerUserId}
             canManageBudget={canManageBudget}
             initialTab="expense"
             triggerLabel="Add expense"
