@@ -2,8 +2,25 @@
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass, CalendarDays, LogIn, LogOut, Coins, UserMinus } from 'lucide-react';
+import {
+  Activity,
+  CalendarDays,
+  ChevronDown,
+  Clock3,
+  Coins,
+  Compass,
+  LogIn,
+  LogOut,
+  MapPin,
+  MessageCircle,
+  Receipt,
+  Tag,
+  ThumbsDown,
+  ThumbsUp,
+  UserMinus,
+  UserPlus,
+  UserRound,
+} from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { formatCurrency, formatDateTime } from '@/lib/format';
 import type { ActivityEntry } from '@/features/activity/queries';
@@ -36,6 +53,45 @@ function fmtDate(dateStr: unknown): string {
   if (typeof dateStr !== 'string') return '';
   return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
+
+function getString(meta: Record<string, unknown> | null, key: string): string | null {
+  const value = meta?.[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getNumber(meta: Record<string, unknown> | null, key: string): number | null {
+  const value = meta?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function formatActionKey(action: string): string {
+  return action
+    .split('.')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' / ');
+}
+
+function formatPlanningRange(meta: Record<string, unknown> | null): string | null {
+  const startDate = getString(meta, 'startDate');
+  const endDate = getString(meta, 'endDate');
+  if (!startDate && !endDate) return null;
+  if (!startDate) return fmtDate(endDate);
+  if (!endDate) return fmtDate(startDate);
+  return `${fmtDate(startDate)} - ${fmtDate(endDate)}`;
+}
+
+type DetailFact = {
+  label: string;
+  value: string;
+  tone?: 'default' | 'primary';
+};
+
+type SummaryChip = {
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  label: string;
+  bg: string;
+  color: string;
+};
 
 // -------------------------------------------------------
 // Per-action config
@@ -216,6 +272,139 @@ const DEFAULT_CONFIG = {
   label: (action: string) => action.replace('.', ' '),
 };
 
+function getSummaryChips(entry: ActivityEntry): SummaryChip[] {
+  const chips: SummaryChip[] = [];
+  const placeName = getString(entry.meta, 'placeName');
+  const contributorName = getString(entry.meta, 'contributorName');
+  const role = getString(entry.meta, 'role');
+  const title = getString(entry.meta, 'title');
+  const categoryName = getString(entry.meta, 'name');
+  const amount = getNumber(entry.meta, 'amount');
+  const currency = getString(entry.meta, 'currency');
+
+  if (placeName) {
+    chips.push({
+      icon: MapPin,
+      label: placeName,
+      bg: '#EFF6FF',
+      color: '#2563EB',
+    });
+  } else if (title && entry.action.startsWith('expense.')) {
+    chips.push({
+      icon: Receipt,
+      label: title,
+      bg: '#F5F3FF',
+      color: '#7C3AED',
+    });
+  } else if (categoryName) {
+    chips.push({
+      icon: Tag,
+      label: categoryName,
+      bg: '#FDF2F8',
+      color: '#DB2777',
+    });
+  }
+
+  if (contributorName) {
+    chips.push({
+      icon: UserRound,
+      label: contributorName,
+      bg: '#ECFEFF',
+      color: '#0F766E',
+    });
+  } else if (role) {
+    chips.push({
+      icon: UserPlus,
+      label: role,
+      bg: '#FEF3C7',
+      color: '#B45309',
+    });
+  }
+
+  if (amount != null && currency) {
+    chips.push({
+      icon: Coins,
+      label: formatCurrency(amount, currency),
+      bg: '#F0FDFA',
+      color: '#0F766E',
+    });
+  }
+
+  return chips.slice(0, 3);
+}
+
+function getDetailFacts(entry: ActivityEntry): DetailFact[] {
+  const facts: DetailFact[] = [
+    {
+      label: 'When',
+      value: formatDateTime(entry.created_at),
+    },
+    {
+      label: 'Action',
+      value: formatActionKey(entry.action),
+    },
+  ];
+
+  const actorName = entry.profile?.display_name ?? 'A member';
+  facts.push({
+    label: 'By',
+    value: actorName,
+  });
+
+  const placeName = getString(entry.meta, 'placeName');
+  const address = getString(entry.meta, 'address');
+  const title = getString(entry.meta, 'title');
+  const categoryName = getString(entry.meta, 'name');
+  const contributorName = getString(entry.meta, 'contributorName');
+  const removedName = getString(entry.meta, 'removedName');
+  const role = getString(entry.meta, 'role');
+  const amount = getNumber(entry.meta, 'amount');
+  const currency = getString(entry.meta, 'currency');
+  const planningRange = formatPlanningRange(entry.meta);
+  const checkinAt = getString(entry.meta, 'checkinAt');
+  const checkoutAt = getString(entry.meta, 'checkoutAt');
+
+  if (placeName) {
+    facts.push({ label: 'Place', value: placeName, tone: 'primary' });
+  }
+  if (title && !entry.action.startsWith('trip.')) {
+    facts.push({ label: 'Purpose', value: title });
+  }
+  if (categoryName) {
+    facts.push({ label: 'Category', value: categoryName });
+  }
+  if (contributorName) {
+    facts.push({ label: 'Contributor', value: contributorName });
+  }
+  if (removedName) {
+    facts.push({ label: 'Member', value: removedName });
+  }
+  if (role) {
+    facts.push({ label: 'Role', value: role });
+  }
+  if (amount != null && currency) {
+    facts.push({ label: 'Amount', value: formatCurrency(amount, currency), tone: 'primary' });
+  }
+  if (planningRange) {
+    facts.push({ label: 'Planning range', value: planningRange });
+  }
+  if (checkinAt) {
+    facts.push({ label: 'Check in', value: formatDateTime(checkinAt) });
+  }
+  if (checkoutAt) {
+    facts.push({ label: 'Check out', value: formatDateTime(checkoutAt) });
+  }
+  if (address) {
+    facts.push({ label: 'Location', value: address });
+  }
+
+  return facts;
+}
+
+function getDetailNote(entry: ActivityEntry): string | null {
+  return getString(entry.meta, 'body') ?? getString(entry.meta, 'note');
+}
+
 // -------------------------------------------------------
 // Day grouping
 // -------------------------------------------------------
@@ -233,10 +422,10 @@ function dayLabel(dateStr: string): string {
 }
 
 // -------------------------------------------------------
-// Single activity row (expandable)
+// Single activity card (expandable)
 // -------------------------------------------------------
 
-function ActivityRow({ entry }: { entry: ActivityEntry }) {
+function ActivityCard({ entry }: { entry: ActivityEntry }) {
   const [expanded, setExpanded] = useState(false);
 
   const cfg = ACTION_CONFIG[entry.action] ?? null;
@@ -246,63 +435,146 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
   const labelNode: ReactNode = cfg
     ? cfg.label(entry.meta)
     : DEFAULT_CONFIG.label(entry.action);
-  const detailNode: ReactNode | null = cfg?.detail ? cfg.detail(entry.meta) : null;
   const displayName = entry.profile?.display_name ?? 'A member';
-
-  const hasDetail = detailNode != null;
+  const detailNode: ReactNode | null = cfg?.detail ? cfg.detail(entry.meta) : null;
+  const summaryChips = getSummaryChips(entry);
+  const facts = getDetailFacts(entry);
+  const note = getDetailNote(entry);
 
   return (
-    <div className="border-b last:border-b-0" style={{ borderColor: 'rgba(193, 176, 152, 0.28)' }}>
-      {/* Collapsed row */}
+    <div
+      className="overflow-hidden rounded-[1.35rem] border bg-white shadow-[0_18px_50px_rgba(28,25,23,0.06)] transition-shadow hover:shadow-[0_24px_60px_rgba(28,25,23,0.08)]"
+      style={{ borderColor: 'rgba(193, 176, 152, 0.28)' }}
+    >
       <button
         type="button"
-        onClick={() => { if (hasDetail) setExpanded((v) => !v); }}
-        className={cn(
-          'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors',
-          hasDetail ? 'hover:bg-black/[0.02] cursor-pointer' : 'cursor-default'
-        )}
+        onClick={() => setExpanded((value) => !value)}
+        className="w-full px-3 py-3 text-left transition-colors hover:bg-black/[0.015] sm:px-4"
       >
-        {/* Action icon */}
-        <div
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
-          style={{ backgroundColor: bg }}
-        >
-          <Icon className="w-3.5 h-3.5" style={{ color }} />
-        </div>
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: bg }}
+          >
+            <Icon className="h-4 w-4" style={{ color }} />
+          </div>
 
-        {/* Label */}
-        <div className="flex-1 min-w-0">
-          <p className="truncate text-sm leading-snug text-stone-600">
-            <span className="font-semibold text-stone-900">{displayName}</span>
-            {' '}{labelNode}
-          </p>
-          <p className="mt-0.5 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
-            {formatDateTime(entry.created_at, { includeYear: false })}
-          </p>
-        </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-snug text-stone-700">
+                  <span className="font-semibold text-stone-950">{displayName}</span>
+                  {' '}
+                  {labelNode}
+                </p>
+                <div
+                  className="mt-1 flex flex-wrap items-center gap-2 text-[11px]"
+                  style={{ color: 'var(--color-text-subtle)' }}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <Clock3 className="h-3 w-3" />
+                    {formatDateTime(entry.created_at, { includeYear: false })}
+                  </span>
+                  <span
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                    style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}
+                  >
+                    {formatActionKey(entry.action)}
+                  </span>
+                </div>
+              </div>
 
-        {/* Avatar + chevron */}
-        <div className="flex flex-shrink-0 items-center gap-1.5">
-          <Avatar
-            user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
-            size="sm"
-          />
-          {hasDetail && (
-            <ChevronDown
-              className={cn('h-3.5 w-3.5 transition-transform duration-200', expanded && 'rotate-180')}
-              style={{ color: 'var(--color-text-subtle)' }}
-            />
-          )}
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <Avatar
+                  user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
+                  size="sm"
+                />
+                <span
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+                  style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}
+                >
+                  <ChevronDown
+                    className={cn('h-4 w-4 transition-transform duration-200', expanded && 'rotate-180')}
+                  />
+                </span>
+              </div>
+            </div>
+
+            {summaryChips.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {summaryChips.map((chip) => {
+                  const ChipIcon = chip.icon;
+                  return (
+                    <span
+                      key={`${entry.id}-${chip.label}`}
+                      className="inline-flex min-w-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                      style={{ backgroundColor: chip.bg, color: chip.color }}
+                    >
+                      <ChipIcon className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{chip.label}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </button>
 
-      {/* Expanded detail panel */}
-      {expanded && hasDetail && (
-        <div
-          className="px-4 pb-3 pt-0 text-xs leading-relaxed text-stone-500"
-          style={{ paddingLeft: '3.5rem' /* align with label */ }}
-        >
-          {detailNode}
+      {expanded && (
+        <div className="border-t px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4" style={{ borderColor: 'var(--color-border-muted)' }}>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {facts.map((fact) => (
+              <div
+                key={`${entry.id}-${fact.label}`}
+                className="rounded-2xl border px-3 py-2.5"
+                style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'rgba(255,255,255,0.82)' }}
+              >
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: 'var(--color-text-subtle)' }}
+                >
+                  {fact.label}
+                </p>
+                <p
+                  className={cn('mt-1 text-sm font-medium leading-snug break-words', fact.tone === 'primary' && 'font-semibold')}
+                  style={{ color: fact.tone === 'primary' ? 'var(--color-primary)' : 'var(--color-text)' }}
+                >
+                  {fact.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {(note || detailNode) && (
+            <div className="mt-3 space-y-2">
+              {note && (
+                <div
+                  className="rounded-2xl border px-3 py-3"
+                  style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'var(--color-bg-subtle)' }}
+                >
+                  <p
+                    className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+                    style={{ color: 'var(--color-text-subtle)' }}
+                  >
+                    Details
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    {note}
+                  </p>
+                </div>
+              )}
+
+              {detailNode && (
+                <div
+                  className="rounded-2xl border px-3 py-3 text-sm leading-relaxed"
+                  style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'rgba(255,255,255,0.82)', color: 'var(--color-text-muted)' }}
+                >
+                  {detailNode}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -345,9 +617,9 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
             {group.label}
           </p>
-          <div className="section-shell overflow-hidden">
+          <div className="space-y-3">
             {group.entries.map((entry) => (
-              <ActivityRow key={entry.id} entry={entry} />
+              <ActivityCard key={entry.id} entry={entry} />
             ))}
           </div>
         </div>
