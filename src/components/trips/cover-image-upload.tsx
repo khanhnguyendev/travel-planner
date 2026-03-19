@@ -157,9 +157,9 @@ export function CoverImageUpload({
           )}
           style={{
             backgroundColor: displayUrl
-              ? (identityMode ? 'rgba(10,12,17,0.22)' : 'rgba(0,0,0,0.35)')
+              ? (identityMode ? (mutationPending ? 'rgba(10,12,17,0.18)' : 'transparent') : 'rgba(0,0,0,0.35)')
               : 'transparent',
-            opacity: mutationPending ? 1 : undefined,
+            opacity: mutationPending || !identityMode ? undefined : 1,
           }}
         >
           {mutationPending ? (
