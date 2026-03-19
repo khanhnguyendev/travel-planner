@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Tag, X, Trash2, CheckSquare } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
-import type { MemberWithProfile } from '@/features/members/queries';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { AddPlaceForm } from '@/components/places/add-place-form';
@@ -11,7 +10,6 @@ import { PlaceGrid } from '@/components/places/place-grid';
 import { PlaceSearch } from '@/components/places/place-search';
 import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
 import { Dialog } from '@/components/ui/dialog';
-import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
 import { deletePlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
@@ -25,10 +23,6 @@ interface PlacesSectionProps {
   initialUserVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
   placeExpensesByPlaceId: Record<string, PlaceExpenseHistoryEntry[]>;
-  members: MemberWithProfile[];
-  budget: number | null;
-  budgetCurrency: string;
-  canManageBudget: boolean;
   commentsByPlaceId: Record<string, PlaceComment[]>;
   commentAuthors: Record<string, string>;
   currentUserId: string;
@@ -59,10 +53,6 @@ export function PlacesSection({
   initialUserVotes,
   reviewsByPlaceId: initialReviewsByPlaceId,
   placeExpensesByPlaceId,
-  members,
-  budget,
-  budgetCurrency,
-  canManageBudget,
   commentsByPlaceId,
   commentAuthors,
   currentUserId,
@@ -198,32 +188,6 @@ export function PlacesSection({
             onCancel={() => setShowAddPlace(false)}
           />
         </Dialog>
-      )}
-
-      {editor && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+6.2rem)] right-4 z-30 flex flex-col items-end gap-2 md:hidden">
-          <AddMoneyDialog
-            tripId={tripId}
-            members={members}
-            currentUserId={currentUserId}
-            places={places}
-            budget={budget}
-            budgetCurrency={budgetCurrency}
-            canManageBudget={canManageBudget}
-            initialTab="expense"
-            triggerLabel="Add expense"
-            triggerClassName="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-[0_14px_30px_rgba(10,12,17,0.14)]"
-          />
-
-          <button
-            type="button"
-            onClick={() => setShowAddPlace(true)}
-            className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-stone-950 px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(10,12,17,0.24)]"
-          >
-            <Plus className="h-4 w-4" />
-            Add place
-          </button>
-        </div>
       )}
 
       {places.length >= 2 && (

@@ -79,9 +79,10 @@ export function MobileNav({ displayName }: MobileNavProps) {
   }, [open]);
 
   const initial = displayName.trim().charAt(0).toUpperCase() || 'T';
+  const isTripWorkspace = /^\/trips\/[^/]+$/.test(pathname);
   const tripsActive = pathname === '/dashboard' || pathname.startsWith('/trips/') || pathname.startsWith('/invites/');
 
-  const dock = mounted
+  const dock = mounted && !isTripWorkspace
     ? createPortal(
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+0.9rem)] md:hidden">
           <div className="floating-dock pointer-events-auto rounded-[1.75rem] px-2 py-2">
