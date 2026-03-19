@@ -22,6 +22,8 @@ interface AddMoneyDialogProps {
   initialTab?: MoneyTab;
   triggerLabel?: string;
   triggerClassName?: string;
+  triggerIcon?: React.ReactNode;
+  onTriggerClick?: () => void;
   // kept for dialog title logic
   budget?: number | null;
 }
@@ -38,12 +40,15 @@ export function AddMoneyDialog({
   initialTab,
   triggerLabel = 'Add money',
   triggerClassName,
+  triggerIcon,
+  onTriggerClick,
 }: AddMoneyDialogProps) {
   const [open, setOpen] = useState(false);
   const defaultTab = initialTab ?? (canManageBudget ? 'income' : 'expense');
   const [activeTab, setActiveTab] = useState<MoneyTab>(defaultTab);
 
   function handleOpen() {
+    onTriggerClick?.();
     setActiveTab(defaultTab);
     setOpen(true);
   }
@@ -58,7 +63,7 @@ export function AddMoneyDialog({
           triggerClassName
         )}
       >
-        <Plus className="w-4 h-4" />
+        {triggerIcon ?? <Plus className="w-4 h-4" />}
         {triggerLabel}
       </button>
 
