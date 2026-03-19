@@ -365,22 +365,33 @@ export async function deleteContribution(
 
   const admin = createAdminClient();
 
-  // Fetch the contribution to get tripId for permission check
+  // Fetch the contribution to get tripId + details for logging
   const { data: contrib } = await admin
     .from('budget_contributions')
-    .select('trip_id')
+    .select('trip_id, user_id, amount, currency')
     .eq('id', contributionId)
     .single();
 
   if (!contrib) return { ok: false, error: 'Contribution not found' };
 
-  const { data: memberData } = await admin
-    .from('trip_members')
-    .select('role')
-    .eq('trip_id', contrib.trip_id)
-    .eq('user_id', user.id)
-    .eq('invite_status', 'accepted')
-    .single();
+  const c = contrib as { trip_id: string; user_id: string; amount: number; currency: string };
+
+  const [memberData, profileData] = await Promise.all([
+    admin
+      .from('trip_members')
+      .select('role')
+      .eq('trip_id', c.trip_id)
+      .eq('user_id', user.id)
+      .eq('invite_status', 'accepted')
+      .single()
+      .then((r) => r.data),
+    admin
+      .from('profiles')
+      .select('display_name')
+      .eq('id', c.user_id)
+      .single()
+      .then((r) => r.data),
+  ]);
 
   const member = memberData as { role: string } | null;
   if (!member || !['owner', 'admin'].includes(member.role)) {
@@ -397,7 +408,15 @@ export async function deleteContribution(
     return { ok: false, error: 'Failed to delete contribution' };
   }
 
-  revalidatePath(`/trips/${contrib.trip_id}`);
+  const contributorName = (profileData as { display_name?: string | null } | null)?.display_name ?? null;
+  void logActivity({
+    tripId: c.trip_id,
+    userId: user.id,
+    action: 'budget.remove',
+    meta: { amount: c.amount, currency: c.currency, contributorName },
+  });
+
+  revalidatePath(`/trips/${c.trip_id}`);
   return { ok: true, data: undefined };
 }
 
