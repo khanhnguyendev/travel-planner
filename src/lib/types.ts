@@ -88,7 +88,8 @@ export interface Place {
   price_level: number | null;
   editorial_summary: string | null;
   metadata_json: Json | null;
-  visit_date: string | null;       // date: YYYY-MM-DD
+  visit_date: string | null;       // date: YYYY-MM-DD (start)
+  visit_date_end: string | null;   // date: YYYY-MM-DD (end, for multi-day)
   visit_time_from: string | null;  // time: HH:MM
   visit_time_to: string | null;    // time: HH:MM
   backup_place_id: string | null;  // FK → places.id

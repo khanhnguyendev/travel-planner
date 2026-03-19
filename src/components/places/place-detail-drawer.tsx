@@ -113,11 +113,13 @@ function ScheduleEditor({
   const [editing, setEditing] = useState(false);
   // Saved state mirrors what's in the DB — updated on successful save so view mode stays fresh
   const [savedDate, setSavedDate] = useState(place.visit_date ?? '');
+  const [savedDateEnd, setSavedDateEnd] = useState(place.visit_date_end ?? '');
   const [savedFrom, setSavedFrom] = useState(place.visit_time_from ?? '');
   const [savedTo, setSavedTo] = useState(place.visit_time_to ?? '');
   const [savedBackupId, setSavedBackupId] = useState(place.backup_place_id ?? '');
   // Draft state used while editing
   const [date, setDate] = useState(savedDate);
+  const [dateEnd, setDateEnd] = useState(savedDateEnd);
   const [from, setFrom] = useState(savedFrom);
   const [to, setTo] = useState(savedTo);
   const [backupId, setBackupId] = useState(savedBackupId);
@@ -130,6 +132,7 @@ function ScheduleEditor({
 
   function openEditor() {
     setDate(savedDate);
+    setDateEnd(savedDateEnd);
     setFrom(savedFrom);
     setTo(savedTo);
     setBackupId(savedBackupId);
@@ -141,6 +144,7 @@ function ScheduleEditor({
     const resolve = loadingToast('Saving schedule…');
     const result = await updatePlaceSchedule(place.id, {
       visit_date: date || null,
+      visit_date_end: dateEnd || null,
       visit_time_from: from || null,
       visit_time_to: to || null,
       backup_place_id: backupId || null,
@@ -149,6 +153,7 @@ function ScheduleEditor({
     if (result.ok) {
       resolve('Schedule saved!', 'success');
       setSavedDate(date);
+      setSavedDateEnd(dateEnd);
       setSavedFrom(from);
       setSavedTo(to);
       setSavedBackupId(backupId);
@@ -169,6 +174,9 @@ function ScheduleEditor({
               <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
                 <CalendarDays className="w-3.5 h-3.5" />
                 {new Date(savedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {savedDateEnd && savedDateEnd !== savedDate && (
+                  <> → {new Date(savedDateEnd + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                )}
               </span>
             )}
             {(savedFrom || savedTo) && (
@@ -223,18 +231,32 @@ function ScheduleEditor({
   // Compact editing layout: date + from + to all in one row
   return (
     <div className="space-y-2 p-3 rounded-xl border border-stone-200 bg-stone-50">
-      <div className="grid grid-cols-3 gap-2">
-        <div className="col-span-1">
-          <label className="block text-xs font-medium text-stone-500 mb-1">Date</label>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs font-medium text-stone-500 mb-1">Start date</label>
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => { setDate(e.target.value); if (!e.target.value) setDateEnd(''); }}
             min={tripStartDate ?? undefined}
             max={tripEndDate ?? undefined}
             className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
+        <div>
+          <label className="block text-xs font-medium text-stone-500 mb-1">End date <span className="text-stone-400 font-normal">(optional)</span></label>
+          <input
+            type="date"
+            value={dateEnd}
+            onChange={(e) => setDateEnd(e.target.value)}
+            min={date || tripStartDate || undefined}
+            max={tripEndDate ?? undefined}
+            disabled={!date}
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs font-medium text-stone-500 mb-1">From</label>
           <input

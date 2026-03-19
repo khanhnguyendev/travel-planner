@@ -32,6 +32,7 @@ export function AddPlaceForm({ tripId, categories, onAdded, onCancel }: AddPlace
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [visitDate, setVisitDate] = useState('');
+  const [visitDateEnd, setVisitDateEnd] = useState('');
   const [visitTimeFrom, setVisitTimeFrom] = useState('');
   const [visitTimeTo, setVisitTimeTo] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +121,7 @@ useEffect(() => {
             tripId,
             categoryId,
             visitDate: visitDate || null,
+            visitDateEnd: visitDateEnd || null,
             visitTimeFrom: visitTimeFrom || null,
             visitTimeTo: visitTimeTo || null,
           }),
@@ -140,7 +142,7 @@ useEffect(() => {
         resolve('Place added!', 'success');
         onAdded?.(data.data!.place, []);
         setQuery(''); setSelected(null); setSuggestions([]); setShowDropdown(false);
-        setError(null); setVisitDate(''); setVisitTimeFrom(''); setVisitTimeTo('');
+        setError(null); setVisitDate(''); setVisitDateEnd(''); setVisitTimeFrom(''); setVisitTimeTo('');
         setSessionToken(newSessionToken());
       } catch {
         const msg = 'Network error — check your connection and try again.';
@@ -297,11 +299,20 @@ useEffect(() => {
               Visit schedule <span className="text-xs font-normal text-stone-400">(optional)</span>
             </p>
             <div className="space-y-2">
-              <div className="relative">
-                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
-                <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} disabled={isPending}
-                  placeholder="Date"
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50" />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
+                  <input type="date" value={visitDate} onChange={(e) => { setVisitDate(e.target.value); if (!e.target.value) setVisitDateEnd(''); }} disabled={isPending}
+                    placeholder="Start date"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50" />
+                </div>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
+                  <input type="date" value={visitDateEnd} onChange={(e) => setVisitDateEnd(e.target.value)} disabled={isPending || !visitDate}
+                    min={visitDate || undefined}
+                    placeholder="End date"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">

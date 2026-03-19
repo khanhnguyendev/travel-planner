@@ -11,6 +11,7 @@ import type { PlaceComment } from '@/lib/types';
 
 export interface PlaceScheduleInput {
   visit_date?: string | null;
+  visit_date_end?: string | null;
   visit_time_from?: string | null;
   visit_time_to?: string | null;
   backup_place_id?: string | null;
@@ -65,6 +66,7 @@ export async function updatePlaceSchedule(
     .from('places')
     .update({
       visit_date: schedule.visit_date ?? null,
+      visit_date_end: schedule.visit_date_end ?? null,
       visit_time_from: schedule.visit_time_from ?? null,
       visit_time_to: schedule.visit_time_to ?? null,
       backup_place_id: schedule.backup_place_id ?? null,
