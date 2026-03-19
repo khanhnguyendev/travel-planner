@@ -140,34 +140,28 @@ function CrewCard({
               No financial activity recorded yet.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <StatBox
-                label="Initial balance"
-                value={formatCurrency(member.contributions, currency)}
-                valueColor="var(--color-text-muted)"
-              />
-              <StatBox
-                label="Expensed"
-                value={formatCurrency(member.paid, currency)}
-                valueColor="var(--color-text-muted)"
-              />
-              <StatBox
+            <div className="space-y-1">
+              <StatRow label="Income put in" value={formatCurrency(member.contributions, currency)} />
+              <StatRow label="Paid expenses" value={formatCurrency(member.paid, currency)} />
+              <StatRow
                 label="Remaining"
                 value={formatCurrency(Math.max(0, remain), currency)}
-                valueColor={remain < 0 ? '#EF4444' : 'var(--color-text-muted)'}
-                hint={remain < 0 ? 'Over contributed' : undefined}
+                valueColor={remain < 0 ? '#EF4444' : undefined}
               />
-              <StatBox
-                label={isOwed ? 'Gets back' : isOwing ? 'Owes' : 'Settled'}
-                value={
-                  isOwed
-                    ? formatCurrency(member.balanceNet, currency)
-                    : isOwing
-                    ? formatCurrency(Math.abs(member.balanceNet), currency)
-                    : '—'
-                }
-                valueColor={isOwed ? '#0F766E' : isOwing ? '#B45309' : 'var(--color-text-subtle)'}
-              />
+              <div className="mt-2 pt-2" style={{ borderTop: '1px solid var(--color-border-muted)' }}>
+                <StatRow
+                  label={isOwed ? 'Gets back' : isOwing ? 'Owes' : 'Settled'}
+                  value={
+                    isOwed
+                      ? `+${formatCurrency(member.balanceNet, currency)}`
+                      : isOwing
+                      ? formatCurrency(Math.abs(member.balanceNet), currency)
+                      : '—'
+                  }
+                  valueColor={isOwed ? '#0F766E' : isOwing ? '#B45309' : 'var(--color-text-subtle)'}
+                  bold
+                />
+              </div>
             </div>
           )}
         </div>
@@ -176,31 +170,26 @@ function CrewCard({
   );
 }
 
-function StatBox({
+function StatRow({
   label,
   value,
   valueColor,
-  hint,
+  bold,
 }: {
   label: string;
   value: string;
-  valueColor: string;
-  hint?: string;
+  valueColor?: string;
+  bold?: boolean;
 }) {
   return (
-    <div
-      className="rounded-xl px-2.5 py-2"
-      style={{ backgroundColor: 'var(--color-bg-muted)' }}
-    >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--color-text-subtle)' }}>
-        {label}
-      </p>
-      <p className="mt-0.5 text-xs font-semibold" style={{ color: valueColor }}>
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>{label}</span>
+      <span
+        className={bold ? 'text-xs font-semibold' : 'text-xs font-medium'}
+        style={{ color: valueColor ?? 'var(--color-text-muted)' }}
+      >
         {value}
-      </p>
-      {hint && (
-        <p className="mt-0.5 text-[10px]" style={{ color: '#EF4444' }}>{hint}</p>
-      )}
+      </span>
     </div>
   );
 }
