@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { FileText, Receipt } from 'lucide-react';
 import type { PlaceExpenseHistoryEntry } from '@/lib/types';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 
 export function PlaceExpenseHistory({
@@ -13,6 +13,12 @@ export function PlaceExpenseHistory({
   expenses: PlaceExpenseHistoryEntry[];
   emptyLabel?: string;
 }) {
+  function expenseMoment(expense: PlaceExpenseHistoryEntry) {
+    return expense.expense_date
+      ? formatDateAndTime(expense.expense_date, expense.created_at)
+      : formatDateTime(expense.created_at);
+  }
+
   if (expenses.length === 0) {
     return (
       <div className="rounded-[1.1rem] border border-dashed border-stone-200 bg-stone-50/70 px-4 py-4 text-sm text-stone-500">
@@ -45,7 +51,7 @@ export function PlaceExpenseHistory({
                 {expense.paid_by_name ?? 'Member'}
                 {expense.category ? ` · ${expense.category}` : ''}
                 {' · '}
-                {formatDate(expense.expense_date ?? expense.created_at)}
+                {expenseMoment(expense)}
               </p>
               {expense.note && (
                 <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-stone-500">

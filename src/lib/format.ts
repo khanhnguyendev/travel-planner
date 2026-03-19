@@ -51,6 +51,35 @@ export function parseNumericInput(raw: string): number {
   return Number(value);
 }
 
+export function formatTime(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+}
+
+export function formatDateTime(
+  date: string | Date,
+  { includeYear = true }: { includeYear?: boolean } = {}
+): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(includeYear ? { year: 'numeric' as const } : {}),
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+}
+
+export function formatDateAndTime(
+  dateSource: string | Date,
+  timeSource?: string | Date
+): string {
+  return `${formatDate(dateSource)} · ${formatTime(timeSource ?? dateSource)}`;
+}
+
 /**
  * Format an ISO date string or Date object into a human-readable short date.
  * @param date ISO string or Date

@@ -18,7 +18,7 @@ import { getSession } from '@/features/auth/session';
 import { getTrips, type TripWithRole } from '@/features/trips/queries';
 import { getMembers } from '@/features/members/queries';
 import { formatDateRange } from '@/lib/date';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDateTime } from '@/lib/format';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Trang chu' };
@@ -42,10 +42,7 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
   const isArchived = trip.status === 'archived';
   const isPublic = trip.visibility === 'public';
   const visibility = isPublic ? VISIBILITY_CONFIG.public : VISIBILITY_CONFIG.private;
-  const updatedLabel = new Date(trip.updated_at).toLocaleDateString('en', {
-    month: 'short',
-    day: 'numeric',
-  });
+  const updatedLabel = formatDateTime(trip.updated_at, { includeYear: false });
 
   return (
     <Link href={`/trips/${trip.id}`} className="group block overflow-hidden rounded-[1.75rem] section-shell animate-in slide-up">

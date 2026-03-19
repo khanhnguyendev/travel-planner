@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Receipt, User, Plus, Trash2, CheckSquare, X, MapPin, Wallet } from 'lucide-react';
 import type { Expense } from '@/lib/types';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
 import { deleteExpense } from '@/features/expenses/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
@@ -68,6 +68,12 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const loadingToast = useLoadingToast();
+
+  function expenseMoment(expense: Expense) {
+    return expense.expense_date
+      ? formatDateAndTime(expense.expense_date, expense.created_at)
+      : formatDateTime(expense.created_at);
+  }
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -242,7 +248,7 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
                         ? <Wallet className="w-3 h-3 flex-shrink-0 text-teal-500" />
                         : <User className="w-3 h-3 flex-shrink-0" />}
                       <span className="truncate">
-                        {expense.expense_date ? formatDate(expense.expense_date) : formatDate(expense.created_at)}
+                        {expenseMoment(expense)}
                       </span>
                       {expense.paid_from_pool && (
                         <span className="font-semibold text-teal-600">Pool</span>

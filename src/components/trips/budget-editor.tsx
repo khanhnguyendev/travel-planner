@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
 import { updateTripBudget, deleteContribution } from '@/features/trips/actions';
-import { formatCurrency, formatDate, formatNumericInput, parseNumericInput } from '@/lib/format';
+import { formatCurrency, formatDateTime, formatNumericInput, parseNumericInput } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { BudgetContribution } from '@/lib/types';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
@@ -261,36 +261,40 @@ export function BudgetEditor({
                   {incomeByCurrency.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+                      className="flex items-start gap-2 rounded-lg px-2.5 py-2"
                       style={{ backgroundColor: 'var(--color-bg-muted)' }}
                     >
                       <div className="flex-1 min-w-0">
-                        <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
+                        <p className="truncate text-xs font-medium" style={{ color: 'var(--color-text)' }}>
                           {nameMap.get(c.user_id) ?? 'Member'}
-                        </span>
-                        {c.note && (
-                          <span className="ml-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                            · {c.note}
-                          </span>
-                        )}
-                        <span className="ml-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                          · {formatDate(c.created_at)}
-                        </span>
+                        </p>
+                        <div className="mt-1 space-y-0.5">
+                          {c.note && (
+                            <p className="truncate text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+                              {c.note}
+                            </p>
+                          )}
+                          <p className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+                            {formatDateTime(c.created_at)}
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-xs font-semibold flex-shrink-0" style={{ color: '#0F766E' }}>
-                        +{formatCurrency(c.amount, c.currency)}
-                      </span>
-                      {canManage && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteContribution(c.id)}
-                          disabled={deletingId === c.id}
-                          className="flex-shrink-0 rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
-                          title="Remove income entry"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      )}
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <span className="text-xs font-semibold" style={{ color: '#0F766E' }}>
+                          +{formatCurrency(c.amount, c.currency)}
+                        </span>
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteContribution(c.id)}
+                            disabled={deletingId === c.id}
+                            className="rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                            title="Remove income entry"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

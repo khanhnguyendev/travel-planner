@@ -8,7 +8,7 @@ import { removeMember, changeMemberRole } from '@/features/members/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDateTime } from '@/lib/format';
 
 // -------------------------------------------------------
 // Role badge
@@ -145,7 +145,7 @@ export function MemberList({
               </div>
               {m.joined_at && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                  Joined {new Date(m.joined_at).toLocaleDateString()}
+                  Joined {formatDateTime(m.joined_at)}
                 </p>
               )}
               {hasBalance && (

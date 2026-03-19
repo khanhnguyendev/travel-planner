@@ -8,6 +8,7 @@ import { revokeInvite } from '@/features/members/actions';
 import type { PendingInvite } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
 import { CopyButton } from '@/components/ui/copy-button';
+import { formatDateTime } from '@/lib/format';
 
 // -------------------------------------------------------
 // Props
@@ -97,7 +98,7 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
                 {linkInvite ? 'Invite link' : invite.email}
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                {role} access · Expires {expiresAt.toLocaleDateString()}
+                {role} access · Expires {formatDateTime(expiresAt)}
               </p>
             </div>
 

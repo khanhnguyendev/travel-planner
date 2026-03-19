@@ -1,6 +1,6 @@
 import { Receipt } from 'lucide-react';
 import type { PlaceExpenseHistoryEntry } from '@/lib/types';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
 
 function getSummaryValue(expenses: PlaceExpenseHistoryEntry[]) {
   const currencies = Array.from(new Set(expenses.map((expense) => expense.currency)));
@@ -26,7 +26,9 @@ export function PlaceExpenseSummary({
   }
 
   const latestExpense = expenses[0];
-  const latestDate = formatDate(latestExpense.expense_date ?? latestExpense.created_at);
+  const latestDate = latestExpense.expense_date
+    ? formatDateAndTime(latestExpense.expense_date, latestExpense.created_at)
+    : formatDateTime(latestExpense.created_at);
 
   return (
     <div className={`rounded-[1rem] border border-stone-200/80 bg-stone-50/85 px-3 py-2 ${className}`}>

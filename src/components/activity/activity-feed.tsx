@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { MapPin, MessageCircle, ThumbsUp, ThumbsDown, Receipt, Tag, UserPlus, Activity, Compass, CalendarDays, LogIn, LogOut, Coins, UserMinus } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDateTime } from '@/lib/format';
 import type { ActivityEntry } from '@/features/activity/queries';
 
 interface ActivityFeedProps {
@@ -183,22 +183,6 @@ const DEFAULT_CONFIG = {
 };
 
 // -------------------------------------------------------
-// Time ago helper
-// -------------------------------------------------------
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
-}
-
-// -------------------------------------------------------
 // Day grouping
 // -------------------------------------------------------
 
@@ -283,7 +267,7 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs text-stone-400 whitespace-nowrap">{timeAgo(entry.created_at)}</span>
+                    <span className="text-xs text-stone-400 whitespace-nowrap">{formatDateTime(entry.created_at, { includeYear: false })}</span>
                     <Avatar
                       user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
                       size="sm"

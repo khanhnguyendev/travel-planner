@@ -7,7 +7,7 @@ import { Pencil, Trash2, Receipt, Calendar, FileText, CheckCircle2, MapPin, Wall
 import type { ExpenseWithSplits, ExpenseSplitWithProfile } from '@/features/expenses/queries';
 import type { TripRole } from '@/lib/types';
 import { deleteExpense } from '@/features/expenses/actions';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDateAndTime, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -204,8 +204,8 @@ export function ExpenseDetail({
 
   const paidByName = expense.paid_by_profile.display_name ?? 'Unknown member';
   const expenseDate = expense.expense_date
-    ? formatDate(expense.expense_date)
-    : formatDate(expense.created_at);
+    ? formatDateAndTime(expense.expense_date, expense.created_at)
+    : formatDateTime(expense.created_at);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

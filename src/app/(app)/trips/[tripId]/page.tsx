@@ -26,7 +26,7 @@ import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpenses, getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDate, formatDateAndTime, formatDateTime } from '@/lib/format';
 import { PlacesSection } from '@/components/places/places-section';
 import { TripTimeline } from '@/components/places/trip-timeline';
 import { MapTabClient } from '@/components/places/map-tab-client';
@@ -805,7 +805,10 @@ export default async function TripDetailPage({
                         <p className="mt-1 truncate text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                           {expense.paid_by_profile.display_name ?? 'Member'}
                           {expense.category ? ` · ${expense.category}` : ''}
-                          {expense.expense_date ? ` · ${formatDate(expense.expense_date)}` : ''}
+                          {' · '}
+                          {expense.expense_date
+                            ? formatDateAndTime(expense.expense_date, expense.created_at)
+                            : formatDateTime(expense.created_at)}
                         </p>
                         {expense.place_id && placeNameById[expense.place_id] && (
                           <p className="mt-1 inline-flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
