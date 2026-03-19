@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Coins, Plus, Receipt } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Dialog } from '@/components/ui/dialog';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import { BudgetIncomeForm } from '@/components/trips/budget-income-form';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { TRIP_BUDGET_REFRESH_EVENT } from '@/components/trips/budget-refresh';
 
 type MoneyTab = 'income' | 'expense';
 
@@ -43,7 +45,9 @@ export function AddMoneyDialog({
   triggerIcon,
   onTriggerClick,
 }: AddMoneyDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [, startRefreshTransition] = useTransition();
   const defaultTab = initialTab ?? (canManageBudget ? 'income' : 'expense');
   const [activeTab, setActiveTab] = useState<MoneyTab>(defaultTab);
 
@@ -51,6 +55,14 @@ export function AddMoneyDialog({
     onTriggerClick?.();
     setActiveTab(defaultTab);
     setOpen(true);
+  }
+
+  function handleSuccess() {
+    window.dispatchEvent(new Event(TRIP_BUDGET_REFRESH_EVENT));
+    setOpen(false);
+    startRefreshTransition(() => {
+      router.refresh();
+    });
   }
 
   return (
@@ -114,7 +126,7 @@ export function AddMoneyDialog({
                 budgetCurrency={budgetCurrency}
                 members={members}
                 currentUserId={currentUserId}
-                onSuccess={() => setOpen(false)}
+                onSuccess={handleSuccess}
                 onCancel={() => setOpen(false)}
               />
             ) : (
@@ -125,7 +137,7 @@ export function AddMoneyDialog({
                 places={places}
                 poolBalance={poolBalance}
                 poolCurrency={budgetCurrency}
-                onSuccess={() => setOpen(false)}
+                onSuccess={handleSuccess}
                 onCancel={() => setOpen(false)}
               />
             )}
