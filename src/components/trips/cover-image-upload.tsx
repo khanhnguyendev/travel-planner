@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, Loader2, X } from 'lucide-react';
 import { updateTrip } from '@/features/trips/actions';
@@ -27,7 +27,13 @@ export function CoverImageUpload({
   const [removing, setRemoving] = useState(false);
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentCoverUrl ?? null);
+  const [imageFailed, setImageFailed] = useState(false);
   const loadingToast = useLoadingToast();
+
+  useEffect(() => {
+    setPreviewUrl(currentCoverUrl ?? null);
+    setImageFailed(false);
+  }, [currentCoverUrl, tripId]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -68,7 +74,8 @@ export function CoverImageUpload({
       const result = await updateTrip(tripId, { cover_image_url: publicUrl });
 
       if (result.ok) {
-        setPreviewUrl(publicUrl);
+        setPreviewUrl(`${publicUrl}?v=${Date.now()}`);
+        setImageFailed(false);
         resolve('Cover image updated!', 'success');
         startRefreshTransition(() => {
           router.refresh();
@@ -92,6 +99,7 @@ export function CoverImageUpload({
       const result = await updateTrip(tripId, { cover_image_url: null });
       if (result.ok) {
         setPreviewUrl(null);
+        setImageFailed(false);
         resolve('Cover image removed', 'success');
         startRefreshTransition(() => {
           router.refresh();
@@ -106,8 +114,10 @@ export function CoverImageUpload({
     }
   }
 
-  const busy = uploading || removing || isRefreshing;
+  const mutationPending = uploading || removing;
+  const busy = mutationPending || isRefreshing;
   const identityMode = variant === 'identity';
+  const displayUrl = imageFailed ? null : previewUrl;
 
   return (
     <div className={cn('relative group', identityMode ? 'h-full w-full' : '')}>
@@ -125,9 +135,14 @@ export function CoverImageUpload({
         }}
         aria-label="Upload cover image"
       >
-        {previewUrl ? (
+        {displayUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={previewUrl} alt="Cover" className="h-full w-full object-cover" />
+          <img
+            src={displayUrl}
+            alt="Cover"
+            className="h-full w-full object-cover"
+            onError={() => setImageFailed(true)}
+          />
         ) : identityMode ? (
           <div className="hero-orb h-full w-full" />
         ) : null}
@@ -139,22 +154,22 @@ export function CoverImageUpload({
             identityMode ? 'flex items-center justify-center' : 'flex flex-col items-center justify-center'
           )}
           style={{
-            backgroundColor: previewUrl
+            backgroundColor: displayUrl
               ? (identityMode ? 'rgba(10,12,17,0.22)' : 'rgba(0,0,0,0.35)')
               : 'transparent',
-            opacity: busy ? 1 : undefined,
+            opacity: mutationPending ? 1 : undefined,
           }}
         >
-          {busy ? (
+          {mutationPending ? (
             <Loader2 className="w-8 h-8 text-white animate-spin" />
           ) : !identityMode ? (
             <div
               className="flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ opacity: previewUrl ? undefined : 1 }}
+              style={{ opacity: displayUrl ? undefined : 1 }}
             >
-              <Camera className="w-8 h-8" style={{ color: previewUrl ? 'white' : 'var(--color-text-subtle)' }} />
-              <span className="text-sm font-medium" style={{ color: previewUrl ? 'white' : 'var(--color-text-muted)' }}>
-                {previewUrl ? 'Change cover' : 'Add cover image'}
+              <Camera className="w-8 h-8" style={{ color: displayUrl ? 'white' : 'var(--color-text-subtle)' }} />
+              <span className="text-sm font-medium" style={{ color: displayUrl ? 'white' : 'var(--color-text-muted)' }}>
+                {displayUrl ? 'Change cover' : 'Add cover image'}
               </span>
             </div>
           ) : null}
@@ -173,14 +188,14 @@ export function CoverImageUpload({
             ? 'right-4 top-4 z-20 h-11 w-11 bg-white/90 text-stone-700 backdrop-blur-sm hover:bg-white'
             : 'left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 bg-white/90 text-stone-700 opacity-0 group-hover:opacity-100'
         )}
-        aria-label={previewUrl ? 'Change cover image' : 'Add cover image'}
-        title={previewUrl ? 'Change cover image' : 'Add cover image'}
+        aria-label={displayUrl ? 'Change cover image' : 'Add cover image'}
+        title={displayUrl ? 'Change cover image' : 'Add cover image'}
       >
         <Camera className={identityMode ? 'h-5 w-5' : 'h-4 w-4'} />
       </button>
 
       {/* Remove button — only shown when a cover exists */}
-      {previewUrl && !busy && (
+      {displayUrl && !busy && (
         <button
           type="button"
           onClick={handleRemove}
@@ -199,7 +214,7 @@ export function CoverImageUpload({
         </button>
       )}
 
-      {isRefreshing && <RefreshOverlay label="Updating cover" />}
+      {isRefreshing && !mutationPending && <RefreshOverlay label="Updating cover" />}
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
     </div>
