@@ -18,6 +18,39 @@ export function formatCurrency(amount: number, currency: string): string {
   }).format(amount);
 }
 
+function addGroupingSeparators(value: string): string {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+export function formatNumericInput(
+  raw: string,
+  { allowDecimals = true }: { allowDecimals?: boolean } = {}
+): string {
+  const base = raw.replace(/,/g, '');
+  const sanitized = allowDecimals
+    ? base.replace(/[^\d.]/g, '')
+    : base.replace(/\D/g, '');
+
+  if (!sanitized) return '';
+
+  if (!allowDecimals) {
+    return addGroupingSeparators(sanitized.replace(/^0+(?=\d)/, ''));
+  }
+
+  const hasDecimal = sanitized.includes('.');
+  const [integerRaw = '', ...decimalRest] = sanitized.split('.');
+  const decimalPart = decimalRest.join('');
+  const integerPart = integerRaw.replace(/^0+(?=\d)/, '');
+  const formattedInteger = integerPart ? addGroupingSeparators(integerPart) : (hasDecimal ? '0' : '');
+
+  return hasDecimal ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+}
+
+export function parseNumericInput(raw: string): number {
+  const value = raw.replace(/,/g, '');
+  return Number(value);
+}
+
 /**
  * Format an ISO date string or Date object into a human-readable short date.
  * @param date ISO string or Date

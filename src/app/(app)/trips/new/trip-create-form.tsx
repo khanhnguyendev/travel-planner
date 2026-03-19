@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Camera, X } from 'lucide-react';
 import { createTrip, updateTrip } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { formatNumericInput, parseNumericInput } from '@/lib/format';
 
 export default function TripCreateForm() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function TripCreateForm() {
 
     const resolve = loadingToast('Creating trip…');
 
-    const parsedBudget = budget ? parseFloat(budget) : null;
+    const parsedBudget = budget ? parseNumericInput(budget) : null;
     const result = await createTrip(
       title,
       description || undefined,
@@ -301,11 +302,10 @@ export default function TripCreateForm() {
               {CURRENCY_SYMBOLS[budgetCurrency] ?? budgetCurrency}
             </span>
             <input
-              type="number"
-              min="0"
-              step="any"
+              type="text"
+              inputMode="decimal"
               value={budget}
-              onChange={(e) => setBudget(e.target.value)}
+              onChange={(e) => setBudget(formatNumericInput(e.target.value))}
               className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm outline-none"
               style={{
                 borderColor: 'var(--color-border)',

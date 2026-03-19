@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
 import { updateTripBudget, deleteContribution } from '@/features/trips/actions';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDate, formatNumericInput, parseNumericInput } from '@/lib/format';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { BudgetContribution } from '@/lib/types';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
@@ -40,7 +40,7 @@ export function BudgetEditor({
 }: BudgetEditorProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(budget != null ? String(budget) : '');
+  const [value, setValue] = useState(budget != null ? formatNumericInput(String(budget)) : '');
   const [currency, setCurrency] = useState(budgetCurrency || 'VND');
   const [pending, setPending] = useState(false);
   const [isRefreshing, startRefreshTransition] = useTransition();
@@ -58,7 +58,7 @@ export function BudgetEditor({
   const poolBalance = totalIncome - poolSpent;
 
   async function handleSave() {
-    const parsed = value ? parseFloat(value) : null;
+    const parsed = value ? parseNumericInput(value) : null;
     if (value && (isNaN(parsed!) || parsed! <= 0)) {
       setError('Please enter a valid positive number');
       return;
@@ -79,7 +79,7 @@ export function BudgetEditor({
   }
 
   function handleCancel() {
-    setValue(budget != null ? String(budget) : '');
+    setValue(budget != null ? formatNumericInput(String(budget)) : '');
     setCurrency(activeCurrency);
     setError(null);
     setEditing(false);
@@ -118,11 +118,10 @@ export function BudgetEditor({
               {CURRENCY_SYMBOLS[currency] ?? currency}
             </span>
             <input
-              type="number"
-              min="0"
-              step="any"
+              type="text"
+              inputMode="decimal"
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => setValue(formatNumericInput(e.target.value))}
               className="w-full rounded-lg border py-2 pl-8 pr-3 text-sm outline-none"
               style={{
                 borderColor: 'var(--color-border)',

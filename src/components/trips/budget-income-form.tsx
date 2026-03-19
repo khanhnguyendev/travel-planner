@@ -5,6 +5,7 @@ import { Check } from 'lucide-react';
 import { addBudgetContribution } from '@/features/trips/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import type { MemberWithProfile } from '@/features/members/queries';
+import { formatNumericInput, parseNumericInput } from '@/lib/format';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: 'EUR', VND: '₫', GBP: '£', JPY: '¥', THB: '฿',
@@ -40,7 +41,7 @@ export function BudgetIncomeForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const parsed = value ? parseFloat(value) : NaN;
+    const parsed = value ? parseNumericInput(value) : NaN;
     if (!value || Number.isNaN(parsed) || parsed <= 0) {
       setError('Please enter a valid positive number');
       return;
@@ -85,11 +86,10 @@ export function BudgetIncomeForm({
               {CURRENCY_SYMBOLS[currency] ?? currency}
             </span>
             <input
-              type="number"
-              min="0"
-              step="any"
+              type="text"
+              inputMode="decimal"
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => setValue(formatNumericInput(e.target.value))}
               className="w-full min-w-0 rounded-xl border py-2.5 pl-8 pr-3 text-sm outline-none"
               style={{
                 borderColor: 'var(--color-border)',

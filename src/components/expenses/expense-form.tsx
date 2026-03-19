@@ -6,7 +6,7 @@ import { SplitSquareVertical, Upload, X, Loader2, Plus, Trash2, MapPin, PencilLi
 import { createExpense, type CreateExpenseInput, type SplitInput } from '@/features/expenses/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { Place } from '@/lib/types';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatNumericInput, parseNumericInput } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 
@@ -60,7 +60,7 @@ interface ExpenseFormProps {
 // -------------------------------------------------------
 
 function parseAmount(raw: string): number {
-  const n = parseFloat(raw);
+  const n = parseNumericInput(raw);
   return isNaN(n) ? 0 : n;
 }
 
@@ -101,6 +101,7 @@ function InputField({
   min,
   step,
   className,
+  inputMode,
 }: {
   id?: string;
   type?: string;
@@ -111,11 +112,13 @@ function InputField({
   min?: string;
   step?: string;
   className?: string;
+  inputMode?: 'search' | 'text' | 'email' | 'tel' | 'url' | 'none' | 'numeric' | 'decimal';
 }) {
   return (
     <input
       id={id}
       type={type}
+      inputMode={inputMode}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
@@ -203,15 +206,15 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
         ...row,
         amountOwed:
           i === 0
-            ? String(roundTo2(perPerson + remainder))
-            : String(perPerson),
+            ? formatNumericInput(String(roundTo2(perPerson + remainder)))
+            : formatNumericInput(String(perPerson)),
       }))
     );
   }
 
-  function updateSplitAmount(index: number, value: string) {
+function updateSplitAmount(index: number, value: string) {
     setSplits((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, amountOwed: value } : row))
+      prev.map((row, i) => (i === index ? { ...row, amountOwed: formatNumericInput(value) } : row))
     );
   }
 
@@ -536,12 +539,11 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
           <Label htmlFor="amount">Amount</Label>
           <InputField
             id="amount"
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={amount}
-            onChange={setAmount}
+            onChange={(value) => setAmount(formatNumericInput(value))}
             placeholder="0.00"
-            min="0.01"
-            step="0.01"
             required
           />
         </div>
@@ -719,12 +721,11 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], poolB
 
                   <div className="flex items-center gap-2 sm:flex-shrink-0">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={row.amountOwed}
                       onChange={(e) => updateSplitAmount(i, e.target.value)}
                       placeholder="0.00"
-                      min="0"
-                      step="0.01"
                       className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-right text-sm outline-none sm:w-28 sm:flex-none"
                       style={{
                         borderColor: 'var(--color-border)',
