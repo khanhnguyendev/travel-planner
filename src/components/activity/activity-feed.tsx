@@ -165,6 +165,18 @@ const ACTION_CONFIG: Record<string, {
       return <>added {amt} to the trip fund</>;
     },
   },
+  'budget.edit': {
+    icon: Coins,
+    color: '#6366F1',
+    bg: '#EEF2FF',
+    label: (m) => {
+      const amt = <Amt>{fmtAmount(m?.amount, m?.currency)}</Amt>;
+      if (m?.contributorName) {
+        return <>updated income to {amt} for <B>{String(m.contributorName)}</B></>;
+      }
+      return <>updated income to {amt}</>;
+    },
+  },
   'budget.remove': {
     icon: Coins,
     color: '#EF4444',

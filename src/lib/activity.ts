@@ -19,6 +19,7 @@ export type ActivityAction =
   | 'place.checkin'
   | 'place.checkout'
   | 'budget.contribute'
+  | 'budget.edit'
   | 'budget.remove'
   | 'member.join'
   | 'member.remove';

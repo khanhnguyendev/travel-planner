@@ -421,6 +421,75 @@ export async function deleteContribution(
 }
 
 // -------------------------------------------------------
+// editContribution
+// -------------------------------------------------------
+
+export async function editContribution(
+  contributionId: string,
+  amount: number,
+  note?: string | null
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+  if (!amount || amount <= 0) return { ok: false, error: 'Amount must be positive' };
+
+  const admin = createAdminClient();
+
+  const { data: contrib } = await admin
+    .from('budget_contributions')
+    .select('trip_id, user_id, amount, currency')
+    .eq('id', contributionId)
+    .single();
+
+  if (!contrib) return { ok: false, error: 'Contribution not found' };
+  const c = contrib as { trip_id: string; user_id: string; amount: number; currency: string };
+
+  const [memberData, profileData] = await Promise.all([
+    admin
+      .from('trip_members')
+      .select('role')
+      .eq('trip_id', c.trip_id)
+      .eq('user_id', user.id)
+      .eq('invite_status', 'accepted')
+      .single()
+      .then((r) => r.data),
+    admin
+      .from('profiles')
+      .select('display_name')
+      .eq('id', c.user_id)
+      .single()
+      .then((r) => r.data),
+  ]);
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  const { error } = await admin
+    .from('budget_contributions')
+    .update({ amount, note: note ?? null })
+    .eq('id', contributionId);
+
+  if (error) {
+    console.error('editContribution error:', error);
+    return { ok: false, error: 'Failed to update contribution' };
+  }
+
+  const contributorName = (profileData as { display_name?: string | null } | null)?.display_name ?? null;
+  void logActivity({
+    tripId: c.trip_id,
+    userId: user.id,
+    action: 'budget.edit',
+    meta: { oldAmount: c.amount, amount, currency: c.currency, contributorName, note: note ?? null },
+  });
+
+  revalidatePath(`/trips/${c.trip_id}`);
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
 // archiveTrip
 // -------------------------------------------------------
 
