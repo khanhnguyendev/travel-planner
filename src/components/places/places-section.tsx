@@ -229,6 +229,7 @@ export function PlacesSection({
         <VoteLeaderboard places={planningPlaces} voteSummaries={voteSummaries} categories={planningCategories} />
       )}
 
+      {(planningPlaces.length > 0 || planningCategories.length > 0) && (
       <div className="section-shell overflow-hidden p-3 sm:p-5">
         <div className="space-y-3">
           <div className="flex items-start gap-2">
@@ -243,7 +244,7 @@ export function PlacesSection({
               </div>
             )}
 
-            {editor && !selectMode && (
+            {editor && planningPlaces.length > 0 && !selectMode && (
               <button
                 onClick={() => setShowAddPlace(true)}
                 className="hidden min-h-[48px] items-center gap-2 rounded-[1.1rem] bg-white px-4 py-3 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:inline-flex"
@@ -334,12 +335,13 @@ export function PlacesSection({
                 aria-label="Add category"
               >
                 <Tag className="h-4 w-4" />
-                <span className="hidden sm:inline">Category</span>
+                <span className="hidden sm:inline">+ Category</span>
               </button>
             )}
           </div>
         </div>
       </div>
+      )}
 
       <PlaceGrid
         places={sortedPlaces}
