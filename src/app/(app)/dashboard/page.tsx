@@ -37,6 +37,21 @@ const VISIBILITY_CONFIG = {
   private: { icon: <Lock className="h-3 w-3" />, label: 'Private', color: '#475569', bg: '#E2E8F0' },
 } as const;
 
+function getTripDurationLabel(startDate: string | null, endDate: string | null) {
+  if (!startDate || !endDate) return null;
+
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const nights = Math.max(0, Math.round((end.getTime() - start.getTime()) / msPerDay));
+  const days = nights + 1;
+
+  const dayLabel = `${days} day${days === 1 ? '' : 's'}`;
+  const nightLabel = `${nights} night${nights === 1 ? '' : 's'}`;
+
+  return `${dayLabel} · ${nightLabel}`;
+}
+
 async function TripCard({ trip }: { trip: TripWithRole }) {
   const members = await getMembers(trip.id);
   const hasCover = !!trip.cover_image_url;
@@ -46,6 +61,7 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
   const visibility = isPublic ? VISIBILITY_CONFIG.public : VISIBILITY_CONFIG.private;
   const updatedLabel = formatDateTime(trip.updated_at, { includeYear: false });
   const coverUrl = normalizePublicStorageUrl(trip.cover_image_url);
+  const durationLabel = getTripDurationLabel(trip.start_date, trip.end_date);
 
   return (
     <Link href={`/trips/${trip.id}`} className="group block overflow-hidden rounded-[1.75rem] section-shell animate-in slide-up">
@@ -121,8 +137,15 @@ async function TripCard({ trip }: { trip: TripWithRole }) {
             Schedule
           </p>
           <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--color-text)' }}>
-            {trip.start_date && trip.end_date ? formatDateRange(trip.start_date, trip.end_date) : 'Dates flexible'}
+            {trip.start_date && trip.end_date
+              ? `${formatDateRange(trip.start_date, trip.end_date).replace(/\s*\([^)]*\)\s*$/, '')}`
+              : 'Dates flexible'}
           </p>
+          {durationLabel && (
+            <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+              {durationLabel}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-stone-950/[0.03] px-3 py-3">
