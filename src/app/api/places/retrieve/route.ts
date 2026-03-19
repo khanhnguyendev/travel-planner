@@ -20,6 +20,7 @@ const retrieveSchema = z.object({
   visitDateEnd: z.string().nullable().optional(),
   visitTimeFrom: z.string().nullable().optional(),
   visitTimeTo: z.string().nullable().optional(),
+  checkoutDate: z.string().nullable().optional(),
 });
 
 // -------------------------------------------------------
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorResponse('invalid', parsed.error.errors[0].message, 400);
   }
 
-  const { mapboxId, sessionToken, tripId, categoryId, visitDate, visitDateEnd, visitTimeFrom, visitTimeTo } = parsed.data;
+  const { mapboxId, sessionToken, tripId, categoryId, visitDate, visitDateEnd, visitTimeFrom, visitTimeTo, checkoutDate } = parsed.data;
 
   // 3. Verify caller is editor/admin/owner of trip
   const { data: membershipData } = await supabase
@@ -147,6 +148,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     visit_date_end: visitDateEnd ?? null,
     visit_time_from: visitTimeFrom ?? null,
     visit_time_to: visitTimeTo ?? null,
+    checkout_date: checkoutDate ?? null,
     actual_checkin_at: null,
     actual_checkout_at: null,
     backup_place_id: null,
