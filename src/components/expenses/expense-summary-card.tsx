@@ -85,20 +85,20 @@ function CollapsedRow({
             </span>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
           {expense.paid_from_pool ? (
-            <span className="font-medium" style={{ color: 'var(--color-primary)' }}>Pool</span>
+            <span className="font-medium shrink-0" style={{ color: 'var(--color-primary)' }}>Pool</span>
           ) : (
-            <span className="truncate max-w-[80px] sm:max-w-none">{payerName}</span>
+            <span className="truncate max-w-[70px] sm:max-w-none">{payerName}</span>
           )}
-          <span>·</span>
-          <span className="flex-shrink-0">{date}</span>
+          <span className="opacity-40">·</span>
+          <span className="shrink-0">{date}</span>
           {splitCount > 0 && (
             <>
               <span>·</span>
-              <div className="flex items-center -space-x-1.5">
+              <div className="flex shrink-0 items-center -space-x-1.5">
                 {previewSplits.map((s) => (
-                  <div key={s.id} className="rounded-full border border-white">
+                  <div key={s.id} className="rounded-full border border-white shrink-0">
                     <Avatar
                       user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
                       size="xs"
@@ -106,7 +106,7 @@ function CollapsedRow({
                   </div>
                 ))}
                 {splitCount > 3 && (
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
                     +{splitCount - 3}
                   </div>
                 )}
@@ -116,11 +116,15 @@ function CollapsedRow({
         </div>
       </div>
 
-      {/* Right: amount + toggle */}
+      {/* Right: amount + payer avatar + toggle */}
       <div className="flex flex-shrink-0 items-center gap-1.5">
-        <span className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
+        <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--color-primary)' }}>
           {formatCurrency(expense.amount, expense.currency)}
         </span>
+        <Avatar
+          user={{ display_name: payerName, avatar_url: expense.paid_by_profile.avatar_url }}
+          size="xs"
+        />
         <button
           type="button"
           onClick={onToggle}

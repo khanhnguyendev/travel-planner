@@ -475,26 +475,26 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
               {objectTitle}
             </p>
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-[12px]" style={{ color: 'var(--color-text-subtle)' }}>
-            <span className="truncate max-w-[70px] sm:max-w-none font-medium text-stone-700">{displayName}</span>
-            <span className="opacity-50">·</span>
-            <span className="truncate max-w-[80px] sm:max-w-none">{formatActionKey(entry.action)}</span>
-            <span className="opacity-50">·</span>
-            <span className="flex-shrink-0">{formatDateTime(entry.created_at, { includeYear: false })}</span>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px]" style={{ color: 'var(--color-text-subtle)' }}>
+            <span className="truncate max-w-[100px] sm:max-w-none font-medium text-stone-700">{displayName}</span>
+            <span className="opacity-40">·</span>
+            <span className="shrink-0">{formatDateTime(entry.created_at, { includeYear: false })}</span>
           </div>
         </div>
 
         {/* Right side alignment matching ExpenseSummaryCard */}
         <div className="flex flex-shrink-0 items-center gap-1.5">
           {amount != null && (
-            <span className="text-sm font-bold mr-1" style={{ color: 'var(--color-primary)' }}>
+            <span className="text-sm font-bold mr-1 shrink-0" style={{ color: 'var(--color-primary)' }}>
               {formatCurrency(amount, currency)}
             </span>
           )}
-          <Avatar
-            user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
-            size="xs"
-          />
+          <div className="shrink-0">
+            <Avatar
+              user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
+              size="xs"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}

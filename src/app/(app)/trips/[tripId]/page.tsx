@@ -586,8 +586,8 @@ export default async function TripDetailPage({
       </div>
 
       <section className="section-shell overflow-hidden p-4 sm:p-5">
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,0.96fr)_minmax(360px,1.12fr)_minmax(300px,0.82fr)] xl:items-start">
-          <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
+        <div className="flex gap-4 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory xl:grid xl:grid-cols-[minmax(0,0.96fr)_minmax(360px,1.12fr)_minmax(300px,0.82fr)] xl:items-start xl:overflow-visible xl:pb-0">
+          <div className="min-w-[88vw] flex-shrink-0 snap-align-start sm:min-w-[360px] xl:min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4 sm:p-5">
             <div className="flex h-full flex-col gap-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -672,7 +672,7 @@ export default async function TripDetailPage({
             signature={budgetSignature}
             label="Updating money"
           >
-            <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+            <div className="min-w-[88vw] flex-shrink-0 snap-align-start sm:min-w-[360px] xl:min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
               <div className="mb-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                   Budget
@@ -762,7 +762,7 @@ export default async function TripDetailPage({
             signature={crewSignature}
             label="Updating crew"
           >
-            <div className="min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+            <div className="min-w-[88vw] flex-shrink-0 snap-align-start sm:min-w-[360px] xl:min-w-0 overflow-hidden rounded-[1.5rem] bg-stone-950/[0.03] p-4">
             <div className="mb-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>

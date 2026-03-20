@@ -243,7 +243,7 @@ function TransportForm({
         </div>
 
         {/* Departure */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
           <div>
             <label className={labelCls}>{type === 'rent' ? 'Pick-up date' : 'Departure date'}</label>
             <input type="date" className={inputCls} style={inputStyle} value={depDate} onChange={(e) => setDepDate(e.target.value)} />
@@ -255,7 +255,7 @@ function TransportForm({
         </div>
 
         {/* Arrival */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
           <div>
             <label className={labelCls}>{type === 'rent' ? 'Return date' : 'Arrival date'}</label>
             <input type="date" className={inputCls} style={inputStyle} value={arrDate} onChange={(e) => setArrDate(e.target.value)} />
@@ -267,7 +267,7 @@ function TransportForm({
         </div>
 
         {/* Provider + ref */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
           <div>
             <label className={labelCls}>Provider <span className="text-stone-400 font-normal">(optional)</span></label>
             <input className={inputCls} style={inputStyle} value={provider} onChange={(e) => setProvider(e.target.value)} placeholder={ph.provider} />
@@ -286,13 +286,13 @@ function TransportForm({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 justify-end pt-1">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 justify-end pt-2 sm:pt-1">
           <button type="button" onClick={onClose} disabled={saving}
-            className="inline-flex items-center gap-1 text-sm px-4 py-2 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors">
+            className="inline-flex min-h-[44px] items-center justify-center gap-1 text-sm px-4 py-2 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors">
             Cancel
           </button>
           <button type="button" onClick={handleSave} disabled={saving}
-            className="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors font-medium">
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors font-medium">
             <Check className="w-3.5 h-3.5" />
             Save booking
           </button>
