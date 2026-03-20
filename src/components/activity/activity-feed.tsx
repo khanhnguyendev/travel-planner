@@ -520,6 +520,11 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
 
           {/* Details list */}
           <div className="space-y-2">
+            {/* Action Type */}
+            <div className="flex items-baseline gap-3 text-[11px]">
+              <span className="w-14 shrink-0 font-bold uppercase tracking-wider text-stone-400">Action</span>
+              <span className="text-stone-600 font-medium">{formatActionKey(entry.action)}</span>
+            </div>
             {/* By (Email) */}
             {email && (
               <div className="flex items-baseline gap-3 text-[11px]">
