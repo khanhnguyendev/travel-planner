@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BedDouble, CalendarDays, Pencil, Check, X, Sparkles } from 'lucide-react';
+import { BedDouble, CalendarDays, Pencil, Check, X, Sparkles, Trash2 } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
-import { updatePlaceSchedule } from '@/features/places/actions';
+import { updatePlaceSchedule, deletePlace } from '@/features/places/actions';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -12,6 +12,7 @@ import { PlaceMapLinks } from '@/components/places/place-map-links';
 import { PlaceExpenseSummary } from '@/components/places/place-expense-summary';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface AccommodationSectionProps {
   places: Place[];
@@ -77,9 +78,13 @@ function getAccommodationStatus(place: Place): 'current' | 'upcoming' | 'complet
   return 'upcoming';
 }
 
-function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
+function DatesEditor({ place, canEdit, editing, setEditing }: {
+  place: Place;
+  canEdit: boolean;
+  editing: boolean;
+  setEditing: (v: boolean) => void;
+}) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
   const [checkIn, setCheckIn] = useState(place.visit_date ?? '');
   const [checkOut, setCheckOut] = useState(place.checkout_date ?? '');
   const [pending, setPending] = useState(false);
@@ -129,16 +134,13 @@ function DatesEditor({ place, canEdit }: { place: Place; canEdit: boolean }) {
           <CalendarDays className="w-3.5 h-3.5" />
           Check-out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60">Not set</span>}
         </span>
-        {canEdit && (
-          <button
-            onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer"
-            style={{ color: 'var(--color-text-subtle)', backgroundColor: 'var(--color-bg-subtle)' }}
-          >
-            <Pencil className="w-3 h-3" />
-            Edit
-          </button>
-        )}
+        <span
+          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
+          style={{ backgroundColor: '#FFF7ED', color: '#C2410C' }}
+        >
+          <CalendarDays className="w-3.5 h-3.5" />
+          Check-out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60">Not set</span>}
+        </span>
       </div>
     );
   }
@@ -194,6 +196,38 @@ function AccommodationCard({
   canEdit: boolean;
   onClick: () => void;
 }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [, startTransition] = useTransition();
+  const loadingToast = useLoadingToast();
+  const { confirm } = useConfirm();
+
+  async function handleDelete() {
+    const isConfirmed = await confirm({
+      title: 'Delete Place',
+      message: `Delete "${place.name}" from the trip?`,
+      okText: 'Delete',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
+    setDeleting(true);
+    const resolve = loadingToast('Deleting…');
+    const result = await deletePlace(place.id);
+    setDeleting(false);
+    if (result.ok) {
+      resolve('Deleted', 'success');
+      emitTripSectionRefresh(place.trip_id, [
+        TRIP_REFRESH_SECTIONS.places,
+        TRIP_REFRESH_SECTIONS.timeline,
+        TRIP_REFRESH_SECTIONS.activity,
+      ]);
+      startTransition(() => router.refresh());
+    } else {
+      resolve(result.error ?? 'Failed to delete', 'error');
+    }
+  }
+
   const stayStatus = getAccommodationStatus(place);
   const isCurrentStay = stayStatus === 'current';
 
@@ -226,16 +260,31 @@ function AccommodationCard({
 
       {/* Check-in / Check-out dates */}
       <div onClick={(e) => e.stopPropagation()}>
-        <DatesEditor place={place} canEdit={canEdit} />
+        <DatesEditor place={place} canEdit={canEdit} editing={editing} setEditing={setEditing} />
       </div>
 
       {placeExpenses.length > 0 && (
         <PlaceExpenseSummary expenses={placeExpenses} />
       )}
 
-      {/* Direction buttons */}
-      <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }} onClick={(e) => e.stopPropagation()}>
-        <PlaceMapLinks place={place} />
+      {/* Actions */}
+      <div className="flex items-center justify-between gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <PlaceMapLinks place={place} />
+        </div>
+        {canEdit && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer"
+              style={{ color: 'var(--color-text-subtle)', backgroundColor: 'var(--color-bg-subtle)' }}>
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
+            <button onClick={handleDelete} disabled={deleting}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer">
+              <Trash2 className="w-3 h-3" /> Delete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
