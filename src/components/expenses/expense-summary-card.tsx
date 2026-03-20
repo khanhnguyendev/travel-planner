@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDateTime, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
@@ -89,30 +89,10 @@ function CollapsedRow({
           {expense.paid_from_pool ? (
             <span className="font-medium shrink-0" style={{ color: 'var(--color-primary)' }}>Pool</span>
           ) : (
-            <span className="truncate max-w-[70px] sm:max-w-none">{payerName}</span>
+            <span className="truncate max-w-[100px] sm:max-w-none">{payerName}</span>
           )}
           <span className="opacity-40">·</span>
-          <span className="shrink-0">{date}</span>
-          {splitCount > 0 && (
-            <>
-              <span>·</span>
-              <div className="flex shrink-0 items-center -space-x-1.5">
-                {previewSplits.map((s) => (
-                  <div key={s.id} className="rounded-full border border-white shrink-0">
-                    <Avatar
-                      user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
-                      size="xs"
-                    />
-                  </div>
-                ))}
-                {splitCount > 3 && (
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
-                    +{splitCount - 3}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+          <span className="shrink-0">{formatDate(expense.expense_date ?? expense.created_at)}</span>
         </div>
       </div>
 
@@ -162,9 +142,27 @@ function ExpandedPanel({
       {/* Split breakdown */}
       {expense.splits.length > 0 && (
         <div className="mb-2.5">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
-            Split
-          </p>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Split
+            </p>
+            {/* Relocated split avatars */}
+            <div className="flex shrink-0 items-center -space-x-1.5">
+              {expense.splits.slice(0, 5).map((s) => (
+                <div key={s.id} className="rounded-full border border-white shrink-0">
+                  <Avatar
+                    user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
+                    size="xs"
+                  />
+                </div>
+              ))}
+              {expense.splits.length > 5 && (
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
+                  +{expense.splits.length - 5}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="space-y-1">
             {expense.splits.map((s) => {
               const pct = expense.amount > 0 ? Math.round((s.amount_owed / expense.amount) * 100) : 0;
