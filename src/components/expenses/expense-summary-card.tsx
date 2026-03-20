@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink, Pencil, Trash2, Car, Bus, Plane } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { Avatar } from '@/components/ui/avatar';
 import { formatCurrency, formatDateTime, formatDate, formatFullDateTime } from '@/lib/format';
@@ -24,6 +24,8 @@ const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
 interface ExpenseSummaryCardProps {
   expense: ExpenseWithSplits;
   linkedPlaceName?: string | null;
+  linkedTransportName?: string | null;
+  linkedTransportType?: 'rent' | 'bus' | 'plane' | null;
   /** Link to the full detail page. Shown inside the expanded section. */
   href?: string;
   compact?: boolean;
@@ -43,11 +45,15 @@ interface ExpenseSummaryCardProps {
 function CollapsedRow({
   expense,
   linkedPlaceName,
+  linkedTransportName,
+  linkedTransportType,
   expanded,
   onToggle,
 }: {
   expense: ExpenseWithSplits;
   linkedPlaceName?: string | null;
+  linkedTransportName?: string | null;
+  linkedTransportType?: 'rent' | 'bus' | 'plane' | null;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -82,6 +88,12 @@ function CollapsedRow({
             <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>
               <MapPin className="h-2.5 w-2.5" />
               {linkedPlaceName}
+            </span>
+          )}
+          {linkedTransportName && (
+            <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#F0FDF4', color: '#166534' }}>
+              {linkedTransportType === 'rent' ? <Car className="h-2.5 w-2.5" /> : linkedTransportType === 'bus' ? <Bus className="h-2.5 w-2.5" /> : <Plane className="h-2.5 w-2.5" />}
+              {linkedTransportName}
             </span>
           )}
         </div>
@@ -145,6 +157,8 @@ function CollapsedRow({
 function ExpandedPanel({
   expense,
   linkedPlaceName,
+  linkedTransportName,
+  linkedTransportType,
   href,
   tripId,
   canModify,
@@ -152,6 +166,8 @@ function ExpandedPanel({
 }: {
   expense: ExpenseWithSplits;
   linkedPlaceName?: string | null;
+  linkedTransportName?: string | null;
+  linkedTransportType?: 'rent' | 'bus' | 'plane' | null;
   href?: string;
   tripId?: string;
   canModify?: boolean;
@@ -220,6 +236,12 @@ function ExpandedPanel({
             {linkedPlaceName}
           </span>
         )}
+        {linkedTransportName && (
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#F0FDF4', color: '#166534' }}>
+            {linkedTransportType === 'rent' ? <Car className="h-2.5 w-2.5" /> : linkedTransportType === 'bus' ? <Bus className="h-2.5 w-2.5" /> : <Plane className="h-2.5 w-2.5" />}
+            {linkedTransportName}
+          </span>
+        )}
 
         {expense.receipt_path && (
           <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: '#F1F5F9', color: '#475569' }}>
@@ -283,6 +305,8 @@ function ExpandedPanel({
 export function ExpenseSummaryCard({
   expense,
   linkedPlaceName,
+  linkedTransportName,
+  linkedTransportType,
   href,
   compact = false,
   selected = false,
@@ -314,6 +338,8 @@ export function ExpenseSummaryCard({
           <CollapsedRow
             expense={expense}
             linkedPlaceName={linkedPlaceName}
+            linkedTransportName={linkedTransportName}
+            linkedTransportType={linkedTransportType}
             expanded={false}
             onToggle={() => { }}
           />
@@ -327,6 +353,8 @@ export function ExpenseSummaryCard({
       <CollapsedRow
         expense={expense}
         linkedPlaceName={linkedPlaceName}
+        linkedTransportName={linkedTransportName}
+        linkedTransportType={linkedTransportType}
         expanded={expanded}
         onToggle={() => {
           if (!disabled) setExpanded((v) => !v);
@@ -336,6 +364,8 @@ export function ExpenseSummaryCard({
         <ExpandedPanel
           expense={expense}
           linkedPlaceName={linkedPlaceName}
+          linkedTransportName={linkedTransportName}
+          linkedTransportType={linkedTransportType}
           href={href}
           tripId={tripId}
           canModify={canModify}

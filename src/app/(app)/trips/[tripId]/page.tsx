@@ -172,8 +172,13 @@ function getStopPointers(places: Place[]) {
   return {
     previous: nextIndex > 0 ? scheduledPlaces[nextIndex - 1] : null,
     current: null,
-    next: scheduledPlaces[nextIndex],
   };
+}
+
+function getTransportLabel(type: 'rent' | 'bus' | 'plane') {
+  if (type === 'rent') return 'Car rental';
+  if (type === 'bus') return 'Bus';
+  return 'Flight';
 }
 
 function SnapshotPill({
@@ -389,6 +394,14 @@ export default async function TripDetailPage({
         avatar_url: split.profile.avatar_url,
       })),
     });
+  }
+
+  const transportNameById: Record<string, string> = {};
+  const transportTypeById: Record<string, 'rent' | 'bus' | 'plane'> = {};
+  for (const b of transportBookings) {
+    if (!b.id) continue;
+    transportTypeById[b.id] = b.transport_type;
+    transportNameById[b.id] = b.provider || b.from_location || getTransportLabel(b.transport_type);
   }
 
   const totalsByCurrency: Record<string, number> = {};
@@ -745,6 +758,8 @@ export default async function TripDetailPage({
                         key={expense.id}
                         expense={expense}
                         linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
+                        linkedTransportName={expense.transport_booking_id ? transportNameById[expense.transport_booking_id] ?? null : null}
+                        linkedTransportType={expense.transport_booking_id ? transportTypeById[expense.transport_booking_id] ?? null : null}
                         href={`/trips/${tripId}/expenses/${expense.id}`}
                         compact
                         className={index >= 3 ? 'hidden lg:block' : undefined}
@@ -913,7 +928,7 @@ export default async function TripDetailPage({
                 />
                 <StopSpotlightCard
                   label="Next stop"
-                  place={stopPointers.next}
+                  place={stopPointers.next || null}
                   emptyLabel={planningScheduledPlaces.length > 0 ? 'Nothing ahead' : 'Not scheduled'}
                   tone="next"
                   canEdit={canEdit}
