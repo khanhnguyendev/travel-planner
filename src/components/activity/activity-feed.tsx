@@ -468,17 +468,14 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
           <Icon className="h-4 w-4" style={{ color }} />
         </div>
 
-        {/* Middle: Title + Meta */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-              {objectTitle}
-            </p>
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px]" style={{ color: 'var(--color-text-subtle)' }}>
-            <span className="truncate max-w-[100px] sm:max-w-none font-medium text-stone-700">{displayName}</span>
-            <span className="opacity-40">·</span>
-            <span className="shrink-0">{formatDateTime(entry.created_at, { includeYear: false })}</span>
+        {/* Middle: Title + Meta in 3 rows */}
+        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+          <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+            {objectTitle}
+          </p>
+          <div className="flex flex-col text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+            <span className="truncate font-medium text-stone-700">{displayName}</span>
+            <span className="shrink-0">{formatDateTime(entry.created_at)}</span>
           </div>
         </div>
 
@@ -508,34 +505,30 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
         </div>
       </div>
 
-      {/* Expanded panel matching ExpandedPanel style */}
+      {/* Expanded panel with clearer Label: Data distinction */}
       {expanded && (
         <div className="border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--color-border-muted)' }}>
           {/* Note section matching ExpenseSummaryCard Note box */}
           {note && (
-            <div className="mb-2.5 flex items-start gap-1.5 rounded-lg px-2.5 py-2.5" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+            <div className="mb-3 flex items-start gap-1.5 rounded-lg px-2.5 py-2.5" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
               <FileText className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
-              <p className="text-[12px] Math.max(0, leading-relaxed)" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                 {note}
               </p>
             </div>
           )}
 
-          {/* Footer: Facts as pills matching ExpenseSummaryCard footer row */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[12px]" style={{ color: 'var(--color-text-subtle)' }}>
-              {formatDateTime(entry.created_at)}
-            </span>
-
-            {/* Email Pill (Requested by User) */}
+          {/* Details list */}
+          <div className="space-y-2">
+            {/* By (Email) */}
             {email && (
-              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
-                <span className="opacity-70 font-bold uppercase text-[9px] tracking-wider">By:</span>
-                <span className="truncate max-w-[150px] sm:max-w-none">{email}</span>
-              </span>
+              <div className="flex items-baseline gap-3 text-[11px]">
+                <span className="w-14 shrink-0 font-bold uppercase tracking-wider text-stone-400">By</span>
+                <span className="text-stone-600 font-medium break-all">{email}</span>
+              </div>
             )}
 
-            {/* Facts - Filtered for uniqueness (don't repeat Title, Amount, Action, or By) */}
+            {/* Facts - Filtered for uniqueness */}
             {facts.filter(f =>
               f.label !== 'By' &&
               f.label !== 'Time' &&
@@ -545,18 +538,17 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
               f.label !== 'Purpose' &&
               f.label !== 'Place'
             ).map((fact) => (
-              <span
-                key={`${entry.id}-${fact.label}`}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
-                style={{
-                  backgroundColor: fact.tone === 'primary' ? 'var(--color-primary-light)' : 'var(--color-bg-subtle)',
-                  color: fact.tone === 'primary' ? 'var(--color-primary)' : 'var(--color-text-subtle)'
-                }}
-              >
-                <span className="opacity-70 font-bold uppercase text-[9px] tracking-wider">{fact.label}:</span>
-                <span className="truncate max-w-[120px] sm:max-w-none">{fact.value}</span>
-              </span>
+              <div key={`${entry.id}-${fact.label}`} className="flex items-baseline gap-3 text-[11px]">
+                <span className="w-14 shrink-0 font-bold uppercase tracking-wider text-stone-400">{fact.label}</span>
+                <span className="text-stone-600 font-medium">{fact.value}</span>
+              </div>
             ))}
+
+            {/* Timestamp */}
+            <div className="flex items-baseline gap-3 text-[11px]">
+              <span className="w-14 shrink-0 font-bold uppercase tracking-wider text-stone-400">Time</span>
+              <span className="text-stone-500">{formatDateTime(entry.created_at)}</span>
+            </div>
           </div>
         </div>
       )}
