@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarDays, Clock, Bookmark } from 'lucide-react';
+import { CalendarDays, Clock, Bookmark, ChevronRight, MapPin } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { PlaceDetailDrawer } from '@/components/places/place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
+import { cn } from '@/lib/utils';
 
 interface TripTimelineProps {
   places: Place[];
@@ -27,11 +28,9 @@ interface TripTimelineProps {
 
 function formatDayHeader(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
-  return new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  }).format(date);
+  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
+  const day = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' }).format(date);
+  return `${weekday}, ${day}`;
 }
 
 function formatTimeRange(from: string | null, to: string | null): string {
@@ -46,13 +45,12 @@ function CategoryBadge({ category }: { category: Category | undefined }) {
   if (!category) return null;
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
       style={{
-        backgroundColor: category.color ?? 'var(--color-bg-subtle)',
-        color: '#1C1917',
+        backgroundColor: `${category.color}15` || 'var(--color-bg-subtle)',
+        color: category.color || 'var(--color-text-subtle)',
       }}
     >
-      {category.icon && <span>{category.icon}</span>}
       {category.name}
     </span>
   );
@@ -68,55 +66,60 @@ interface PlaceRowProps {
 function PlaceRow({ place, category, previewMode = false, onClick }: PlaceRowProps) {
   const timeLabel = formatTimeRange(place.visit_time_from, place.visit_time_to);
   const isBackup = !!place.backup_place_id;
+  const icon = category?.icon || '📍';
 
   return (
     <button
       onClick={() => onClick?.(place)}
-      className="flex min-h-[0] w-full flex-col gap-2 rounded-xl p-2.5 text-left transition-colors hover:bg-[var(--color-bg-muted)] sm:flex-row sm:items-start sm:gap-3 sm:p-3"
-      style={{ backgroundColor: 'var(--color-bg-subtle)' }}
-    >
-      {!previewMode && (
-        <div
-          className="mt-0.5 flex items-center gap-1 text-[11px] flex-shrink-0 sm:w-24 sm:text-xs md:w-28"
-          style={{ color: 'var(--color-text-subtle)' }}
-        >
-          <Clock className="w-3 h-3 flex-shrink-0" />
-          <span>{timeLabel}</span>
-        </div>
+      className={cn(
+        'group relative flex w-full flex-col overflow-hidden border bg-white transition-all',
+        'rounded-[1.1rem] shadow-[0_8px_20px_rgba(87,67,40,0.04)]',
+        'border-stone-200/80 hover:border-stone-300 hover:shadow-md sm:flex-row sm:items-center sm:gap-3'
       )}
-
-      {/* Name + badges */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className="font-medium text-sm truncate"
-            style={{ color: 'var(--color-text)' }}
-          >
-            {place.name}
-          </span>
-          {isBackup && (
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
-              style={{
-                backgroundColor: 'var(--color-secondary-light)',
-                color: 'var(--color-secondary)',
-              }}
-            >
-              <Bookmark className="w-3 h-3" />
-              Backup
-            </span>
-          )}
+    >
+      <div className="flex items-center gap-3 px-3 py-2.5 sm:flex-1">
+        {/* Icon/Emoji Box */}
+        <div
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-lg leading-none transition-transform group-hover:scale-110"
+          style={{ backgroundColor: `${category?.color}15` || 'var(--color-bg-subtle)' }}
+        >
+          <span className="grayscale-[0.2] group-hover:grayscale-0">{icon}</span>
         </div>
-        {category && (
-          <div className="mt-1">
+
+        {/* Middle: Name + Meta */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+              {place.name}
+            </span>
+            {isBackup && (
+              <span
+                className="inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{ backgroundColor: 'var(--color-secondary-light)', color: 'var(--color-secondary)' }}
+              >
+                <Bookmark className="h-2.5 w-2.5" />
+                Backup
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+            {!previewMode && (
+              <>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-2.5 w-2.5 opacity-60" />
+                  <span>{timeLabel}</span>
+                </div>
+                <span className="opacity-40">·</span>
+              </>
+            )}
             <CategoryBadge category={category} />
           </div>
-        )}
-        {previewMode && place.address && (
-          <p className="mt-1 text-xs leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-            {place.address}
-          </p>
-        )}
+        </div>
+
+        {/* Right: Chevron */}
+        <div className="hidden sm:block">
+          <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-40" style={{ color: 'var(--color-text-subtle)' }} />
+        </div>
       </div>
     </button>
   );
@@ -173,14 +176,14 @@ export function TripTimeline({
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+          className="w-16 h-16 rounded-[2rem] flex items-center justify-center mb-4 shadow-sm"
           style={{ backgroundColor: 'var(--color-bg-subtle)' }}
         >
-          <CalendarDays className="w-6 h-6" style={{ color: 'var(--color-text-subtle)' }} />
+          <CalendarDays className="w-8 h-8 opacity-40" style={{ color: 'var(--color-text-subtle)' }} />
         </div>
-        <p className="font-medium text-sm text-stone-800 mb-1">No places yet</p>
-        <p className="text-xs text-stone-400 max-w-xs">
-          Add places to your trip to see them on the timeline.
+        <p className="font-semibold text-base section-title mb-1" style={{ color: 'var(--color-text)' }}>No places saved yet</p>
+        <p className="text-sm max-w-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          Search for places or categories to start building your collective trip plan.
         </p>
       </div>
     );
@@ -189,31 +192,38 @@ export function TripTimeline({
   return (
     <div className="space-y-6 sm:space-y-8">
       {previewMode && (
-        <div className="rounded-[1.2rem] bg-stone-950/[0.03] px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-          Public preview keeps the plan lightweight. You can browse which places are in the plan without revealing exact trip timing.
+        <div className="rounded-[1.2rem] border px-4 py-3.5 text-sm leading-relaxed" style={{ backgroundColor: 'var(--color-bg-subtle)', borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}>
+          <p>
+            Public preview keeps the plan lightweight. Browse saved places without revealing exact trip timing.
+          </p>
         </div>
       )}
       {/* Scheduled section */}
       {scheduled.length === 0 ? (
-        <div className="flex flex-col items-center py-8 text-center">
-          <CalendarDays className="w-8 h-8 mb-2" style={{ color: 'var(--color-text-subtle)' }} />
-          <p className="text-sm text-stone-500">
-            No places scheduled yet — add visit dates to your places
+        <div className="flex flex-col items-center py-10 text-center rounded-[1.5rem] border-2 border-dashed" style={{ borderColor: 'var(--color-border-muted)' }}>
+          <Clock className="w-8 h-8 mb-3 opacity-20" style={{ color: 'var(--color-text-subtle)' }} />
+          <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
+            Nothing scheduled yet
+          </p>
+          <p className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            Add visit dates to your places to see them here.
           </p>
         </div>
       ) : previewMode ? (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-semibold text-sm text-stone-800">Scheduled places</h3>
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Scheduled places
+            </h3>
             <span
-              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white"
-              style={{ backgroundColor: '#0D9488' }}
+              className="inline-flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-bold text-white"
+              style={{ backgroundColor: '#14B8A6' }}
             >
               {scheduled.length}
             </span>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {scheduled.map((place) => (
               <PlaceRow
                 key={place.id}
@@ -226,38 +236,40 @@ export function TripTimeline({
         </div>
       ) : (
         <div className="relative">
-          {/* Vertical timeline line */}
+          {/* Vertical timeline line - refined */}
           <div
-            className="absolute bottom-4 left-3.5 top-7 w-0.5 rounded-full sm:left-4 sm:top-8"
-            style={{ backgroundColor: '#0D9488' }}
+            className="absolute bottom-6 left-[15px] top-8 w-[3px] rounded-full sm:left-[19px] sm:top-10"
+            style={{ backgroundColor: '#14B8A6', opacity: 0.15 }}
           />
 
-          <div className="space-y-6 sm:space-y-8">
+          <div className="space-y-8 sm:space-y-10">
             {sortedDates.map((date) => {
               const dayPlaces = groupedByDate.get(date)!;
               return (
                 <div key={date} className="relative pl-10 sm:pl-12">
-                  {/* Day dot */}
+                  {/* Day marker - Refined dot */}
                   <div
-                    className="absolute left-1.5 top-1.5 h-4 w-4 rounded-full border-2 border-white sm:left-2"
-                    style={{ backgroundColor: '#0D9488' }}
+                    className="absolute left-[9px] top-2 z-10 h-3.5 w-3.5 rounded-full border-[3px] border-white shadow-sm sm:left-[13px]"
+                    style={{ backgroundColor: '#14B8A6' }}
                   />
 
-                  {/* Day header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <h3 className="font-semibold text-sm text-stone-800">
-                      {formatDayHeader(date)}
-                    </h3>
-                    <span
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white"
-                      style={{ backgroundColor: '#0D9488' }}
-                    >
-                      {dayPlaces.length}
-                    </span>
+                  {/* Day header - Refined */}
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="text-sm font-bold section-title tracking-tight" style={{ color: 'var(--color-text)' }}>
+                        {formatDayHeader(date)}
+                      </h3>
+                      <span
+                        className="inline-flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-bold text-white shadow-sm"
+                        style={{ backgroundColor: '#14B8A6' }}
+                      >
+                        {dayPlaces.length}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Places for this day */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {dayPlaces.map((place) => (
                       <PlaceRow
                         key={place.id}
@@ -277,11 +289,13 @@ export function TripTimeline({
 
       {/* Unscheduled section */}
       {unscheduled.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-semibold text-sm text-stone-500">Unscheduled</h3>
+        <div className="pt-2">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
+              Unscheduled
+            </h3>
             <span
-              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
+              className="inline-flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-bold"
               style={{
                 backgroundColor: 'var(--color-bg-subtle)',
                 color: 'var(--color-text-muted)',
@@ -290,7 +304,7 @@ export function TripTimeline({
               {unscheduled.length}
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {unscheduled.map((place) => (
               <PlaceRow
                 key={place.id}
