@@ -333,7 +333,6 @@ export function BudgetEditor({
                 </button>
               )}
             </div>
-            </div>
           </div>
 
           {(canManage || actionSlot) && (
