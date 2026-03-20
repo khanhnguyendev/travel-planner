@@ -162,27 +162,9 @@ function ExpandedPanel({
       {/* Split breakdown */}
       {expense.splits.length > 0 && (
         <div className="mb-2.5">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
-              Split
-            </p>
-            {/* Relocated split avatars */}
-            <div className="flex shrink-0 items-center -space-x-1.5">
-              {expense.splits.slice(0, 5).map((s) => (
-                <div key={s.id} className="rounded-full border border-white shrink-0">
-                  <Avatar
-                    user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
-                    size="xs"
-                  />
-                </div>
-              ))}
-              {expense.splits.length > 5 && (
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
-                  +{expense.splits.length - 5}
-                </div>
-              )}
-            </div>
-          </div>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--color-text-subtle)' }}>
+            Split
+          </p>
           <div className="space-y-1">
             {expense.splits.map((s) => {
               const pct = expense.amount > 0 ? Math.round((s.amount_owed / expense.amount) * 100) : 0;
