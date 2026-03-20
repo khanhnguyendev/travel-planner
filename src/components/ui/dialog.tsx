@@ -36,7 +36,7 @@ export function Dialog({ title, onClose, children, maxWidth = 'max-w-md' }: Dial
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm cursor-pointer" onClick={onClose} aria-hidden="true" />
       <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-x-hidden px-2 py-3 sm:p-4 sm:pt-16">
         <div
           className={cn(

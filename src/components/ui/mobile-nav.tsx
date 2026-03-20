@@ -123,7 +123,7 @@ export function MobileNav({ displayName }: MobileNavProps) {
     ? createPortal(
         <>
           <div
-            className="fixed inset-0 z-50 bg-stone-950/35 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-50 bg-stone-950/35 backdrop-blur-sm md:hidden cursor-pointer"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
