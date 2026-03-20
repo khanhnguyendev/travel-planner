@@ -333,30 +333,7 @@ export function BudgetEditor({
                 </button>
               )}
             </div>
-
-            {/* Income summary */}
-            {hasIncome ? (
-              <div className="mt-2.5 space-y-1 rounded-lg border border-stone-200/50 bg-white/40 p-2.5 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Income</span>
-                  <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Pool used</span>
-                  <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1" style={{ borderColor: 'var(--color-border-muted)' }}>
-                  <span className="text-xs font-semibold" style={{ color: 'var(--color-text-subtle)' }}>Pool balance</span>
-                  <span className="text-xs font-bold" style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}>
-                    {formatCurrency(poolBalance, activeCurrency)}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
-                No income recorded yet. Use Add money to track who funded the trip.
-              </p>
-            )}
+            </div>
           </div>
 
           {(canManage || actionSlot) && (
@@ -365,6 +342,30 @@ export function BudgetEditor({
             </div>
           )}
         </div>
+
+        {/* Income summary — full width below the header row */}
+        {hasIncome ? (
+          <div className="mt-4 space-y-1 rounded-lg border border-stone-200/50 bg-white/40 p-3 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Income</span>
+              <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(totalIncome, activeCurrency)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Pool used</span>
+              <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(poolSpent, activeCurrency)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1" style={{ borderColor: 'var(--color-border-muted)' }}>
+              <span className="text-xs font-semibold" style={{ color: 'var(--color-text-subtle)' }}>Pool balance</span>
+              <span className="text-xs font-bold" style={{ color: poolBalance >= 0 ? '#0F766E' : '#EF4444' }}>
+                {formatCurrency(poolBalance, activeCurrency)}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
+            No income recorded yet. Use Add money to track who funded the trip.
+          </p>
+        )}
 
         {/* Contribution list — full width below the header row */}
         {hasIncome && (
