@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, Receipt, Wallet, MapPin, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency, formatDateTime, formatDate } from '@/lib/format';
+import { formatCurrency, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
@@ -85,14 +85,34 @@ function CollapsedRow({
             </span>
           )}
         </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
-          {expense.paid_from_pool ? (
-            <span className="font-medium shrink-0" style={{ color: 'var(--color-primary)' }}>Pool</span>
-          ) : (
-            <span className="truncate max-w-[100px] sm:max-w-none">{payerName}</span>
+        <div className="mt-0.5 flex flex-col gap-1 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            {expense.paid_from_pool ? (
+              <span className="font-medium shrink-0" style={{ color: 'var(--color-primary)' }}>Pool</span>
+            ) : (
+              <span className="truncate max-w-[100px] sm:max-w-none">{payerName}</span>
+            )}
+            <span className="opacity-40">·</span>
+            <span className="shrink-0">{formatDateTime(expense.expense_date ?? expense.created_at)}</span>
+          </div>
+
+          {splitCount > 0 && (
+            <div className="flex shrink-0 items-center -space-x-1.5 px-0.5">
+              {previewSplits.map((s) => (
+                <div key={s.id} className="rounded-full border border-white shrink-0">
+                  <Avatar
+                    user={{ display_name: s.profile.display_name ?? 'M', avatar_url: s.profile.avatar_url }}
+                    size="xs"
+                  />
+                </div>
+              ))}
+              {splitCount > 3 && (
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white bg-stone-100 text-[9px] font-semibold text-stone-500">
+                  +{splitCount - 3}
+                </div>
+              )}
+            </div>
           )}
-          <span className="opacity-40">·</span>
-          <span className="shrink-0">{formatDate(expense.expense_date ?? expense.created_at)}</span>
         </div>
       </div>
 
