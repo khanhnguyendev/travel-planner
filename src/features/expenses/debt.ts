@@ -74,10 +74,6 @@ export function calculateDebts(expenses: ExpenseWithSplits[]): DebtSummary[] {
   const balancesByCurrency = new Map<string, Map<string, number>>();
 
   for (const expense of expenses) {
-    // Pool expenses have no individual payer — skip them entirely.
-    // They don't create person-to-person debts; they only affect the shared pool balance.
-    if (expense.paid_from_pool) continue;
-
     const currency = expense.currency;
 
     if (!balancesByCurrency.has(currency)) {
@@ -85,14 +81,24 @@ export function calculateDebts(expenses: ExpenseWithSplits[]): DebtSummary[] {
     }
     const balances = balancesByCurrency.get(currency)!;
 
-    // The payer fronted the full amount
-    const currentPayer = balances.get(expense.paid_by_user_id) ?? 0;
-    balances.set(expense.paid_by_user_id, currentPayer + expense.amount);
-
-    // Each split participant owes their share
+    // We only care about PENDING splits.
+    // If a split is settled, the money has already been moved or accounted for.
     for (const split of expense.splits) {
-      const current = balances.get(split.user_id) ?? 0;
-      balances.set(split.user_id, current - split.amount_owed);
+      if (split.status !== 'pending') continue;
+
+      // The debtor owes the amount
+      const currentDebtor = balances.get(split.user_id) ?? 0;
+      balances.set(split.user_id, currentDebtor - split.amount_owed);
+
+      // The creditor is either the Payer or the Pool
+      const creditorId = expense.paid_from_pool ? 'pool' : expense.paid_by_user_id;
+
+      // If the payer is the one who owes (individual share), it's a wash for person-to-person debt.
+      // But we still track it for the balance calc.
+      // Wait, if I pay 100, and my share is 50, and my share is "pending" (which it shouldn't be),
+      // I don't owe myself.
+      const currentCreditor = balances.get(creditorId) ?? 0;
+      balances.set(creditorId, currentCreditor + split.amount_owed);
     }
   }
 

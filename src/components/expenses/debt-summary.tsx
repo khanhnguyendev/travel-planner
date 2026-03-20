@@ -32,6 +32,7 @@ export function DebtSummary({ expenses, members, currentUserId }: DebtSummaryPro
 
   // Build a userId → display_name lookup from members
   const nameMap = new Map<string, string>();
+  nameMap.set('pool', 'Pool');
   for (const m of members) {
     nameMap.set(m.user_id, m.display_name ?? 'Unknown');
   }
