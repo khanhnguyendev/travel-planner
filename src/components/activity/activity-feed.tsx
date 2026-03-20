@@ -9,6 +9,7 @@ import {
   Clock3,
   Coins,
   Compass,
+  FileText,
   LogIn,
   LogOut,
   MapPin,
@@ -433,14 +434,21 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
   const Icon = cfg?.icon ?? DEFAULT_CONFIG.icon;
   const color = cfg?.color ?? DEFAULT_CONFIG.color;
   const bg = cfg?.bg ?? DEFAULT_CONFIG.bg;
-  const labelNode: ReactNode = cfg
-    ? cfg.label(entry.meta)
-    : DEFAULT_CONFIG.label(entry.action);
+
   const displayName = entry.profile?.display_name ?? 'A member';
-  const detailNode: ReactNode | null = cfg?.detail ? cfg.detail(entry.meta) : null;
-  const summaryChips = getSummaryChips(entry);
+  const email = entry.profile?.email;
   const facts = getDetailFacts(entry);
   const note = getDetailNote(entry);
+
+  // Object-First logic: What is the main thing this activity is about?
+  const objectTitle =
+    getString(entry.meta, 'title') ||
+    getString(entry.meta, 'placeName') ||
+    getString(entry.meta, 'name') ||
+    formatActionKey(entry.action);
+
+  const amount = getNumber(entry.meta, 'amount');
+  const currency = getString(entry.meta, 'currency') || 'VND';
 
   return (
     <div
@@ -450,68 +458,47 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
         'border-stone-200/80 hover:border-stone-300 hover:shadow-sm'
       )}
     >
+      {/* Collapsed view structure matching CollapsedRow */}
       <div className="flex items-center gap-3 px-3 py-2.5">
         {/* Icon */}
         <div
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-lg leading-none"
           style={{ backgroundColor: bg }}
         >
           <Icon className="h-4 w-4" style={{ color }} />
         </div>
 
-        {/* Middle: Actor + Label + Chips */}
+        {/* Middle: Title + Meta */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2 min-w-0">
-            <p className="text-sm leading-snug text-stone-700 truncate">
-              <span className="font-semibold text-stone-950">{displayName}</span>
-              {' '}
-              {labelNode}
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="truncate text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+              {objectTitle}
             </p>
           </div>
-          <div className="mt-0.5 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
-            <span className="inline-flex items-center gap-1">
-              <Clock3 className="h-3 w-3" />
-              {formatDateTime(entry.created_at, { includeYear: false })}
-            </span>
-            <span>·</span>
-            <span
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]"
-              style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}
-            >
-              {formatActionKey(entry.action)}
-            </span>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[12px]" style={{ color: 'var(--color-text-subtle)' }}>
+            <span className="truncate max-w-[70px] sm:max-w-none font-medium text-stone-700">{displayName}</span>
+            <span className="opacity-50">·</span>
+            <span className="truncate max-w-[80px] sm:max-w-none">{formatActionKey(entry.action)}</span>
+            <span className="opacity-50">·</span>
+            <span className="flex-shrink-0">{formatDateTime(entry.created_at, { includeYear: false })}</span>
           </div>
-
-          {summaryChips.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5 leading-none">
-              {summaryChips.map((chip) => {
-                const ChipIcon = chip.icon;
-                return (
-                  <span
-                    key={`${entry.id}-${chip.label}`}
-                    className="inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    style={{ backgroundColor: chip.bg, color: chip.color }}
-                  >
-                    <ChipIcon className="h-2.5 w-2.5 flex-shrink-0" />
-                    <span className="truncate">{chip.label}</span>
-                  </span>
-                );
-              })}
-            </div>
-          )}
         </div>
 
-        {/* Right: Avatar + Toggle */}
+        {/* Right side alignment matching ExpenseSummaryCard */}
         <div className="flex flex-shrink-0 items-center gap-1.5">
+          {amount != null && (
+            <span className="text-sm font-bold mr-1" style={{ color: 'var(--color-primary)' }}>
+              {formatCurrency(amount, currency)}
+            </span>
+          )}
           <Avatar
             user={{ display_name: entry.profile?.display_name ?? null, avatar_url: entry.profile?.avatar_url ?? null }}
-            size="sm"
+            size="xs"
           />
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
             className="rounded-lg p-1 transition-colors hover:bg-black/[0.05]"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
           >
             <ChevronDown
               className={cn('h-4 w-4 transition-transform duration-200', expanded && 'rotate-180')}
@@ -521,60 +508,56 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
         </div>
       </div>
 
+      {/* Expanded panel matching ExpandedPanel style */}
       {expanded && (
         <div className="border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--color-border-muted)' }}>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {facts.map((fact) => (
-              <div
-                key={`${entry.id}-${fact.label}`}
-                className="rounded-[1rem] border px-3 py-2.5"
-                style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'rgba(255,255,255,0.82)' }}
-              >
-                <p
-                  className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-                  style={{ color: 'var(--color-text-subtle)' }}
-                >
-                  {fact.label}
-                </p>
-                <p
-                  className={cn('mt-1 text-sm font-medium leading-snug break-words', fact.tone === 'primary' && 'font-semibold')}
-                  style={{ color: fact.tone === 'primary' ? 'var(--color-primary)' : 'var(--color-text)' }}
-                >
-                  {fact.value}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {(note || detailNode) && (
-            <div className="mt-3 space-y-2">
-              {note && (
-                <div
-                  className="rounded-[1rem] border px-3 py-3"
-                  style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'var(--color-bg-subtle)' }}
-                >
-                  <p
-                    className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-                    style={{ color: 'var(--color-text-subtle)' }}
-                  >
-                    Details
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                    {note}
-                  </p>
-                </div>
-              )}
-
-              {detailNode && (
-                <div
-                  className="rounded-[1rem] border px-3 py-3 text-sm leading-relaxed"
-                  style={{ borderColor: 'var(--color-border-muted)', backgroundColor: 'rgba(255,255,255,0.82)', color: 'var(--color-text-muted)' }}
-                >
-                  {detailNode}
-                </div>
-              )}
+          {/* Note section matching ExpenseSummaryCard Note box */}
+          {note && (
+            <div className="mb-2.5 flex items-start gap-1.5 rounded-lg px-2.5 py-2.5" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+              <FileText className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+              <p className="text-[12px] Math.max(0, leading-relaxed)" style={{ color: 'var(--color-text-muted)' }}>
+                {note}
+              </p>
             </div>
           )}
+
+          {/* Footer: Facts as pills matching ExpenseSummaryCard footer row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[12px]" style={{ color: 'var(--color-text-subtle)' }}>
+              {formatDateTime(entry.created_at)}
+            </span>
+
+            {/* Email Pill (Requested by User) */}
+            {email && (
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
+                <span className="opacity-70 font-bold uppercase text-[9px] tracking-wider">By:</span>
+                <span className="truncate max-w-[150px] sm:max-w-none">{email}</span>
+              </span>
+            )}
+
+            {/* Facts - Filtered for uniqueness (don't repeat Title, Amount, Action, or By) */}
+            {facts.filter(f =>
+              f.label !== 'By' &&
+              f.label !== 'Time' &&
+              f.label !== 'When' &&
+              f.label !== 'Action' &&
+              f.label !== 'Amount' &&
+              f.label !== 'Purpose' &&
+              f.label !== 'Place'
+            ).map((fact) => (
+              <span
+                key={`${entry.id}-${fact.label}`}
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                style={{
+                  backgroundColor: fact.tone === 'primary' ? 'var(--color-primary-light)' : 'var(--color-bg-subtle)',
+                  color: fact.tone === 'primary' ? 'var(--color-primary)' : 'var(--color-text-subtle)'
+                }}
+              >
+                <span className="opacity-70 font-bold uppercase text-[9px] tracking-wider">{fact.label}:</span>
+                <span className="truncate max-w-[120px] sm:max-w-none">{fact.value}</span>
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>
