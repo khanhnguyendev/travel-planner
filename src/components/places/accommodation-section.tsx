@@ -267,25 +267,25 @@ function AccommodationCard({
         <PlaceExpenseSummary expenses={placeExpenses} />
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2">
-          <PlaceMapLinks place={place} />
-        </div>
-        {canEdit && (
-          <div className="flex items-center gap-2">
-            <button onClick={() => setEditing(true)}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer"
-              style={{ color: 'var(--color-text-subtle)', backgroundColor: 'var(--color-bg-subtle)' }}>
-              <Pencil className="w-3 h-3" /> Edit
-            </button>
-            <button onClick={handleDelete} disabled={deleting}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer">
-              <Trash2 className="w-3 h-3" /> Delete
-            </button>
-          </div>
-        )}
+      {/* Direction buttons */}
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <PlaceMapLinks place={place} />
       </div>
+
+      {/* Actions */}
+      {canEdit && (
+        <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: 'var(--color-border-muted)' }} onClick={(e) => e.stopPropagation()}>
+          <button onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer"
+            style={{ color: 'var(--color-text-subtle)', backgroundColor: 'var(--color-bg-subtle)' }}>
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
+          <button onClick={handleDelete} disabled={deleting}
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer">
+            <Trash2 className="w-3 h-3" /> Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
