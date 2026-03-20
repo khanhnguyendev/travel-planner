@@ -8,6 +8,7 @@ import { useLoadingToast } from '@/components/ui/toast';
 import type { Place } from '@/lib/types';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
+import { cn } from '@/lib/utils';
 
 interface CheckInOutButtonProps {
   place: Place;
@@ -234,42 +235,46 @@ export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = t
 
   // ── Default idle buttons ──────────────────────────────
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {!isCheckedIn && (
         <button
           type="button"
           onClick={openCheckin}
-          className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors hover:bg-teal-50 hover:border-teal-400 hover:text-teal-700"
-          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+          className={cn(
+            'inline-flex h-9 items-center gap-2 rounded-xl border px-4 text-xs font-semibold transition-all hover:shadow-md',
+            'border-teal-200 bg-teal-600 text-white hover:bg-teal-700 active:scale-95'
+          )}
         >
-          <LogIn className="h-4 w-4" />
+          <LogIn className="h-3.5 w-3.5" />
           Check in
         </button>
       )}
 
       {isCheckedIn && !isCheckedOut && (
         <>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700">
+          <div className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-teal-100 bg-teal-50 px-3 text-[11px] font-bold text-teal-700">
             <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse" />
-            Checked in {place.actual_checkin_at
+            IN {place.actual_checkin_at
               ? new Date(place.actual_checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : ''}
           </div>
           <button
             type="button"
             onClick={openCheckout}
-            className="inline-flex min-h-[40px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-100"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+            className={cn(
+              'inline-flex h-9 items-center gap-2 rounded-xl border px-4 text-xs font-semibold transition-all hover:shadow-md',
+              'border-stone-200 bg-stone-800 text-white hover:bg-stone-900 active:scale-95'
+            )}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             Check out
           </button>
         </>
       )}
 
       {isCheckedOut && (
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600">
-          ✓ Done · {place.actual_checkin_at
+        <div className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-100 px-3 text-[11px] font-bold text-stone-600">
+          ✓ DONE · {place.actual_checkin_at
             ? new Date(place.actual_checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : '?'}
           {' → '}
@@ -283,8 +288,7 @@ export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = t
         <button
           type="button"
           onClick={handleClear}
-          className="inline-flex items-center gap-1 rounded-full border px-2.5 py-2 text-xs text-stone-400 hover:text-red-500 hover:border-red-200 transition-colors"
-          style={{ borderColor: 'var(--color-border)' }}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-400 transition-all hover:border-red-200 hover:text-red-500 hover:shadow-sm"
           title="Clear check-in"
         >
           <RotateCcw className="h-3.5 w-3.5" />

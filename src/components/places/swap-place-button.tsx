@@ -88,10 +88,14 @@ export function SwapPlaceButton({ place, allPlaces, tripId, affectsStops = true 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors mt-1 cursor-pointer"
-        style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-all hover:shadow-sm"
+        style={{
+          borderColor: 'rgba(120, 113, 108, 0.2)', // stone-200/60 variant
+          backgroundColor: 'rgba(245, 245, 244, 0.4)', // stone-100/40 variant
+          color: 'var(--color-text-muted)',
+        }}
       >
-        <ArrowLeftRight className="w-3 h-3" />
+        <ArrowLeftRight className="w-3.5 h-3.5 opacity-70" />
         Swap place
       </button>
     );

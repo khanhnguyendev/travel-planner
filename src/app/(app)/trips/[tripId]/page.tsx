@@ -266,11 +266,11 @@ function StopSpotlightCard({
   const styles = toneStyles[tone];
 
   return (
-    <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-4">
+    <div className="rounded-[1.5rem] bg-stone-950/[0.03] p-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div
-            className="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold"
+            className="mt-1.5 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold"
             style={{ backgroundColor: styles.chipBg, color: styles.chipText }}
           >
             {label}
@@ -278,43 +278,42 @@ function StopSpotlightCard({
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <h3 className="text-lg font-semibold leading-tight section-title" style={{ color: 'var(--color-text)' }}>
           {place?.name ?? emptyLabel}
         </h3>
-        <p className="mt-1 min-h-[2.75rem] text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
+        <p className="mt-1 min-h-[2.2rem] text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
           {place?.address ?? (place ? 'Address not available yet.' : 'No scheduled place is mapped to this slot yet.')}
         </p>
       </div>
 
-      <div className="mt-4 rounded-[1.2rem] px-3 py-3" style={{ backgroundColor: styles.panelBg }}>
+      <div className="mt-3 rounded-[1.2rem] px-3 py-3" style={{ backgroundColor: styles.panelBg }}>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
           Schedule plan
         </p>
-        <p className="mt-2 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+        <p className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
           {place ? formatStopPlan(place) : 'No plan yet'}
         </p>
         {place?.visit_date && (
-          <p className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="mt-0.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             Planned for {formatDate(place.visit_date)}
           </p>
         )}
       </div>
 
       {place && (
-        <div className="mt-4">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <PlaceMapLinks place={place} />
-        </div>
-      )}
-
-      {canEdit && place && (
-        <div className="mt-4 space-y-2">
-          <SwapPlaceButton place={place} allPlaces={allPlaces} tripId={tripId} />
-          <CheckInOutButton
-            place={place}
-            allDayPlaces={allDayPlaces}
-            tripId={tripId}
-          />
+          {canEdit && (
+            <>
+              <SwapPlaceButton place={place} allPlaces={allPlaces} tripId={tripId} />
+              <CheckInOutButton
+                place={place}
+                allDayPlaces={allDayPlaces}
+                tripId={tripId}
+              />
+            </>
+          )}
         </div>
       )}
     </div>
