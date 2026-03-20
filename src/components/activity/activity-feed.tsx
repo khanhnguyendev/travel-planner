@@ -23,7 +23,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
-import { formatCurrency, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDateTime, formatDate, formatFullDateTime } from '@/lib/format';
 import type { ActivityEntry } from '@/features/activity/queries';
 import { cn } from '@/lib/utils';
 
@@ -338,7 +338,7 @@ function getDetailFacts(entry: ActivityEntry): DetailFact[] {
   const facts: DetailFact[] = [
     {
       label: 'When',
-      value: formatDateTime(entry.created_at),
+      value: formatFullDateTime(entry.created_at),
     },
     {
       label: 'Action',
@@ -391,10 +391,10 @@ function getDetailFacts(entry: ActivityEntry): DetailFact[] {
     facts.push({ label: 'Planning range', value: planningRange });
   }
   if (checkinAt) {
-    facts.push({ label: 'Check in', value: formatDateTime(checkinAt) });
+    facts.push({ label: 'Check in', value: formatFullDateTime(checkinAt) });
   }
   if (checkoutAt) {
-    facts.push({ label: 'Check out', value: formatDateTime(checkoutAt) });
+    facts.push({ label: 'Check out', value: formatFullDateTime(checkoutAt) });
   }
   if (address) {
     facts.push({ label: 'Location', value: address });
@@ -475,7 +475,7 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
           </p>
           <div className="flex flex-col text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
             <span className="truncate font-medium text-stone-700">{displayName}</span>
-            <span className="shrink-0">{formatDateTime(entry.created_at)}</span>
+            <span className="shrink-0">{formatDate(entry.created_at)}</span>
           </div>
         </div>
 
@@ -547,7 +547,7 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
             {/* Timestamp */}
             <div className="flex items-baseline gap-3 text-[11px]">
               <span className="w-14 shrink-0 font-bold uppercase tracking-wider text-stone-400">Time</span>
-              <span className="text-stone-500">{formatDateTime(entry.created_at)}</span>
+              <span className="text-stone-500">{formatFullDateTime(entry.created_at)}</span>
             </div>
           </div>
         </div>

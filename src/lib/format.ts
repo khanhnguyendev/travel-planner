@@ -92,3 +92,18 @@ export function formatDate(date: string | Date): string {
     year: 'numeric',
   }).format(d);
 }
+
+/**
+ * Format a date with full precision (including seconds).
+ */
+export function formatFullDateTime(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(d);
+}
