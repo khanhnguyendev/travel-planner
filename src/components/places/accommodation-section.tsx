@@ -134,13 +134,6 @@ function DatesEditor({ place, canEdit, editing, setEditing }: {
           <CalendarDays className="w-3.5 h-3.5" />
           Check-out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60">Not set</span>}
         </span>
-        <span
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: '#FFF7ED', color: '#C2410C' }}
-        >
-          <CalendarDays className="w-3.5 h-3.5" />
-          Check-out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60">Not set</span>}
-        </span>
       </div>
     );
   }
