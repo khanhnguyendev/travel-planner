@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, Link2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { revokeInvite } from '@/features/members/actions';
 import type { PendingInvite } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
@@ -42,14 +43,20 @@ export function PendingInvitesList({ tripId, invites, canManage }: PendingInvite
   const router = useRouter();
   const [revoking, setRevoking] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
+  const { confirm } = useConfirm();
 
   function isLinkInvite(email: string) {
     return email.startsWith('link-invite-') && email.endsWith('@noemail.local');
   }
 
   async function handleRevoke(inviteId: string, label: string) {
-    const confirmed = window.confirm(`Revoke ${label}?`);
-    if (!confirmed) return;
+    const isConfirmed = await confirm({
+      title: 'Revoke Invite',
+      message: `Revoke ${label}?`,
+      okText: 'Revoke',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
 
     setRevoking(inviteId);
     const resolve = loadingToast('Revoking invite…');

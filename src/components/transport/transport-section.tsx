@@ -10,6 +10,7 @@ import type { TransportBooking, TransportType, PlaceExpenseHistoryEntry } from '
 import type { MapboxSuggestion } from '@/features/places/mapbox';
 import { addTransportBooking, updateTransportBooking, deleteTransportBooking, type TransportBookingInput } from '@/features/transport/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { Dialog } from '@/components/ui/dialog';
@@ -325,10 +326,17 @@ function TransportCard({
   const [deleting, setDeleting] = useState(false);
   const [, startTransition] = useTransition();
   const loadingToast = useLoadingToast();
+  const { confirm } = useConfirm();
   const colors = TYPE_COLORS[booking.transport_type];
 
   async function handleDelete() {
-    if (!confirm('Delete this transport booking?')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Booking',
+      message: 'Delete this transport booking?',
+      okText: 'Delete',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setDeleting(true);
     const resolve = loadingToast('Deleting…');
     const result = await deleteTransportBooking(booking.id);

@@ -18,6 +18,7 @@ import { formatCurrency, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import { deleteExpense } from '@/features/expenses/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { TripRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
@@ -40,10 +41,17 @@ export function ExpenseList({ expenses: initialExpenses, tripId, placeNameById =
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { confirm } = useConfirm();
   const loadingToast = useLoadingToast();
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense?',
+      okText: 'Delete',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     
     setDeleting((prev) => new Set(prev).add(id));
     const resolve = loadingToast('Deleting expense...');

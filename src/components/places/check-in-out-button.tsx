@@ -9,6 +9,7 @@ import type { Place } from '@/lib/types';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface CheckInOutButtonProps {
   place: Place;
@@ -113,8 +114,17 @@ export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = t
     setStep('idle');
   }
 
+  const { confirm } = useConfirm();
+
   async function handleClear() {
-    if (!confirm('Clear check-in and check-out times for this place?')) return;
+    const isConfirmed = await confirm({
+      title: 'Clear History',
+      message: 'Clear check-in and check-out times for this place?',
+      okText: 'Clear',
+      variant: 'danger',
+    });
+
+    if (!isConfirmed) return;
     setLoading(true);
     const resolve = loadingToast('Clearing…');
     const result = await clearPlaceCheckin(place.id);

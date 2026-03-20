@@ -12,6 +12,7 @@ import { VoteLeaderboard } from '@/components/places/vote-leaderboard';
 import { Dialog } from '@/components/ui/dialog';
 import { deletePlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
 interface PlacesSectionProps {
@@ -75,6 +76,7 @@ export function PlacesSection({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [searchResults, setSearchResults] = useState<Place[] | null>(null);
+  const { confirm } = useConfirm();
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -134,7 +136,13 @@ export function PlacesSection({
 
   async function handleBulkDelete() {
     if (selectedIds.size === 0) return;
-    if (!confirm(`Remove ${selectedIds.size} place${selectedIds.size > 1 ? 's' : ''} from this trip?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Places',
+      message: `Remove ${selectedIds.size} place${selectedIds.size > 1 ? 's' : ''} from this trip?`,
+      okText: 'Remove',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setBulkDeleting(true);
     const resolve = loadingToast(`Removing ${selectedIds.size} places…`);
     const results = await Promise.all([...selectedIds].map((id) => deletePlace(id)));

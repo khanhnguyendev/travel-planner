@@ -10,6 +10,7 @@ import type { MemberWithProfile } from '@/features/members/queries';
 import type { BudgetContribution } from '@/lib/types';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', VND: '₫', GBP: '£', JPY: '¥', THB: '฿',
@@ -196,6 +197,7 @@ export function BudgetEditor({
   actionSlot,
 }: BudgetEditorProps) {
   const router = useRouter();
+  const { confirm, alert: customAlert } = useConfirm();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(budget != null ? formatNumericInput(String(budget)) : '');
   const [pending, setPending] = useState(false);
@@ -239,11 +241,25 @@ export function BudgetEditor({
   }
 
   async function handleDeleteContribution(id: string) {
-    if (!confirm('Remove this income entry?')) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Income',
+      message: 'Remove this income entry?',
+      okText: 'Remove',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setDeletingId(id);
     const result = await deleteContribution(id);
     setDeletingId(null);
-    if (!result.ok) { alert(result.error); } else { refresh(); }
+    if (!result.ok) {
+      void customAlert({
+        title: 'Error',
+        message: result.error ?? 'Failed to remove income',
+        variant: 'danger',
+      });
+    } else {
+      refresh();
+    }
   }
 
   if (editing) {

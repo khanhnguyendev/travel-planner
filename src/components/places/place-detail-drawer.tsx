@@ -11,6 +11,7 @@ import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { updatePlaceSchedule, updatePlaceNote, addPlaceComment, deletePlaceComment, deletePlace } from '@/features/places/actions';
 import type { ConflictingPlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { CheckInOutButton } from '@/components/places/check-in-out-button';
 import { SwapPlaceButton } from '@/components/places/swap-place-button';
 import { PlaceMapLinks } from '@/components/places/place-map-links';
@@ -579,6 +580,7 @@ export function PlaceDetailDrawer({
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const loadingToastDrawer = useLoadingToast();
+  const { confirm } = useConfirm();
   const affectsStops = category?.category_type !== 'accommodation';
   const refreshSignature = [
     place.id,
@@ -600,7 +602,13 @@ export function PlaceDetailDrawer({
   });
 
   async function handleDelete() {
-    if (!confirm(`Remove "${place.name}" from this trip?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Place',
+      message: `Remove "${place.name}" from this trip?`,
+      okText: 'Remove',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setDeleting(true);
     const resolve = loadingToastDrawer('Removing place…');
     const result = await deletePlace(place.id);

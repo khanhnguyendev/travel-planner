@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
 import { Avatar } from '@/components/ui/avatar';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 
 interface ExpenseDetailProps {
@@ -139,6 +140,7 @@ export function ExpenseDetail({
   const [isDeleting, setIsDeleting] = useState(false);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [splits, setSplits] = useState<ExpenseSplitWithProfile[]>(expense.splits);
+  const { confirm } = useConfirm();
   const loadingToast = useLoadingToast();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -151,7 +153,13 @@ export function ExpenseDetail({
   const isOwnerOrAdmin = ['owner', 'admin'].includes(role);
 
   async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this expense? This cannot be undone.')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense? This cannot be undone.',
+      okText: 'Delete',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setIsDeleting(true);
     const resolve = loadingToast('Deleting expense…');
     const result = await deleteExpense(expense.id);

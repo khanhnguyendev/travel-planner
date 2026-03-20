@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Globe, Lock, AlertTriangle } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { updateTrip, updateTripDates, updateTripBudget, archiveTrip } from '@/features/trips/actions';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { useToast } from '@/components/ui/toast';
@@ -361,15 +362,19 @@ function MoneySection({ trip, hasCurrencyData }: { trip: Trip; hasCurrencyData: 
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [currency, setCurrency] = useState(trip.budget_currency || 'VND');
   const [saving, setSaving] = useState(false);
+  const { confirm } = useConfirm();
   const changed = currency !== (trip.budget_currency || 'VND');
 
   async function handleSave() {
     if (!changed) return;
     const hasBudgetCap = trip.budget != null;
-    const confirmed = window.confirm(
-      `Changing currency to ${currency} will reset your budget cap to "none" (the old amount was in ${trip.budget_currency || 'VND'} and can't be converted automatically).${hasBudgetCap ? '' : ''}\n\nExisting expenses and income contributions keep their own currency and won't be affected.\n\nContinue?`
-    );
-    if (!confirmed) return;
+    const isConfirmed = await confirm({
+      title: 'Change Currency',
+      message: `Changing currency to ${currency} will reset your budget cap to "none" (the old amount was in ${trip.budget_currency || 'VND'} and can't be converted automatically).${hasBudgetCap ? '' : ''}\n\nExisting expenses and income contributions keep their own currency and won't be affected.\n\nContinue?`,
+      okText: 'Change',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setSaving(true);
     // Reset budget cap + set new currency in one call
     await updateTripBudget(trip.id, null, currency, null);
@@ -434,15 +439,26 @@ function MoneySection({ trip, hasCurrencyData }: { trip: Trip; hasCurrencyData: 
 function DangerSection({ trip, isOwner }: { trip: Trip; isOwner: boolean }) {
   const router = useRouter();
   const [archiving, setArchiving] = useState(false);
+  const { confirm, alert: customAlert } = useConfirm();
 
   async function handleArchive() {
-    if (!confirm('Archive this trip? It will be hidden from your active trips and become read-only.')) return;
+    const isConfirmed = await confirm({
+      title: 'Archive Trip',
+      message: 'Archive this trip? It will be hidden from your active trips and become read-only.',
+      okText: 'Archive',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setArchiving(true);
     const result = await archiveTrip(trip.id);
     if (result.ok) {
       router.push('/dashboard');
     } else {
-      alert(result.error ?? 'Failed to archive trip');
+      await customAlert({
+        title: 'Error',
+        message: result.error ?? 'Failed to archive trip',
+        variant: 'danger',
+      });
       setArchiving(false);
     }
   }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Shield, Trash2, ChevronDown, CalendarDays, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { removeMember, changeMemberRole } from '@/features/members/actions';
 import type { MemberWithProfile } from '@/features/members/queries';
 import type { TripRole } from '@/lib/types';
@@ -228,6 +229,7 @@ export function MemberList({
   const router = useRouter();
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const loadingToast = useLoadingToast();
+  const { confirm } = useConfirm();
 
   const canManage = ['owner', 'admin'].includes(currentUserRole);
 
@@ -249,8 +251,13 @@ export function MemberList({
   }
 
   async function handleRemove(userId: string, name: string) {
-    const confirmed = window.confirm(`Remove ${name} from this trip?`);
-    if (!confirmed) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Member',
+      message: `Remove ${name} from this trip?`,
+      okText: 'Remove',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
     setLoadingUserId(userId);
     const resolve = loadingToast('Removing member…');
     try {
