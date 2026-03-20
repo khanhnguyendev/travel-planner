@@ -12,6 +12,7 @@ export interface ActivityEntry {
   profile: {
     display_name: string | null;
     avatar_url: string | null;
+    email: string | null;
   } | null;
 }
 
@@ -20,7 +21,7 @@ export async function getTripActivity(tripId: string): Promise<ActivityEntry[]> 
 
   const { data, error } = await admin
     .from('trip_activity')
-    .select('*, profiles(display_name, avatar_url)')
+    .select('*, profiles(display_name, avatar_url, email)')
     .eq('trip_id', tripId)
     .order('created_at', { ascending: false })
     .limit(60);

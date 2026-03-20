@@ -87,14 +87,15 @@ export async function signUp(
     return { ok: false, error: error.message };
   }
 
-  // Upsert a profile row immediately if the user was auto-confirmed.
-  if (data.user) {
-    const admin = createAdminClient();
-    await admin.from('profiles').upsert({
-      id: data.user.id,
-      display_name: parsed.data.displayName,
-    });
-  }
+    // Upsert a profile row immediately if the user was auto-confirmed.
+    if (data.user) {
+      const admin = createAdminClient();
+      await admin.from('profiles').upsert({
+        id: data.user.id,
+        display_name: parsed.data.displayName,
+        email: parsed.data.email,
+      });
+    }
 
   revalidatePath('/', 'layout');
   redirect(normalizeNextPath(nextPath));

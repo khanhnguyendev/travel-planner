@@ -346,9 +346,10 @@ function getDetailFacts(entry: ActivityEntry): DetailFact[] {
   ];
 
   const actorName = entry.profile?.display_name ?? 'A member';
+  const actorEmail = entry.profile?.email;
   facts.push({
     label: 'By',
-    value: actorName,
+    value: actorEmail ? `${actorName} (${actorEmail})` : actorName,
   });
 
   const placeName = getString(entry.meta, 'placeName');
