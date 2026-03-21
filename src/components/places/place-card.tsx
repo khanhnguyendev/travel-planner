@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, MessageCircle, NotebookPen } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
@@ -84,9 +85,16 @@ export function PlaceCard({
     feature_type?: string; place_formatted?: string;
   } | null;
   const displayAddress = place.address ?? meta?.place_formatted;
-  const locationTags: string[] = meta?.place
-    ? [meta.place]
-    : place.address ? [extractLocationTag(place.address)].filter(Boolean) as string[] : [];
+  const locationTags: string[] = useMemo(() => {
+    if (!meta) {
+      return place.address ? [extractLocationTag(place.address)].filter(Boolean) as string[] : [];
+    }
+    const tags: string[] = [];
+    if (meta.place) tags.push(meta.place);
+    if (meta.region && meta.region !== meta.place) tags.push(meta.region);
+    if (meta.country && !tags.includes(meta.country)) tags.push(meta.country);
+    return tags;
+  }, [meta, place.address]);
 
   if (isList) {
     return (
@@ -273,22 +281,27 @@ export function PlaceCard({
               />
 
               {locationTags.length > 0 && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onLocationTagClick?.(locationTags[0]);
-                  }}
-                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-bold transition-all hover:shadow-sm"
-                  style={{
-                    backgroundColor: '#EFF6FF',
-                    color: '#2563EB',
-                    cursor: onLocationTagClick ? 'pointer' : 'default',
-                  }}
-                >
-                  <MapPin className="w-2.5 h-2.5" />
-                  {locationTags[0]}
-                </button>
+                <div className="flex flex-wrap items-center justify-end gap-1">
+                  {locationTags.slice(-2).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onLocationTagClick?.(tag);
+                      }}
+                      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold transition-all hover:bg-blue-100/50"
+                      style={{
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                        cursor: onLocationTagClick ? 'pointer' : 'default',
+                      }}
+                    >
+                      <MapPin className="w-2.5 h-2.5" />
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           </div>
