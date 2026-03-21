@@ -389,6 +389,7 @@ export function PlacesSection({
         selectedCategoryId={selectedCategoryId}
         selectedTagId={selectedTagId}
         placeTagIds={placeTagIds}
+        tags={tags}
         selectedLocationTag={selectedLocationTag}
         onLocationTagClick={(tag) =>
           setSelectedLocationTag((prev) => (prev === tag ? null : tag))

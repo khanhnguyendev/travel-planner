@@ -22,6 +22,7 @@ interface PlaceCardProps {
   isNext?: boolean;
   onClick?: () => void;
   onLocationTagClick?: (tag: string) => void;
+  tags?: string[]; // tag names for display
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -71,6 +72,7 @@ export function PlaceCard({
   isNext = false,
   onClick,
   onLocationTagClick,
+  tags = [],
 }: PlaceCardProps) {
   const hasSchedule = place.visit_date || place.visit_time_from;
   const meta = place.metadata_json as {
@@ -115,8 +117,8 @@ export function PlaceCard({
           </div>
         )}
 
-        {/* Category + location tags */}
-        {(category || locationTags.length > 0) && (
+        {/* Category + location tags + trip tags */}
+        {(category || locationTags.length > 0 || tags.length > 0) && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {category && <CategoryBadge category={category} size="sm" />}
             {locationTags.map((tag) => (
@@ -138,6 +140,15 @@ export function PlaceCard({
                 <MapPin className="w-3 h-3" />
                 {tag}
               </button>
+            ))}
+            {tags.map((name) => (
+              <span
+                key={name}
+                className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+              >
+                {name}
+              </span>
             ))}
           </div>
         )}

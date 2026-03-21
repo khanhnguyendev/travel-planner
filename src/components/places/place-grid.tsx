@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MapPin, Plus } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
+import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry, Tag } from '@/lib/types';
 import { PlaceCard } from './place-card';
 import { extractLocationTag } from '@/lib/address';
 import { PlaceDetailDrawer } from './place-detail-drawer';
@@ -15,6 +15,7 @@ interface PlaceGridProps {
   selectedCategoryId: string | null;
   selectedTagId?: string | null;
   placeTagIds?: Record<string, string[]>;
+  tags?: Tag[];
   selectedLocationTag: string | null;
   onLocationTagClick: (tag: string) => void;
   voteSummaries: VoteSummaryEntry[];
@@ -46,6 +47,7 @@ export function PlaceGrid({
   selectedCategoryId,
   selectedTagId,
   placeTagIds = {},
+  tags = [],
   selectedLocationTag,
   onLocationTagClick,
   voteSummaries,
@@ -72,6 +74,7 @@ export function PlaceGrid({
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
+  const tagNameMap = Object.fromEntries(tags.map((t) => [t.id, t.name]));
   const voteSummaryMap = Object.fromEntries(
     voteSummaries.map((v) => [v.placeId, v])
   );
@@ -199,6 +202,7 @@ export function PlaceGrid({
                         canVote={!selectMode && canVote}
                         isNext={place.id === nextPlaceId}
                         previewMode={previewMode}
+                        tags={(placeTagIds[place.id] ?? []).map((id) => tagNameMap[id]).filter(Boolean)}
                         onClick={
                           previewMode
                             ? undefined
