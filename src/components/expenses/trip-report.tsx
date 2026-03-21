@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X, TrendingUp, Wallet, Users, CalendarDays } from 'lucide-react';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { TripExpenseReport, MemberReportEntry } from '@/features/expenses/reports';
 import type { BudgetContribution } from '@/lib/types';
@@ -218,7 +218,7 @@ export function TripReport({ report, contributions, trip, onClose }: TripReportP
                         </p>
                         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                           {exp.expense_date
-                            ? new Date(exp.expense_date.slice(0, 10) + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                            ? formatDate(exp.expense_date)
                             : '—'}
                           {exp.category ? ` · ${exp.category}` : ''}
                         </p>
@@ -296,10 +296,7 @@ function DailyChart({ entries, currency }: { entries: { date: string; amount: nu
     <div className="space-y-1.5">
       {entries.map((entry) => {
         const percent = max > 0 ? (entry.amount / max) * 100 : 0;
-        const label = new Date(entry.date + 'T00:00:00').toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-        });
+        const label = formatDate(entry.date + 'T00:00:00');
         return (
           <div key={entry.date} className="flex items-center gap-3">
             <span className="w-14 flex-shrink-0 text-right text-xs" style={{ color: 'var(--color-text-subtle)' }}>
