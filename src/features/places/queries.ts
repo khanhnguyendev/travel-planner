@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { Place, PlaceReview, PlaceComment } from '@/lib/types';
 
 export type PlaceWithReviews = Place & { reviews: PlaceReview[] };
@@ -64,6 +65,43 @@ export async function getPlace(id: string): Promise<PlaceWithReviews | null> {
     ...(place as Place),
     reviews: (reviews ?? []) as PlaceReview[],
   };
+}
+
+/**
+ * Returns a map of place_id → tag_ids[] for all places in a trip.
+ * Used for client-side tag filtering without loading full Tag objects per place.
+ */
+export async function getPlaceTagIdsByTrip(
+  tripId: string
+): Promise<Record<string, string[]>> {
+  const admin = createAdminClient();
+
+  // Get all place IDs for this trip first, then fetch their place_tags
+  const { data: placesData } = await admin
+    .from('places')
+    .select('id')
+    .eq('trip_id', tripId);
+
+  if (!placesData?.length) return {};
+
+  const placeIds = (placesData as { id: string }[]).map((p) => p.id);
+
+  const { data, error } = await admin
+    .from('place_tags')
+    .select('place_id, tag_id')
+    .in('place_id', placeIds);
+
+  if (error) {
+    console.error('getPlaceTagIdsByTrip error:', error);
+    return {};
+  }
+
+  const result: Record<string, string[]> = {};
+  for (const row of (data ?? []) as { place_id: string; tag_id: string }[]) {
+    if (!result[row.place_id]) result[row.place_id] = [];
+    result[row.place_id].push(row.tag_id);
+  }
+  return result;
 }
 
 export async function getCommentsByTripId(

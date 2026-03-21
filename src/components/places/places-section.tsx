@@ -22,6 +22,7 @@ interface PlacesSectionProps {
   initialPlaces: Place[];
   initialCategories: Category[];
   initialTags?: Tag[];
+  initialPlaceTagIds?: Record<string, string[]>;
   initialVoteSummaries: VoteSummaryEntry[];
   initialUserVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -54,6 +55,7 @@ export function PlacesSection({
   initialPlaces,
   initialCategories,
   initialTags = [],
+  initialPlaceTagIds = {},
   initialVoteSummaries,
   initialUserVotes,
   reviewsByPlaceId: initialReviewsByPlaceId,
@@ -70,6 +72,8 @@ export function PlacesSection({
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [tags] = useState<Tag[]>(initialTags);
+  const [placeTagIds] = useState<Record<string, string[]>>(initialPlaceTagIds);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [voteSummaries] = useState<VoteSummaryEntry[]>(initialVoteSummaries);
   const [userVotes] = useState<PlaceVote[]>(initialUserVotes);
   const [reviewsByPlaceId, setReviewsByPlaceId] = useState<Record<string, PlaceReview[]>>(initialReviewsByPlaceId);
@@ -329,6 +333,26 @@ export function PlacesSection({
               />
             )}
 
+            {tags.length > 0 && (
+              <div className="flex flex-shrink-0 items-center gap-1.5">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => setSelectedTagId((prev) => (prev === tag.id ? null : tag.id))}
+                    className="inline-flex items-center rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-colors sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: selectedTagId === tag.id ? 'var(--color-primary-light)' : 'white',
+                      color: selectedTagId === tag.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      borderColor: selectedTagId === tag.id ? 'var(--color-primary)' : 'var(--color-border)',
+                    }}
+                  >
+                    {tag.name}
+                    {selectedTagId === tag.id && <X className="ml-1 h-2.5 w-2.5" />}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {selectedLocationTag && (
               <div className="flex flex-shrink-0 items-center gap-2">
                 <button
@@ -363,6 +387,8 @@ export function PlacesSection({
         categories={planningCategories}
         tripId={tripId}
         selectedCategoryId={selectedCategoryId}
+        selectedTagId={selectedTagId}
+        placeTagIds={placeTagIds}
         selectedLocationTag={selectedLocationTag}
         onLocationTagClick={(tag) =>
           setSelectedLocationTag((prev) => (prev === tag ? null : tag))

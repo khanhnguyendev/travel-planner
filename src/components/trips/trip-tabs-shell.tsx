@@ -65,6 +65,7 @@ interface TripTabsShellProps {
   places: Place[];
   categories: Category[];
   tags: Tag[];
+  placeTagIds: Record<string, string[]>;
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -95,6 +96,7 @@ export function TripTabsShell({
   places,
   categories,
   tags,
+  placeTagIds,
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
@@ -208,6 +210,7 @@ export function TripTabsShell({
                   initialPlaces={visiblePlaces}
                   initialCategories={visibleCategories}
                   initialTags={tags}
+                  initialPlaceTagIds={placeTagIds}
                   initialVoteSummaries={voteSummaries}
                   initialUserVotes={userVotes}
                   reviewsByPlaceId={reviewsByPlaceId}

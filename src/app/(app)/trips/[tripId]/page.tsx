@@ -19,7 +19,7 @@ import { getSession } from '@/features/auth/session';
 import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/queries';
 import { getJoinRequests, getMembers, hasRequestedJoin } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
-import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
+import { getPlaces, getCommentsByTripId, getPlaceTagIdsByTrip } from '@/features/places/queries';
 import { getTagsByTrip } from '@/features/tags/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
@@ -270,9 +270,10 @@ export default async function TripDetailPage({
   const canComment = isMember;
   const joinRequests = canManage ? await getJoinRequests(tripId) : [];
 
-  const [places, tags] = await Promise.all([
+  const [places, tags, placeTagIds] = await Promise.all([
     getPlaces(tripId),
     getTagsByTrip(tripId),
+    getPlaceTagIdsByTrip(tripId),
   ]);
 
   const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries, transportBookings] =
@@ -968,6 +969,7 @@ export default async function TripDetailPage({
         places={places}
         categories={categories}
         tags={tags}
+        placeTagIds={placeTagIds}
         voteSummaries={voteSummaries}
         userVotes={userVotes}
         reviewsByPlaceId={reviewsByPlaceId}

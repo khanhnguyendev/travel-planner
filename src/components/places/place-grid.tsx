@@ -13,6 +13,8 @@ interface PlaceGridProps {
   categories: Category[];
   tripId: string;
   selectedCategoryId: string | null;
+  selectedTagId?: string | null;
+  placeTagIds?: Record<string, string[]>;
   selectedLocationTag: string | null;
   onLocationTagClick: (tag: string) => void;
   voteSummaries: VoteSummaryEntry[];
@@ -42,6 +44,8 @@ export function PlaceGrid({
   categories,
   tripId,
   selectedCategoryId,
+  selectedTagId,
+  placeTagIds = {},
   selectedLocationTag,
   onLocationTagClick,
   voteSummaries,
@@ -75,9 +79,13 @@ export function PlaceGrid({
     userVotes.map((v) => [v.place_id, v])
   );
 
-  // Filter by selected category and/or location tag
+  // Filter by selected category, tag, and/or location tag
   const filtered = places.filter((p) => {
     if (selectedCategoryId && p.category_id !== selectedCategoryId) return false;
+    if (selectedTagId) {
+      const tagIds = placeTagIds[p.id] ?? [];
+      if (!tagIds.includes(selectedTagId)) return false;
+    }
     if (selectedLocationTag) {
       const tag = p.address ? extractLocationTag(p.address) : null;
       if (tag !== selectedLocationTag) return false;
