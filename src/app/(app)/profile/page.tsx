@@ -1,13 +1,17 @@
 import { requireSession } from '@/features/auth/session';
-import { getProfileWithStats } from '@/features/profile/queries';
+import { getProfileWithStats, getUserExpenseStats } from '@/features/profile/queries';
 import { ProfileForm } from '@/components/profile/profile-form';
+import { UserExpenseSummary } from '@/components/profile/user-expense-summary';
 import { redirect } from 'next/navigation';
 
 export const metadata = { title: 'Profile' };
 
 export default async function ProfilePage() {
   const user = await requireSession();
-  const profile = await getProfileWithStats(user.id);
+  const [profile, expenseStats] = await Promise.all([
+    getProfileWithStats(user.id),
+    getUserExpenseStats(user.id),
+  ]);
 
   if (!profile) redirect('/dashboard');
 
@@ -23,6 +27,7 @@ export default async function ProfilePage() {
       </div>
 
       <ProfileForm profile={profile} />
+      <UserExpenseSummary stats={expenseStats} />
     </div>
   );
 }
