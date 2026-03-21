@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Tag as TagIcon, X, Trash2, CheckSquare, MapPin, Grid, List } from 'lucide-react';
+import { Plus, Tag as TagIcon, X, Trash2, CheckCircle2, MapPin, Grid, List, Check } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry, Tag } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -288,26 +288,35 @@ export function PlacesSection({
                   <button onClick={() => setSelectedCategoryIds(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-2 scrollbar-hide">
-                {planningCategories.map((cat) => (
-                  <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategoryIds.has(cat.id)}
-                      onChange={() => setSelectedCategoryIds(prev => {
+              <div className="flex flex-col gap-1 max-h-56 overflow-y-auto pr-1 scrollbar-hide">
+                {planningCategories.map((cat) => {
+                  const isActive = selectedCategoryIds.has(cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategoryIds(prev => {
                         const next = new Set(prev);
                         if (next.has(cat.id)) next.delete(cat.id);
                         else next.add(cat.id);
                         return next;
                       })}
-                      className="h-3.5 w-3.5 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
-                    />
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {cat.icon && <span className="text-xs">{cat.icon}</span>}
-                      <span className={cn("text-sm truncate transition-colors", selectedCategoryIds.has(cat.id) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>{cat.name}</span>
-                    </div>
-                  </label>
-                ))}
+                      className={cn(
+                        "group flex items-center justify-between rounded-xl px-2.5 py-2 text-sm transition-all duration-200",
+                        isActive 
+                          ? "bg-teal-600 text-white shadow-md shadow-teal-900/10" 
+                          : "text-stone-500 hover:bg-stone-100/80 hover:text-stone-800"
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className={cn("flex h-6 w-6 items-center justify-center rounded-lg text-xs transition-colors", isActive ? "bg-white/20" : "bg-stone-100 group-hover:bg-stone-200")}>
+                          {cat.icon || '📍'}
+                        </span>
+                        <span className={cn("truncate font-medium", isActive ? "font-bold" : "")}>{cat.name}</span>
+                      </div>
+                      {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
               </div>
               {editor && (
                 <button
@@ -328,24 +337,36 @@ export function PlacesSection({
                   <button onClick={() => setSelectedLocationTags(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
-                {allLocationTags.map((tag) => (
-                  <label key={tag} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selectedLocationTags.has(tag)}
-                      onChange={() => setSelectedLocationTags(prev => {
+              <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1 scrollbar-hide">
+                {allLocationTags.map((tag) => {
+                  const isActive = selectedLocationTags.has(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedLocationTags(prev => {
                         const next = new Set(prev);
                         if (next.has(tag)) next.delete(tag);
                         else next.add(tag);
                         return next;
                       })}
-                      className="h-3.5 w-3.5 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className={cn("text-sm transition-colors", selectedLocationTags.has(tag) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>{tag}</span>
-                  </label>
-                ))}
-                {allLocationTags.length === 0 && <span className="text-xs text-stone-400 italic">No locations found</span>}
+                      className={cn(
+                        "group flex items-center justify-between rounded-xl px-2.5 py-2 text-sm transition-all duration-200",
+                        isActive 
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-900/10" 
+                          : "text-stone-500 hover:bg-stone-100/80 hover:text-stone-800"
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                         <span className={cn("flex h-6 w-6 items-center justify-center rounded-lg transition-colors", isActive ? "bg-white/20" : "bg-stone-100 group-hover:bg-stone-200")}>
+                           <MapPin className="h-3.5 w-3.5" />
+                         </span>
+                         <span className={cn("truncate font-medium", isActive ? "font-bold" : "")}>{tag}</span>
+                      </div>
+                      {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
+                {allLocationTags.length === 0 && <span className="text-xs text-stone-400 italic px-1">No locations found</span>}
               </div>
             </div>
 
@@ -357,24 +378,36 @@ export function PlacesSection({
                   <button onClick={() => setSelectedTagIds(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
-                {tags.map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selectedTagIds.has(tag.id)}
-                      onChange={() => setSelectedTagIds(prev => {
+              <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1 scrollbar-hide">
+                {tags.map((tag) => {
+                  const isActive = selectedTagIds.has(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => setSelectedTagIds(prev => {
                         const next = new Set(prev);
                         if (next.has(tag.id)) next.delete(tag.id);
                         else next.add(tag.id);
                         return next;
                       })}
-                      className="h-3.5 w-3.5 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
-                    />
-                    <span className={cn("text-sm transition-colors", selectedTagIds.has(tag.id) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>#{tag.name}</span>
-                  </label>
-                ))}
-                {tags.length === 0 && <span className="text-xs text-stone-400 italic">No tags found</span>}
+                      className={cn(
+                        "group flex items-center justify-between rounded-xl px-2.5 py-2 text-sm transition-all duration-200",
+                        isActive 
+                          ? "bg-stone-800 text-white shadow-md shadow-stone-900/20" 
+                          : "text-stone-500 hover:bg-stone-100/80 hover:text-stone-800"
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                         <span className={cn("flex h-6 w-6 items-center justify-center rounded-lg transition-colors border-stone-200", isActive ? "bg-white/20 border-white/20" : "bg-stone-100 group-hover:bg-stone-200 border")}>
+                            <TagIcon className="h-3 w-3" />
+                         </span>
+                         <span className={cn("truncate font-medium", isActive ? "font-bold" : "")}>#{tag.name}</span>
+                      </div>
+                      {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
+                {tags.length === 0 && <span className="text-xs text-stone-400 italic px-1">No tags found</span>}
               </div>
             </div>
 
@@ -425,7 +458,7 @@ export function PlacesSection({
                       style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
                       title="Select multiple"
                     >
-                      <CheckSquare className="h-4 w-4" />
+                      <CheckCircle2 className="h-4 w-4" />
                       <span className="hidden md:ml-2 md:inline">Select</span>
                     </button>
 
