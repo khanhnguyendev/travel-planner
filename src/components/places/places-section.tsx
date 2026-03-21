@@ -288,7 +288,7 @@ export function PlacesSection({
                   <button onClick={() => setSelectedCategoryIds(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-2 scrollbar-hide">
+              <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-2 scrollbar-hide">
                 {planningCategories.map((cat) => (
                   <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
                     <input
@@ -302,19 +302,22 @@ export function PlacesSection({
                       })}
                       className="h-3.5 w-3.5 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
                     />
-                    <span className={cn("text-sm transition-colors", selectedCategoryIds.has(cat.id) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>{cat.name}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {cat.icon && <span className="text-xs">{cat.icon}</span>}
+                      <span className={cn("text-sm truncate transition-colors", selectedCategoryIds.has(cat.id) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>{cat.name}</span>
+                    </div>
                   </label>
                 ))}
-                {editor && (
-                  <button
-                    onClick={() => setShowAddCategory(true)}
-                    className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-stone-400 transition-colors hover:text-stone-600"
-                  >
-                    <Plus className="h-3 w-3" />
-                    <span>Add category</span>
-                  </button>
-                )}
               </div>
+              {editor && (
+                <button
+                  onClick={() => setShowAddCategory(true)}
+                  className="mt-1 flex items-center gap-1.5 px-0.5 text-xs font-bold text-teal-600/70 transition-colors hover:text-teal-700"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add category</span>
+                </button>
+              )}
             </div>
 
             {/* Location Tags Section */}
