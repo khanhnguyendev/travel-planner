@@ -20,6 +20,7 @@ import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/q
 import { getJoinRequests, getMembers, hasRequestedJoin } from '@/features/members/queries';
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByTripId } from '@/features/places/queries';
+import { getTagsByTrip } from '@/features/tags/queries';
 import { getVoteSummary, getUserVote } from '@/features/votes/queries';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
@@ -269,7 +270,10 @@ export default async function TripDetailPage({
   const canComment = isMember;
   const joinRequests = canManage ? await getJoinRequests(tripId) : [];
 
-  const places = await getPlaces(tripId);
+  const [places, tags] = await Promise.all([
+    getPlaces(tripId),
+    getTagsByTrip(tripId),
+  ]);
 
   const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries, transportBookings] =
     await Promise.all([
@@ -963,6 +967,7 @@ export default async function TripDetailPage({
         tripEndDate={trip.end_date}
         places={places}
         categories={categories}
+        tags={tags}
         voteSummaries={voteSummaries}
         userVotes={userVotes}
         reviewsByPlaceId={reviewsByPlaceId}

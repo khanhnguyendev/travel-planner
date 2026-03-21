@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Tag, X, Trash2, CheckSquare } from 'lucide-react';
-import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
+import { Plus, Tag as TagIcon, X, Trash2, CheckSquare } from 'lucide-react';
+import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry, Tag } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { AddPlaceForm } from '@/components/places/add-place-form';
@@ -21,6 +21,7 @@ interface PlacesSectionProps {
   role: TripRole;
   initialPlaces: Place[];
   initialCategories: Category[];
+  initialTags?: Tag[];
   initialVoteSummaries: VoteSummaryEntry[];
   initialUserVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -52,6 +53,7 @@ export function PlacesSection({
   role,
   initialPlaces,
   initialCategories,
+  initialTags = [],
   initialVoteSummaries,
   initialUserVotes,
   reviewsByPlaceId: initialReviewsByPlaceId,
@@ -67,6 +69,7 @@ export function PlacesSection({
 }: PlacesSectionProps) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [tags] = useState<Tag[]>(initialTags);
   const [voteSummaries] = useState<VoteSummaryEntry[]>(initialVoteSummaries);
   const [userVotes] = useState<PlaceVote[]>(initialUserVotes);
   const [reviewsByPlaceId, setReviewsByPlaceId] = useState<Record<string, PlaceReview[]>>(initialReviewsByPlaceId);
@@ -230,6 +233,7 @@ export function PlacesSection({
           <AddPlaceForm
             tripId={tripId}
             categories={categories}
+            tags={tags}
             onAdded={(place, reviews) => { handlePlaceAdded(place, reviews); setShowAddPlace(false); }}
             onCancel={() => setShowAddPlace(false)}
           />
@@ -345,7 +349,7 @@ export function PlacesSection({
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 aria-label="Add category"
               >
-                <Tag className="h-4 w-4" />
+                <TagIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">+ Category</span>
               </button>
             )}

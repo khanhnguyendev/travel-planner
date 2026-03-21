@@ -23,6 +23,7 @@ import type {
   PlaceExpenseHistoryEntry,
   PlaceReview,
   PlaceVote,
+  Tag,
   TripRole,
 } from '@/lib/types';
 
@@ -63,6 +64,7 @@ interface TripTabsShellProps {
   tripEndDate?: string | null;
   places: Place[];
   categories: Category[];
+  tags: Tag[];
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
   reviewsByPlaceId: Record<string, PlaceReview[]>;
@@ -92,6 +94,7 @@ export function TripTabsShell({
   tripEndDate,
   places,
   categories,
+  tags,
   voteSummaries,
   userVotes,
   reviewsByPlaceId,
@@ -204,6 +207,7 @@ export function TripTabsShell({
                   role={resolvedRole}
                   initialPlaces={visiblePlaces}
                   initialCategories={visibleCategories}
+                  initialTags={tags}
                   initialVoteSummaries={voteSummaries}
                   initialUserVotes={userVotes}
                   reviewsByPlaceId={reviewsByPlaceId}

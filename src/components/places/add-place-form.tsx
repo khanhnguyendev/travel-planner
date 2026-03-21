@@ -3,19 +3,21 @@
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, Loader2, AlertCircle, MapPin, CalendarDays, Clock, Plus, BedDouble } from 'lucide-react';
-import type { Category, Place, PlaceReview } from '@/lib/types';
+import type { Category, Place, PlaceReview, Tag } from '@/lib/types';
 import type { MapboxSuggestion } from '@/features/places/mapbox';
 import { useLoadingToast } from '@/components/ui/toast';
 import { extractLocationTag } from '@/lib/address';
 import { Dialog } from '@/components/ui/dialog';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
 import { ensureAccommodationCategory } from '@/features/categories/actions';
+import { setPlaceTags } from '@/features/tags/actions';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 
 interface AddPlaceFormProps {
   tripId: string;
   categories: Category[];
+  tags?: Tag[];
   onAdded?: (place: Place, reviews: PlaceReview[]) => void;
   onCancel?: () => void;
 }
@@ -25,7 +27,7 @@ function newSessionToken(): string {
 }
 
 
-export function AddPlaceForm({ tripId, categories, onAdded, onCancel }: AddPlaceFormProps) {
+export function AddPlaceForm({ tripId, categories, tags = [], onAdded, onCancel }: AddPlaceFormProps) {
   const router = useRouter();
   const [sessionToken, setSessionToken] = useState<string>(() => newSessionToken());
   const [query, setQuery] = useState('');
@@ -42,6 +44,7 @@ export function AddPlaceForm({ tripId, categories, onAdded, onCancel }: AddPlace
   const [visitDateEnd, setVisitDateEnd] = useState('');
   const [visitTimeFrom, setVisitTimeFrom] = useState('');
   const [visitTimeTo, setVisitTimeTo] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isPending, startTransition] = useTransition();
@@ -161,10 +164,15 @@ useEffect(() => {
           setError(msg);
           return;
         }
+        // Assign selected tags (non-fatal)
+        if (selectedTagIds.size > 0) {
+          void setPlaceTags(data.data!.place.id, [...selectedTagIds]);
+        }
         resolve('Place added!', 'success');
         onAdded?.(data.data!.place, []);
         setQuery(''); setSelected(null); setSuggestions([]); setShowDropdown(false);
         setError(null); setVisitDate(''); setVisitDateEnd(''); setVisitTimeFrom(''); setVisitTimeTo(''); setIsAccommodation(false);
+        setSelectedTagIds(new Set());
         setSessionToken(newSessionToken());
         emitTripSectionRefresh(tripId, [
           TRIP_REFRESH_SECTIONS.places,
@@ -351,6 +359,41 @@ useEffect(() => {
               </select>
             )}
           </div>
+
+          {/* Tags (optional) */}
+          {tags.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
+                Tags{' '}
+                <span className="text-xs font-normal text-stone-400">(optional)</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((tag) => {
+                  const active = selectedTagIds.has(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => setSelectedTagIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(tag.id)) next.delete(tag.id); else next.add(tag.id);
+                        return next;
+                      })}
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors border"
+                      style={{
+                        backgroundColor: active ? 'var(--color-primary-light)' : 'white',
+                        color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        borderColor: active ? 'var(--color-primary)' : 'var(--color-border)',
+                      }}
+                    >
+                      {tag.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Schedule (optional) */}
           <div>
