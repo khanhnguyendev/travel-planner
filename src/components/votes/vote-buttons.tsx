@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { PlaceVote, VoteType } from '@/lib/types';
 import { useLoadingToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 
 interface VoteButtonsProps {
   tripId: string;
@@ -12,6 +13,7 @@ interface VoteButtonsProps {
   downvotes: number;
   userVote: PlaceVote | null;
   canVote?: boolean;
+  size?: 'sm' | 'md';
 }
 
 export function VoteButtons({
@@ -21,6 +23,7 @@ export function VoteButtons({
   downvotes: initialDownvotes,
   userVote: initialUserVote,
   canVote = true,
+  size = 'md',
 }: VoteButtonsProps) {
   const [userVote, setUserVote] = useState<PlaceVote | null>(initialUserVote);
   const [upvotes, setUpvotes] = useState(initialUpvotes);
@@ -86,47 +89,58 @@ export function VoteButtons({
   const activeUpvote = userVote?.vote_type === 'upvote';
   const activeDownvote = userVote?.vote_type === 'downvote';
 
+  const sizeClasses = size === 'sm' ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1.5 text-sm';
+  const iconSize = size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4';
+
   return (
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => handleVote('upvote')}
         disabled={isPending || !canVote}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+        className={cn(
+          "flex items-center gap-1.5 rounded-full font-bold transition-all cursor-pointer active:scale-95 shadow-sm",
+          sizeClasses
+        )}
         style={{
           backgroundColor: activeUpvote
             ? 'var(--color-primary)'
-            : 'var(--color-bg-subtle)',
+            : 'var(--color-bg-muted)',
           color: activeUpvote
             ? 'var(--color-primary-foreground)'
             : 'var(--color-text-muted)',
           opacity: canVote ? 1 : 0.55,
+          border: activeUpvote ? 'none' : '1px solid var(--color-border)',
         }}
         aria-label="Upvote"
         aria-pressed={activeUpvote}
         title={canVote ? undefined : 'Voting is available to trip members while the trip is active.'}
       >
-        <ThumbsUp className="w-3.5 h-3.5" />
+        <ThumbsUp className={iconSize} />
         <span>{upvotes}</span>
       </button>
 
       <button
         onClick={() => handleVote('downvote')}
         disabled={isPending || !canVote}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+        className={cn(
+          "flex items-center gap-1.5 rounded-full font-bold transition-all cursor-pointer active:scale-95 shadow-sm",
+          sizeClasses
+        )}
         style={{
           backgroundColor: activeDownvote
             ? 'var(--color-secondary)'
-            : 'var(--color-bg-subtle)',
+            : 'var(--color-bg-muted)',
           color: activeDownvote
             ? 'var(--color-secondary-foreground)'
             : 'var(--color-text-muted)',
           opacity: canVote ? 1 : 0.55,
+          border: activeDownvote ? 'none' : '1px solid var(--color-border)',
         }}
         aria-label="Downvote"
         aria-pressed={activeDownvote}
         title={canVote ? undefined : 'Voting is available to trip members while the trip is active.'}
       >
-        <ThumbsDown className="w-3.5 h-3.5" />
+        <ThumbsDown className={iconSize} />
         <span>{downvotes}</span>
       </button>
     </div>
