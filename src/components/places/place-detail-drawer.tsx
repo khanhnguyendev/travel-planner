@@ -218,7 +218,7 @@ function ScheduleEditor({
             {(savedFrom || savedTo) && (
               <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
                 <Clock className="w-3.5 h-3.5" />
-                {savedFrom || '?'} – {savedTo || '?'}
+                {savedFrom ? savedFrom.split(':').slice(0, 2).join(':') : '?'} – {savedTo ? savedTo.split(':').slice(0, 2).join(':') : '?'}
               </span>
             )}
           </div>

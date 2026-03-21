@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, MessageCircle, NotebookPen } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Star, MapPin, DollarSign, Clock, ShieldAlert, CalendarDays, Navigation, MessageCircle, NotebookPen, ChevronDown, ChevronUp, Maximize2 } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceComment, PlaceExpenseHistoryEntry } from '@/lib/types';
 import { CategoryBadge } from '@/components/categories/category-badge';
 import { VoteButtons } from '@/components/votes/vote-buttons';
@@ -61,6 +61,18 @@ function PriceDots({ level }: { level: number }) {
   );
 }
 
+function formatTime(time: string | null | undefined): string {
+  if (!time) return '';
+  const parts = time.split(':');
+  if (parts.length >= 2) return `${parts[0]}:${parts[1]}`;
+  return time;
+}
+
+function parseDate(dateStr: string | null | undefined) {
+  if (!dateStr) return null;
+  return new Date(dateStr + 'T00:00:00');
+}
+
 export function PlaceCard({
   place,
   category,
@@ -77,6 +89,7 @@ export function PlaceCard({
   tags = [],
   viewMode = 'card',
 }: PlaceCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const isList = viewMode === 'list';
   const hasSchedule = place.visit_date || place.visit_time_from;
   const meta = place.metadata_json as {
@@ -100,65 +113,187 @@ export function PlaceCard({
     return (
       <div
         className={cn(
-          'section-shell flex items-center gap-3 p-2.5 cursor-pointer hover:bg-black/[0.02] transition-all',
-          isNext && 'ring-2 ring-teal-500 ring-offset-1'
+          'section-shell flex flex-col gap-0 overflow-hidden transition-all duration-200 border-stone-200/60',
+          isNext && 'ring-2 ring-teal-500 ring-offset-1',
+          isExpanded ? 'p-0 shadow-md' : 'p-0 hover:bg-stone-50/50'
         )}
-        onClick={onClick}
-        role={onClick ? 'button' : undefined}
-        tabIndex={onClick ? 0 : undefined}
       >
-        {/* Left Side: Icon */}
+        {/* Primary Row */}
         <div 
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-lg shadow-sm"
-          style={{ backgroundColor: category?.color ? `${category.color}20` : 'var(--color-bg-muted)', color: category?.color ?? 'var(--color-primary)' }}
+          className="flex items-center gap-3 p-2.5 cursor-pointer select-none"
+          onClick={() => setIsExpanded(!isExpanded)}
         >
-          {category?.icon ?? <MapPin className="h-5 w-5" />}
+          {/* Left Side: Icon */}
+          <div 
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-base shadow-sm"
+            style={{ backgroundColor: category?.color ? `${category.color}20` : 'var(--color-bg-muted)', color: category?.color ?? 'var(--color-primary)' }}
+          >
+            {category?.icon ?? <MapPin className="h-4 w-4" />}
+          </div>
+
+          {/* Middle: Name & Category */}
+          <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <h3 className="line-clamp-1 text-sm font-bold text-stone-800 tracking-tight">
+                {place.name}
+              </h3>
+              {isNext && (
+                <span className="flex items-center gap-1 rounded-full bg-teal-50 px-1.5 py-0.5 text-[9px] font-extrabold text-teal-700 uppercase">
+                  Next
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2 overflow-hidden">
+               {category && <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">{category.name}</span>}
+               {locationTags.length > 0 && (
+                 <span className="flex items-center gap-1 text-[10px] text-stone-300 font-medium">
+                   <MapPin className="w-2.5 h-2.5" />
+                   {locationTags[0]}
+                 </span>
+               )}
+               {hasSchedule && (
+                 <span className="flex items-center gap-1 border-l pl-2 text-[10px] text-teal-600/80 font-bold">
+                   <CalendarDays className="w-2.5 h-2.5" />
+                   {parseDate(place.visit_date)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                 </span>
+               )}
+            </div>
+          </div>
+
+          {/* Right Side: Quick Actions & Chevron */}
+          <div className="flex flex-shrink-0 items-center gap-2">
+             {!previewMode && (
+               <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
+                 <VoteButtons
+                    tripId={tripId}
+                    placeId={place.id}
+                    upvotes={voteSummary?.upvotes ?? 0}
+                    downvotes={voteSummary?.downvotes ?? 0}
+                    userVote={userVote}
+                    canVote={canVote}
+                    size="sm"
+                  />
+               </div>
+             )}
+             <div className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors">
+               {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+             </div>
+          </div>
         </div>
 
-        {/* Middle: Content */}
-        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <h3 className="line-clamp-1 text-sm font-bold text-stone-800 tracking-tight">
-              {place.name}
-            </h3>
-            {isNext && (
-              <span className="flex items-center gap-1 rounded-full bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-700 uppercase">
-                Next
-              </span>
+        {/* Expanded Content */}
+        {isExpanded && (
+          <div className="border-t border-stone-100 bg-white p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Address & Rating */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                {displayAddress && (
+                  <p className="flex items-start gap-1 text-xs text-stone-500 leading-snug max-w-md">
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-stone-400" />
+                    {displayAddress}
+                  </p>
+                )}
+                {(place.rating != null || place.price_level != null) && (
+                  <div className="flex items-center gap-3">
+                    {place.rating != null && <StarRating rating={place.rating} />}
+                    {place.price_level != null && <PriceDots level={place.price_level} />}
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-bold text-stone-600 hover:bg-stone-50 transition-colors shadow-sm"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                Details
+              </button>
+            </div>
+
+            {/* Schedule */}
+            {!previewMode && hasSchedule && (
+              <div
+                className="flex items-center gap-4 rounded-full border-2 border-teal-200 bg-teal-50 px-5 py-2.5 shadow-sm shadow-teal-900/5 max-w-fit"
+              >
+                <div className="flex items-center gap-2 text-xs font-extrabold text-teal-800">
+                  <CalendarDays className="h-4 w-4" />
+                  <span>
+                    {parseDate(place.visit_date)?.toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                    {place.visit_date_end && place.visit_date_end !== place.visit_date && (
+                      <> → {parseDate(place.visit_date_end)?.toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric'
+                      })}</>
+                    )}
+                  </span>
+                </div>
+                {place.visit_time_from && (
+                  <div className="flex items-center gap-3 border-l-[1.5px] border-teal-200 pl-4 text-xs font-extrabold text-teal-800">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {formatTime(place.visit_time_from)} {place.visit_time_to ? `– ${formatTime(place.visit_time_to)}` : '– ?'}
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
-            {category && <span className="text-[10px] text-stone-400 font-medium px-1.5 py-0.5 rounded-md bg-stone-100 uppercase tracking-wider">{category.name}</span>}
-          </div>
-          
-          <div className="flex items-center gap-3 flex-wrap">
-            {displayAddress && (
-              <p className="flex items-center gap-1 text-[11px] text-stone-400 line-clamp-1">
-                <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
-                {displayAddress}
-              </p>
+
+            {/* Note */}
+            {place.note && (
+              <div className="flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50/30 p-3 shadow-sm border-l-4 border-l-amber-400">
+                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-amber-700/70">
+                  <NotebookPen className="w-3 h-3" />
+                  Note
+                </div>
+                <p className="text-[11px] text-stone-600 leading-relaxed italic line-clamp-3">
+                  {place.note}
+                </p>
+              </div>
             )}
-            {(place.rating != null || place.price_level != null) && (
-              <div className="flex items-center gap-2 border-l pl-2 ml-1 first:border-l-0 first:pl-0 first:ml-0" style={{ borderColor: 'var(--color-border)' }}>
-                {place.rating != null && <StarRating rating={place.rating} />}
-                {place.price_level != null && <PriceDots level={place.price_level} />}
+
+            {/* Actions Footer */}
+            {!previewMode && (
+              <div className="flex flex-col gap-3 pt-2">
+                <PlaceMapLinks place={place} className="w-full justify-start" />
+                
+                <div className="flex items-center justify-between">
+                  {/* Vote Buttons (Mobile visibility or secondary access) */}
+                  <div className="sm:hidden">
+                    <VoteButtons
+                      tripId={tripId}
+                      placeId={place.id}
+                      upvotes={voteSummary?.upvotes ?? 0}
+                      downvotes={voteSummary?.downvotes ?? 0}
+                      userVote={userVote}
+                      canVote={canVote}
+                      size="sm"
+                    />
+                  </div>
+                  <div className="hidden sm:block" /> {/* Align tags to right */}
+
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-end gap-1 px-1">
+                      {tags.map((name) => (
+                        <span
+                          key={name}
+                          className="inline-flex items-center gap-0.5 rounded-full border border-teal-100 bg-white px-2 py-0.5 text-[10px] font-bold text-teal-600 shadow-sm"
+                        >
+                          <span className="opacity-70">#</span>
+                          {name.toUpperCase()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </div>
-
-        {/* Right Side: Actions */}
-        <div className="flex flex-shrink-0 items-center gap-3" onClick={(e) => e.stopPropagation()}>
-          {!previewMode && (
-            <VoteButtons
-              tripId={tripId}
-              placeId={place.id}
-              upvotes={voteSummary?.upvotes ?? 0}
-              downvotes={voteSummary?.downvotes ?? 0}
-              userVote={userVote}
-              canVote={canVote}
-              size="sm"
-            />
-          )}
-        </div>
+        )}
       </div>
     );
   }
@@ -210,26 +345,35 @@ export function PlaceCard({
         {/* Schedule: Teal Pill Style */}
         {!previewMode && hasSchedule && (
           <div
-            className="flex items-center gap-3 rounded-full border-2 border-teal-200 bg-teal-50 px-5 py-3 shadow-sm shadow-teal-900/5"
+            className="flex items-center gap-4 rounded-full border-2 border-teal-200 bg-teal-50 px-5 py-3 shadow-sm shadow-teal-900/5"
           >
             <div className="flex items-center gap-2 text-xs font-extrabold text-teal-800">
               <CalendarDays className="h-4.5 w-4.5" />
               <span>
-                {new Date(place.visit_date + 'T00:00:00').toLocaleDateString(undefined, {
+                {parseDate(place.visit_date)?.toLocaleDateString(undefined, {
                   weekday: 'short',
                   month: 'short',
                   day: 'numeric'
                 })}
+                {place.visit_date_end && place.visit_date_end !== place.visit_date && (
+                  <> → {parseDate(place.visit_date_end)?.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric'
+                  })}</>
+                )}
               </span>
             </div>
-            {place.visit_time_from && (
-              <div className="flex items-center gap-2 border-l-2 border-teal-200/50 pl-3.5 text-xs font-extrabold text-teal-800">
-                <Clock className="h-4.5 w-4.5" />
-                <span>
-                  {place.visit_time_from} {place.visit_time_to ? `– ${place.visit_time_to}` : '– ?'}
-                </span>
-              </div>
-            )}
+                {place.visit_time_from && (
+                  <>
+                    <div className="w-[1.5px] h-3.5 bg-teal-200/60" />
+                    <div className="flex items-center gap-2 text-xs font-extrabold text-teal-800">
+                      <Clock className="h-4.5 w-4.5" />
+                      <span>
+                        {formatTime(place.visit_time_from)} {place.visit_time_to ? `– ${formatTime(place.visit_time_to)}` : '– ?'}
+                      </span>
+                    </div>
+                  </>
+                )}
           </div>
         )}
 
