@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Tag as TagIcon, X, Trash2, CheckSquare, MapPin } from 'lucide-react';
+import { Plus, Tag as TagIcon, X, Trash2, CheckSquare, MapPin, Grid, List } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, TripRole, PlaceComment, PlaceExpenseHistoryEntry, Tag } from '@/lib/types';
 import { CategoryList } from '@/components/categories/category-list';
 import { AddCategoryForm } from '@/components/categories/add-category-form';
@@ -13,6 +13,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { deletePlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { cn } from '@/lib/utils';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { TRIP_TIMEZONE } from '@/lib/date';
 
@@ -88,6 +89,7 @@ export function PlacesSection({
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
   const loadingToast = useLoadingToast();
 
   const editor = canEdit(role);
@@ -282,6 +284,29 @@ export function PlacesSection({
                     <CheckSquare className="h-4 w-4" />
                     <span className="hidden md:ml-2 md:inline">Select</span>
                   </button>
+
+                  <div className="ml-auto hidden items-center gap-1 rounded-[1.1rem] border p-1 md:flex" style={{ borderColor: 'var(--color-border)' }}>
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
+                        viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                      )}
+                      title="Grid view"
+                    >
+                      <Grid className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
+                        viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                      )}
+                      title="Compact view"
+                    >
+                      <List className="h-4 w-4" />
+                    </button>
+                  </div>
                 </>
               )}
               {selectMode && (
@@ -381,6 +406,29 @@ export function PlacesSection({
                 <span>+ Category</span>
               </button>
             )}
+
+            <div className="flex flex-shrink-0 items-center gap-1 rounded-full border p-1 md:hidden" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(255,255,255,0.8)' }}>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full transition-all",
+                  viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
+                )}
+                aria-label="Grid view"
+              >
+                <Grid className="h-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('compact')}
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full transition-all",
+                  viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
+                )}
+                aria-label="Compact view"
+              >
+                <List className="h-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -413,6 +461,7 @@ export function PlacesSection({
         tripStartDate={tripStartDate}
         tripEndDate={tripEndDate}
         previewMode={previewMode}
+        viewMode={viewMode}
         onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
         onPlaceDeleted={handlePlaceDeleted}
         selectMode={selectMode}

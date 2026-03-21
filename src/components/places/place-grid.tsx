@@ -5,6 +5,7 @@ import { MapPin, Plus } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry, Tag } from '@/lib/types';
 import { PlaceCard } from './place-card';
 import { extractLocationTag } from '@/lib/address';
+import { cn } from '@/lib/utils';
 import { PlaceDetailDrawer } from './place-detail-drawer';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 
@@ -38,6 +39,7 @@ interface PlaceGridProps {
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (placeId: string) => void;
+  viewMode?: 'grid' | 'compact';
 }
 
 export function PlaceGrid({
@@ -70,6 +72,7 @@ export function PlaceGrid({
   selectMode = false,
   selectedIds,
   onToggleSelect,
+  viewMode = 'grid',
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -168,7 +171,10 @@ export function PlaceGrid({
               )}
 
               {/* Responsive grid: 1 col mobile, 2 on md, 3 on lg */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={cn(
+                "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
+                viewMode === 'compact' && "gap-3 md:grid-cols-3 lg:grid-cols-4"
+              )}>
                 {catPlaces.map((place) => {
                   const isSelected = selectedIds?.has(place.id) ?? false;
                   return (
@@ -202,6 +208,7 @@ export function PlaceGrid({
                         canVote={!selectMode && canVote}
                         isNext={place.id === nextPlaceId}
                         previewMode={previewMode}
+                        compact={viewMode === 'compact'}
                         tags={(placeTagIds[place.id] ?? []).map((id) => tagNameMap[id]).filter(Boolean)}
                         onClick={
                           previewMode

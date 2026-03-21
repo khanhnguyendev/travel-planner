@@ -23,6 +23,7 @@ interface PlaceCardProps {
   onClick?: () => void;
   onLocationTagClick?: (tag: string) => void;
   tags?: string[]; // tag names for display
+  compact?: boolean;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -73,6 +74,7 @@ export function PlaceCard({
   onClick,
   onLocationTagClick,
   tags = [],
+  compact = false,
 }: PlaceCardProps) {
   const hasSchedule = place.visit_date || place.visit_time_from;
   const meta = place.metadata_json as {
@@ -90,7 +92,8 @@ export function PlaceCard({
       className={cn(
         'section-shell flex flex-col cursor-pointer overflow-hidden',
         'hover:-translate-y-1 hover:shadow-xl transition-all',
-        isNext && 'ring-2 ring-teal-500 ring-offset-2'
+        isNext && 'ring-2 ring-teal-500 ring-offset-2',
+        compact && 'hover:-translate-y-0.5'
       )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -108,7 +111,7 @@ export function PlaceCard({
         style={{ backgroundColor: category?.color ?? 'var(--color-primary)' }}
       />
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className={cn("flex flex-1 flex-col gap-3", compact ? "p-3 gap-2" : "p-4 gap-3")}>
         {/* "Next stop" badge */}
         {isNext && (
           <div className="flex w-fit items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 animate-pulse">
@@ -144,10 +147,14 @@ export function PlaceCard({
             {tags.map((name) => (
               <span
                 key={name}
-                className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium"
-                style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                className="inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-black/[0.02] sm:text-xs"
+                style={{
+                  borderColor: 'var(--color-primary-mid)',
+                  color: 'var(--color-primary)',
+                  backgroundColor: 'white'
+                }}
               >
-                {name}
+                #{name}
               </span>
             ))}
           </div>
@@ -176,14 +183,14 @@ export function PlaceCard({
         )}
 
         {/* Editorial summary */}
-        {place.editorial_summary && (
+        {place.editorial_summary && !compact && (
           <p className="text-xs leading-relaxed line-clamp-2 text-stone-400">
             {place.editorial_summary}
           </p>
         )}
 
         {/* Note + comment previews */}
-        {!previewMode && (place.note || comments.length > 0) && (
+        {!previewMode && !compact && (place.note || comments.length > 0) && (
           <div className="flex flex-col gap-1">
             {place.note && (
               <p className="flex items-start gap-1.5 text-xs text-amber-700 leading-snug line-clamp-2">
