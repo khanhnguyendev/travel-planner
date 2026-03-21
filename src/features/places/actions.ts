@@ -169,7 +169,7 @@ export async function checkInPlace(
   let downstreamCount = 0;
 
   if (place.visit_date && place.visit_time_from) {
-    const plannedTs = new Date(`${place.visit_date}T${place.visit_time_from}:00`).getTime();
+    const plannedTs = new Date(`${place.visit_date}T${place.visit_time_from}:00+07:00`).getTime();
     const actualTs = new Date(checkinAt).getTime();
     delayMinutes = Math.round((actualTs - plannedTs) / 60_000);
 

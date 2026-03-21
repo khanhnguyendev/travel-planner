@@ -11,6 +11,7 @@ import { Car, Bus, Plane } from 'lucide-react';
 import { formatCurrency, formatNumericInput, parseNumericInput } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useLoadingToast } from '@/components/ui/toast';
+import { getTripTodayKey, formatInTripTimezone } from '@/lib/date';
 
 // -------------------------------------------------------
 // Constants
@@ -170,7 +171,7 @@ export function ExpenseForm({ tripId, members, currentUserId, places = [], trans
   const [amount, setAmount] = useState(expense ? String(expense.amount) : '');
   const [currency, setCurrency] = useState<Currency>((expense?.currency as Currency) ?? 'VND');
   const [expenseDate, setExpenseDate] = useState(
-    expense?.expense_date ? expense.expense_date.slice(0, 10) : new Date().toISOString().slice(0, 10)
+    expense?.expense_date ? expense.expense_date.slice(0, 10) : getTripTodayKey()
   );
   const [note, setNote] = useState(expense?.note ?? '');
   const [paidByUserId, setPaidByUserId] = useState(expense?.paid_by_user_id ?? currentUserId);
@@ -564,7 +565,7 @@ function updateSplitAmount(index: number, value: string) {
                 {transportBookings.map((b) => {
                   const typeLabel = b.transport_type === 'rent' ? 'Car rental' : b.transport_type === 'bus' ? 'Bus' : 'Flight';
                   const route = b.from_location && b.to_location ? ` · ${b.from_location} → ${b.to_location}` : '';
-                  const date = b.departure_date ? ` · ${new Date(`${b.departure_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '';
+                  const date = b.departure_date ? ` · ${formatInTripTimezone(new Date(`${b.departure_date}T00:00:00+07:00`), { month: 'short', day: 'numeric' })}` : '';
                   return (
                     <option key={b.id} value={b.id}>
                       {typeLabel}{b.provider ? ` – ${b.provider}` : ''}{route}{date}
@@ -584,7 +585,7 @@ function updateSplitAmount(index: number, value: string) {
                     <p className="mt-1 text-xs">{selectedTransport.from_location} → {selectedTransport.to_location}</p>
                   )}
                   {selectedTransport.departure_date && (
-                    <p className="text-xs">{new Date(`${selectedTransport.departure_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <p className="text-xs">{formatInTripTimezone(new Date(`${selectedTransport.departure_date}T00:00:00+07:00`), { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                   )}
                 </>
               ) : (
@@ -622,7 +623,7 @@ function updateSplitAmount(index: number, value: string) {
                 {places.map((place) => (
                   <option key={place.id} value={place.id}>
                     {place.name}
-                    {place.visit_date ? ` · ${new Date(`${place.visit_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}
+                    {place.visit_date ? ` · ${formatInTripTimezone(new Date(`${place.visit_date}T00:00:00+07:00`), { month: 'short', day: 'numeric' })}` : ''}
                   </option>
                 ))}
               </select>
@@ -636,7 +637,7 @@ function updateSplitAmount(index: number, value: string) {
                   </p>
                   <p className="mt-1 text-xs">
                     {selectedPlace.visit_date
-                      ? `Scheduled for ${new Date(`${selectedPlace.visit_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      ? `Scheduled for ${formatInTripTimezone(new Date(`${selectedPlace.visit_date}T00:00:00+07:00`), { month: 'short', day: 'numeric', year: 'numeric' })}`
                       : 'No visit schedule set yet'}
                   </p>
                 </>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { formatInTripTimezone, getTripNow } from '@/lib/date';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -56,10 +57,10 @@ export function NavClock() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const today = new Date();
-  const todayYear = today.getFullYear();
-  const todayMonth = today.getMonth();
-  const todayDay = today.getDate();
+  const today = getTripNow();
+  const todayYear = today.getUTCFullYear();
+  const todayMonth = today.getUTCMonth();
+  const todayDay = today.getUTCDate();
 
   function prevMonth() {
     if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
@@ -104,8 +105,8 @@ export function NavClock() {
     return <div className="hidden md:block w-36 h-8" />;
   }
 
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  const dateStr = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr = formatInTripTimezone(now, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const dateStr = formatInTripTimezone(now, { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
     <div ref={ref} className="hidden md:flex flex-col items-center relative">

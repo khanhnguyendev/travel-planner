@@ -26,6 +26,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { formatCurrency, formatDateTime, formatDate, formatFullDateTime } from '@/lib/format';
 import type { ActivityEntry } from '@/features/activity/queries';
 import { cn } from '@/lib/utils';
+import { getTripNow, getTripTodayKey, formatInTripTimezone } from '@/lib/date';
 
 interface ActivityFeedProps {
   activities: ActivityEntry[];
@@ -52,7 +53,7 @@ function fmtAmount(amount: unknown, currency: unknown): string {
 
 function fmtDate(dateStr: unknown): string {
   if (typeof dateStr !== 'string') return '';
-  return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  return formatInTripTimezone(new Date(dateStr), { month: 'short', day: 'numeric' });
 }
 
 function getString(meta: Record<string, unknown> | null, key: string): string | null {
@@ -412,15 +413,18 @@ function getDetailNote(entry: ActivityEntry): string | null {
 // -------------------------------------------------------
 
 function dayLabel(dateStr: string): string {
-  const d = new Date(dateStr);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  const d = formatInTripTimezone(new Date(dateStr), { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const today = getTripTodayKey();
+  
+  const dDate = new Date(dateStr);
+  const yesterday = getTripNow();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayKey = yesterday.toISOString().split('T')[0];
 
-  const fmt = (dt: Date) => dt.toDateString();
-  if (fmt(d) === fmt(today)) return 'Today';
-  if (fmt(d) === fmt(yesterday)) return 'Yesterday';
-  return d.toLocaleDateString('en', { weekday: 'long', month: 'short', day: 'numeric' });
+  if (d === today) return 'Today';
+  if (d === yesterdayKey) return 'Yesterday';
+  
+  return formatInTripTimezone(new Date(dateStr), { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
 // -------------------------------------------------------

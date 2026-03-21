@@ -14,6 +14,7 @@ import { deletePlace } from '@/features/places/actions';
 import { useLoadingToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
+import { TRIP_TIMEZONE } from '@/lib/date';
 
 interface PlacesSectionProps {
   tripId: string;
@@ -172,7 +173,7 @@ export function PlacesSection({
       if (!place.visit_date || !place.visit_time_from) continue;
       const [hours, minutes] = place.visit_time_from.split(':').map(Number);
       const timestamp = new Date(
-        `${place.visit_date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00+07:00`
+        `${place.visit_date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00${TRIP_TIMEZONE === 'Asia/Ho_Chi_Minh' ? '+07:00' : ''}`
       ).getTime();
       const diff = timestamp - Date.now();
       if (diff > 0 && diff < closestDiff) {

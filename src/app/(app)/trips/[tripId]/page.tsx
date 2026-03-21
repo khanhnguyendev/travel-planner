@@ -25,7 +25,7 @@ import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '@/lib/format';
-import { getTripDurationLabel } from '@/lib/date';
+import { getTripDurationLabel, getTripNow, getTripTodayKey } from '@/lib/date';
 import { normalizePublicStorageUrl } from '@/lib/storage';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
@@ -95,22 +95,18 @@ function VisibilityBadge({ visibility }: { visibility: Visibility }) {
 
 function getTripPhase(trip: { start_date: string | null; end_date: string | null; status: string }) {
   if (trip.status === 'archived') return 'Archived';
-  const today = new Date();
-  const start = trip.start_date ? new Date(`${trip.start_date}T00:00:00`) : null;
-  const end = trip.end_date ? new Date(`${trip.end_date}T23:59:59`) : null;
+  const now = getTripNow();
+  // Construct dates for comparison using the same "local" components
+  const todayStr = getTripTodayKey();
+  const start = trip.start_date || '';
+  const end = trip.end_date || '';
 
-  if (start && end && today >= start && today <= end) return 'Traveling';
-  if (start && today < start) return 'Planning';
-  if (end && today > end) return 'Wrapped';
+  if (start && end && todayStr >= start && todayStr <= end) return 'Traveling';
+  if (start && todayStr < start) return 'Planning';
+  if (end && todayStr > end) return 'Wrapped';
   return 'Planning';
 }
 
-function getLocalDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 function timeToMinutes(value: string | null, fallback: number) {
   if (!value) return fallback;
@@ -132,9 +128,9 @@ function getStopPointers(places: Place[]) {
     return { previous: null, current: null, next: null };
   }
 
-  const now = new Date();
-  const todayKey = getLocalDateKey(now);
-  const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+  const now = getTripNow();
+  const todayKey = getTripTodayKey();
+  const currentMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
   const activeTodayIndex = scheduledPlaces.findIndex((place) => {
     if (place.visit_date !== todayKey) return false;

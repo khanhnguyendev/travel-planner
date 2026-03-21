@@ -13,6 +13,7 @@ import { PlaceExpenseSummary } from '@/components/places/place-expense-summary';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { getTripTodayKey, getTripNow, formatInTripTimezone } from '@/lib/date';
 
 interface AccommodationSectionProps {
   places: Place[];
@@ -33,22 +34,15 @@ interface AccommodationSectionProps {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
+  return formatInTripTimezone(new Date(dateStr + 'T00:00:00+07:00'), {
     weekday: 'short', month: 'short', day: 'numeric',
   });
 }
 
-function getTodayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 function getAccommodationStatus(place: Place): 'current' | 'upcoming' | 'completed' {
-  const now = Date.now();
-  const todayKey = getTodayKey();
+  const now = getTripNow().getTime();
+  const todayKey = getTripTodayKey();
 
   if (place.actual_checkin_at) {
     const actualCheckin = new Date(place.actual_checkin_at).getTime();

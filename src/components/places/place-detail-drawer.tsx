@@ -19,6 +19,7 @@ import { PlaceExpenseHistory } from '@/components/places/place-expense-history';
 import { RefreshOverlay } from '@/components/ui/refresh-overlay';
 import { emitTripSectionRefresh, useTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
+import { formatInTripTimezone } from '@/lib/date';
 
 interface PlaceDetailDrawerProps {
   place: Place;
@@ -83,7 +84,7 @@ function ReviewCard({ review }: { review: PlaceReview }) {
           </p>
           {review.published_at && (
             <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-              {new Date(review.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
+              {formatInTripTimezone(new Date(review.published_at), { year: 'numeric', month: 'short' })}
             </p>
           )}
         </div>
@@ -197,9 +198,9 @@ function ScheduleEditor({
             {savedDate && (
               <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
                 <CalendarDays className="w-3.5 h-3.5" />
-                {new Date(savedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {formatInTripTimezone(new Date(savedDate + 'T00:00:00+07:00'), { month: 'short', day: 'numeric', year: 'numeric' })}
                 {savedDateEnd && savedDateEnd !== savedDate && (
-                  <> → {new Date(savedDateEnd + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                  <> → {formatInTripTimezone(new Date(savedDateEnd + 'T00:00:00+07:00'), { month: 'short', day: 'numeric', year: 'numeric' })}</>
                 )}
               </span>
             )}
@@ -505,7 +506,7 @@ function CommentsSection({
                     {commentAuthors[c.user_id] ?? 'Member'}
                   </span>
                   <span className="text-xs text-stone-400">
-                    {new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {formatInTripTimezone(new Date(c.created_at), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <p className="text-sm text-stone-700 leading-relaxed">{c.body}</p>

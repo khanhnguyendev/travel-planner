@@ -10,6 +10,7 @@ import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { getTripNow, formatInTripTimezone, TRIP_TIMEZONE } from '@/lib/date';
 
 interface CheckInOutButtonProps {
   place: Place;
@@ -21,8 +22,16 @@ interface CheckInOutButtonProps {
 type Step = 'idle' | 'picking-checkin' | 'picking-checkout' | 'cascade-prompt';
 
 function toLocalDatetimeValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  // Use formatToParts to get YYYY-MM-DDTHH:mm for datetime-local input
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: TRIP_TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(date);
+  const get = (type: string) => parts.find(p => p.type === type)!.value;
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 }
 
 export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = true }: CheckInOutButtonProps) {
@@ -230,7 +239,8 @@ export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = t
             type="button"
             disabled={loading || !datetimeValue}
             onClick={() => {
-              const iso = new Date(datetimeValue).toISOString();
+              // datetimeValue is "YYYY-MM-DDTHH:mm" in Vietnam time
+              const iso = new Date(datetimeValue + ':00+07:00').toISOString();
               if (isIn) submitCheckin(iso);
               else submitCheckout(iso);
             }}
@@ -265,7 +275,7 @@ export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = t
           <div className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-teal-100 bg-teal-50 px-3 text-[11px] font-bold text-teal-700">
             <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse" />
             IN {place.actual_checkin_at
-              ? new Date(place.actual_checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              ? formatInTripTimezone(new Date(place.actual_checkin_at), { hour: '2-digit', minute: '2-digit' })
               : ''}
           </div>
           <button
@@ -285,11 +295,11 @@ export function CheckInOutButton({ place, allDayPlaces, tripId, affectsStops = t
       {isCheckedOut && (
         <div className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-100 px-3 text-[11px] font-bold text-stone-600">
           ✓ DONE · {place.actual_checkin_at
-            ? new Date(place.actual_checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            ? formatInTripTimezone(new Date(place.actual_checkin_at), { hour: '2-digit', minute: '2-digit' })
             : '?'}
           {' → '}
           {place.actual_checkout_at
-            ? new Date(place.actual_checkout_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            ? formatInTripTimezone(new Date(place.actual_checkout_at), { hour: '2-digit', minute: '2-digit' })
             : '?'}
         </div>
       )}

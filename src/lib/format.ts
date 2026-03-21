@@ -1,3 +1,5 @@
+import { TRIP_TIMEZONE } from './date';
+
 /**
  * Format a numeric amount as a currency string.
  * @param amount  The numeric amount (e.g. 12.5)
@@ -56,6 +58,7 @@ export function formatTime(date: string | Date): string {
   return new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: TRIP_TIMEZONE,
   }).format(d);
 }
 
@@ -70,6 +73,7 @@ export function formatDateTime(
     ...(includeYear ? { year: 'numeric' as const } : {}),
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: TRIP_TIMEZONE,
   }).format(d);
 }
 
@@ -90,6 +94,7 @@ export function formatDate(date: string | Date): string {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: TRIP_TIMEZONE,
   }).format(d);
 }
 
@@ -105,5 +110,6 @@ export function formatFullDateTime(date: string | Date): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: TRIP_TIMEZONE,
   }).format(d);
 }

@@ -34,6 +34,7 @@ export interface Trip {
   budget: number | null;
   budget_currency: string;
   budget_payer_user_id: string | null;
+  locations: string[];
   created_at: string;
   updated_at: string;
 }
@@ -61,6 +62,15 @@ export interface TripInvite {
 }
 
 export type CategoryType = 'general' | 'accommodation';
+
+export interface Tag {
+  id: string;
+  trip_id: string;
+  name: string;
+  color: string | null;
+  is_auto: boolean;
+  created_at: string;
+}
 
 export interface Category {
   id: string;
@@ -249,7 +259,7 @@ export type Database = {
       };
       trips: {
         Row: R<Trip>;
-        Insert: R<Omit<Trip, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status' | 'budget' | 'budget_currency' | 'budget_payer_user_id'> & {
+        Insert: R<Omit<Trip, 'id' | 'created_at' | 'updated_at' | 'cover_image_url' | 'status' | 'budget' | 'budget_currency' | 'budget_payer_user_id' | 'locations'> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
@@ -258,6 +268,7 @@ export type Database = {
           budget?: number | null;
           budget_currency?: string;
           budget_payer_user_id?: string | null;
+          locations?: string[];
         }>;
         Update: R<Partial<Omit<Trip, 'id' | 'created_at'>>>;
         Relationships: [];
@@ -288,6 +299,22 @@ export type Database = {
           category_type?: CategoryType;
         }>;
         Update: R<Partial<Omit<Category, 'id' | 'created_at'>>>;
+        Relationships: [];
+      };
+      tags: {
+        Row: R<Tag>;
+        Insert: R<Omit<Tag, 'id' | 'created_at' | 'is_auto'> & {
+          id?: string;
+          created_at?: string;
+          is_auto?: boolean;
+        }>;
+        Update: R<Partial<Omit<Tag, 'id' | 'created_at'>>>;
+        Relationships: [];
+      };
+      place_tags: {
+        Row: R<{ place_id: string; tag_id: string }>;
+        Insert: R<{ place_id: string; tag_id: string }>;
+        Update: R<Partial<{ place_id: string; tag_id: string }>>;
         Relationships: [];
       };
       places: {
