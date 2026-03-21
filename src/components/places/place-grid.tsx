@@ -39,7 +39,7 @@ interface PlaceGridProps {
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (placeId: string) => void;
-  viewMode?: 'grid' | 'compact';
+  viewMode?: 'card' | 'list';
 }
 
 export function PlaceGrid({
@@ -72,7 +72,7 @@ export function PlaceGrid({
   selectMode = false,
   selectedIds,
   onToggleSelect,
-  viewMode = 'grid',
+  viewMode = 'card',
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -145,8 +145,10 @@ export function PlaceGrid({
       <div className="space-y-8">
         {Array.from(grouped.entries()).map(([catId, catPlaces]) => {
           const cat = categoryMap[catId] ?? null;
+          const isList = viewMode === 'list';
+
           return (
-            <div key={catId}>
+            <div key={catId} className="w-full">
               {/* Category header — only show when no specific category is filtered or multi-categories shown */}
               {selectedCategoryIds.size !== 1 && cat && (
                 <div className="mb-4 flex items-center gap-2">
@@ -170,10 +172,11 @@ export function PlaceGrid({
                 </div>
               )}
 
-              {/* Responsive grid: 1 col mobile, 2 on md, 3 on lg */}
+              {/* View mode transition: Card Grid vs List Row */}
               <div className={cn(
-                "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
-                viewMode === 'compact' && "gap-3 md:grid-cols-3 lg:grid-cols-4"
+                isList 
+                  ? "flex flex-col gap-3" 
+                  : "grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8"
               )}>
                 {catPlaces.map((place) => {
                   const isSelected = selectedIds?.has(place.id) ?? false;
@@ -208,7 +211,7 @@ export function PlaceGrid({
                         canVote={!selectMode && canVote}
                         isNext={place.id === nextPlaceId}
                         previewMode={previewMode}
-                        compact={viewMode === 'compact'}
+                        viewMode={viewMode}
                         tags={(placeTagIds[place.id] ?? []).map((id) => tagNameMap[id]).filter(Boolean)}
                         onClick={
                           previewMode

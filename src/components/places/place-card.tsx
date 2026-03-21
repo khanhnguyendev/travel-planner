@@ -210,10 +210,10 @@ export function PlaceCard({
         {/* Schedule: Teal Pill Style */}
         {!previewMode && hasSchedule && (
           <div
-            className="flex items-center gap-3 rounded-full border border-teal-100 bg-teal-50/50 px-4 py-2.5 shadow-sm"
+            className="flex items-center gap-3 rounded-full border-2 border-teal-200 bg-teal-50 px-5 py-3 shadow-sm shadow-teal-900/5"
           >
-            <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700">
-              <CalendarDays className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-xs font-extrabold text-teal-800">
+              <CalendarDays className="h-4.5 w-4.5" />
               <span>
                 {new Date(place.visit_date + 'T00:00:00').toLocaleDateString(undefined, {
                   weekday: 'short',
@@ -223,8 +223,8 @@ export function PlaceCard({
               </span>
             </div>
             {place.visit_time_from && (
-              <div className="flex items-center gap-1.5 border-l border-teal-200 pl-3 text-xs font-bold text-teal-700">
-                <Clock className="h-4 w-4" />
+              <div className="flex items-center gap-2 border-l-2 border-teal-200/50 pl-3.5 text-xs font-extrabold text-teal-800">
+                <Clock className="h-4.5 w-4.5" />
                 <span>
                   {place.visit_time_from} {place.visit_time_to ? `– ${place.visit_time_to}` : '– ?'}
                 </span>
@@ -233,11 +233,17 @@ export function PlaceCard({
           </div>
         )}
 
-        {/* Note */}
+        {/* Note - Stylized for clarity */}
         {place.note && (
-          <p className="text-xs text-stone-500 leading-snug line-clamp-2 italic bg-stone-50 p-2 rounded-lg border border-stone-100/50">
-            {place.note}
-          </p>
+          <div className="flex flex-col gap-1.5 rounded-2xl border border-amber-200 bg-amber-50/30 p-4 shadow-sm border-l-4 border-l-amber-400">
+            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-700/70">
+              <NotebookPen className="w-3.5 h-3.5" />
+              Note
+            </div>
+            <p className="text-[13px] text-stone-700 leading-relaxed italic line-clamp-3">
+              {place.note}
+            </p>
+          </div>
         )}
 
         {/* Spacer */}
