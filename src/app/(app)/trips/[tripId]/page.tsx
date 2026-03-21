@@ -29,6 +29,7 @@ import { formatDate } from '@/lib/format';
 import { getTripDurationLabel, getTripNow, getTripTodayKey } from '@/lib/date';
 import { normalizePublicStorageUrl } from '@/lib/storage';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
+import { RecentTransactionsList } from '@/components/expenses/recent-transactions-list';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
@@ -736,40 +737,24 @@ export default async function TripDetailPage({
               )}
 
               <div className="mt-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="mb-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
-                    Recent transactions
+                    Spending history
                   </p>
-                  {isMember && recentExpenses.length > 0 && (
-                    <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                      Last {Math.min(recentExpenses.length, 5)}
-                    </span>
-                  )}
                 </div>
 
                 {!isMember ? (
                   <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                     Spending stays inside the crew workspace. Join the trip to review recent transactions and balances.
                   </div>
-                ) : recentExpenses.length === 0 ? (
-                  <div className="rounded-[1.25rem] bg-white/70 px-4 py-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                    No transactions yet. Add income or log the first shared expense to start the trip ledger.
-                  </div>
                 ) : (
-                  <div className="space-y-2">
-                    {recentExpenses.map((expense, index) => (
-                      <ExpenseSummaryCard
-                        key={expense.id}
-                        expense={expense}
-                        linkedPlaceName={expense.place_id ? placeNameById[expense.place_id] ?? null : null}
-                        linkedTransportName={expense.transport_booking_id ? transportNameById[expense.transport_booking_id] ?? null : null}
-                        linkedTransportType={expense.transport_booking_id ? transportTypeById[expense.transport_booking_id] ?? null : null}
-                        href={`/trips/${tripId}/expenses/${expense.id}`}
-                        compact
-                        className={index >= 3 ? 'hidden lg:block' : undefined}
-                      />
-                    ))}
-                  </div>
+                  <RecentTransactionsList
+                    expenses={recentExpenses}
+                    placeNameById={placeNameById}
+                    transportNameById={transportNameById}
+                    transportTypeById={transportTypeById}
+                    tripId={tripId}
+                  />
                 )}
               </div>
             </div>
