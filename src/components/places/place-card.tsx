@@ -181,95 +181,77 @@ export function PlaceCard({
         }
       }}
     >
-      {/* Top accent bar */}
-      <div
-        className="h-1.5"
-        style={{ backgroundColor: category?.color ?? 'var(--color-primary)' }}
-      />
-
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        {/* Header: Clear Icon Indicator */}
-        <div className="flex items-center justify-between gap-2">
-          <div 
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-lg shadow-sm"
-            style={{ backgroundColor: category?.color ? `${category.color}15` : 'var(--color-bg-muted)', color: category?.color ?? 'var(--color-primary)' }}
-          >
-            {category?.icon ?? <MapPin className="h-5 w-5" />}
-          </div>
-          <div className="flex flex-1 flex-wrap items-center justify-end gap-1">
-             {isNext && (
-              <div className="flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[9px] font-bold text-teal-700 uppercase animate-pulse">
-                <Navigation className="w-2.5 h-2.5" />
-                Next
-              </div>
-            )}
-             {category && <CategoryBadge category={category} size="xs" />}
-          </div>
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        {/* Header: Category Badge + Location Context */}
+        <div className="flex flex-wrap items-center gap-2">
+          {category && <CategoryBadge category={category} size="sm" />}
+          {locationTags.length > 0 && (
+            <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-100/50">
+              <MapPin className="h-3.5 w-3.5" />
+              <span>{locationTags[0]}</span>
+            </div>
+          )}
         </div>
 
-        {/* Place name */}
-        <div className="min-h-[2.2rem]">
-          <h3 className="line-clamp-2 text-sm font-bold leading-tight text-stone-800 tracking-tight">
+        {/* Place name & Address */}
+        <div className="space-y-1">
+          <h3 className="line-clamp-2 text-lg font-bold leading-tight text-stone-800 tracking-tight">
             {place.name}
           </h3>
 
           {displayAddress && (
-            <p className="flex items-start gap-1 text-[10px] leading-snug line-clamp-1 text-stone-400 mt-0.5">
-              <MapPin className="w-2.5 h-2.5 mt-0.5 flex-shrink-0" />
+            <p className="flex items-start gap-1 text-xs leading-snug line-clamp-1 text-stone-400">
+              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
               {displayAddress}
             </p>
           )}
         </div>
 
-        {/* Rating + price */}
-        {(place.rating != null || place.price_level != null) && (
-          <div className="flex items-center gap-3">
-            {place.rating != null && <StarRating rating={place.rating} />}
-            {place.price_level != null && <PriceDots level={place.price_level} />}
-          </div>
-        )}
-
-        {/* Note - User wants to see this */}
-        {place.note && (
-          <p className="flex items-start gap-1.5 text-[10px] text-amber-700 leading-snug line-clamp-2 italic bg-amber-50/50 p-1.5 rounded-lg border border-amber-100/50">
-            <NotebookPen className="w-2.5 h-2.5 mt-0.5 flex-shrink-0 opacity-70" />
-            {place.note}
-          </p>
-        )}
-
-        {/* Schedule - Full Date */}
+        {/* Schedule: Teal Pill Style */}
         {!previewMode && hasSchedule && (
           <div
-            className="flex items-center gap-2 flex-wrap rounded-lg border-l-2 px-2 py-1.5"
-            style={{ backgroundColor: '#F0FDFA', borderLeftColor: '#0D9488' }}
+            className="flex items-center gap-3 rounded-full border border-teal-100 bg-teal-50/50 px-4 py-2.5 shadow-sm"
           >
-            {place.visit_date && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700">
-                <CalendarDays className="w-3 h-3" />
+            <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700">
+              <CalendarDays className="h-4 w-4" />
+              <span>
                 {new Date(place.visit_date + 'T00:00:00').toLocaleDateString(undefined, {
                   weekday: 'short',
                   month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
+                  day: 'numeric'
                 })}
               </span>
+            </div>
+            {place.visit_time_from && (
+              <div className="flex items-center gap-1.5 border-l border-teal-200 pl-3 text-xs font-bold text-teal-700">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {place.visit_time_from} {place.visit_time_to ? `– ${place.visit_time_to}` : '– ?'}
+                </span>
+              </div>
             )}
-            <CheckInStatusBadge place={place} />
           </div>
+        )}
+
+        {/* Note */}
+        {place.note && (
+          <p className="text-xs text-stone-500 leading-snug line-clamp-2 italic bg-stone-50 p-2 rounded-lg border border-stone-100/50">
+            {place.note}
+          </p>
         )}
 
         {/* Spacer */}
         <div className="flex-1" />
 
         {!previewMode && (
-          <div className="flex flex-col gap-2 border-t pt-2.5 mt-auto" style={{ borderColor: 'var(--color-border-muted)' }}>
+          <div className="flex flex-col gap-3">
             {/* Row 1: Maps */}
             <div onClick={(e) => e.stopPropagation()}>
-              <PlaceMapLinks place={place} className="w-full justify-between sm:justify-start" />
+              <PlaceMapLinks place={place} className="w-full justify-start" />
             </div>
 
-            {/* Row 2: Votes + Tag */}
-            <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+            {/* Row 2: Votes (Left) + Trip Tags (Right) */}
+            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
               <VoteButtons
                 tripId={tripId}
                 placeId={place.id}
@@ -277,29 +259,19 @@ export function PlaceCard({
                 downvotes={voteSummary?.downvotes ?? 0}
                 userVote={userVote}
                 canVote={canVote}
-                size="sm"
+                size="md"
               />
 
-              {locationTags.length > 0 && (
-                <div className="flex flex-wrap items-center justify-end gap-1">
-                  {locationTags.slice(-2).map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onLocationTagClick?.(tag);
-                      }}
-                      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold transition-all hover:bg-blue-100/50"
-                      style={{
-                        backgroundColor: '#EFF6FF',
-                        color: '#2563EB',
-                        cursor: onLocationTagClick ? 'pointer' : 'default',
-                      }}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap items-center justify-end gap-1 px-1">
+                  {tags.map((name) => (
+                    <span
+                      key={name}
+                      className="inline-flex items-center gap-0.5 rounded-full border border-teal-100 bg-white px-2.5 py-1 text-[11px] font-bold text-teal-600 shadow-sm"
                     >
-                      <MapPin className="w-2.5 h-2.5" />
-                      {tag}
-                    </button>
+                      <span className="opacity-70">#</span>
+                      {name.toUpperCase()}
+                    </span>
                   ))}
                 </div>
               )}
