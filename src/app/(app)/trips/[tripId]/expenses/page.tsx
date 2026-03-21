@@ -2,13 +2,15 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { requireSession } from '@/features/auth/session';
-import { getTrip, getUserRole } from '@/features/trips/queries';
+import { getTrip, getUserRole, getBudgetContributions } from '@/features/trips/queries';
 import type { TripRole } from '@/lib/types';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { getMembers } from '@/features/members/queries';
 import { getPlaces } from '@/features/places/queries';
+import { buildTripExpenseReport, buildUserTransactionReport } from '@/features/expenses/reports';
 import { ExpenseList } from '@/components/expenses/expense-list';
 import { DebtSummary } from '@/components/expenses/debt-summary';
+import { ExpenseReportShell } from '@/components/expenses/expense-report-shell';
 import { PageHeader } from '@/components/ui/page-header';
 import { TripSectionRefreshBoundary } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
@@ -33,12 +35,13 @@ export default async function ExpensesPage({
   const { tripId } = await params;
   const user = await requireSession();
 
-  const [trip, role, expensesWithSplits, members, places] = await Promise.all([
+  const [trip, role, expensesWithSplits, members, places, contributions] = await Promise.all([
     getTrip(tripId),
     getUserRole(tripId),
     getExpensesWithSplits(tripId),
     getMembers(tripId),
     getPlaces(tripId),
+    getBudgetContributions(tripId),
   ]);
 
   if (!trip || !role) {
@@ -63,6 +66,22 @@ export default async function ExpensesPage({
     avatar_url: m.profile.avatar_url,
     user_id: m.user_id,
   }));
+
+  // Build reports
+  const reportMemberProfiles = members.map((m) => ({
+    id: m.profile.id,
+    display_name: m.profile.display_name,
+    avatar_url: m.profile.avatar_url,
+  }));
+  const tripReport = buildTripExpenseReport(expensesWithSplits, contributions, reportMemberProfiles);
+  const userReports = members.map((m) =>
+    buildUserTransactionReport(
+      m.user_id,
+      { display_name: m.profile.display_name, avatar_url: m.profile.avatar_url },
+      expensesWithSplits,
+      contributions
+    )
+  );
 
   const addExpenseButton = canEdit ? (
     <Link
@@ -115,6 +134,14 @@ export default async function ExpensesPage({
             currentUserId={user.id}
           />
         )}
+
+        {/* Reports */}
+        <ExpenseReportShell
+          tripReport={tripReport}
+          userReports={userReports}
+          contributions={contributions}
+          trip={trip}
+        />
 
         {/* List */}
         <ExpenseList 
