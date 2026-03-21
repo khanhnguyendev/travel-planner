@@ -399,6 +399,14 @@ svg {
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background-color: var(--color-bg-muted); border-radius: 999px; }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari and Opera */
+}
+
 /* -------------------------------------------------------
    Animation Library
    ------------------------------------------------------- */

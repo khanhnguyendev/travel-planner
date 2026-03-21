@@ -17,7 +17,7 @@ export function CategoryList({
   inline = false,
 }: CategoryListProps) {
   return (
-    <div className={inline ? 'flex flex-wrap items-center gap-2 sm:flex-nowrap' : 'flex flex-wrap items-center gap-2 pb-1 sm:flex-nowrap sm:overflow-x-auto sm:scrollbar-hide'}>
+    <div className={inline ? 'flex flex-nowrap items-center gap-2' : 'flex flex-wrap items-center gap-2 pb-1 sm:flex-nowrap sm:overflow-x-auto sm:scrollbar-hide'}>
       {/* "All" chip */}
       <button
         onClick={() => onSelect(null)}
