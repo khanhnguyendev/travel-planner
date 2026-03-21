@@ -115,8 +115,7 @@ export function StopSpotlightCard({
           </div>
 
           {place && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <PlaceMapLinks place={place} />
+            <div className="mt-4 flex flex-col gap-3">
               {canEdit && (
                 <CheckInOutButton
                   place={place}
@@ -124,6 +123,9 @@ export function StopSpotlightCard({
                   tripId={tripId}
                 />
               )}
+              <div className="pt-0.5 select-none">
+                <PlaceMapLinks place={place} />
+              </div>
             </div>
           )}
         </div>
