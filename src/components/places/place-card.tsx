@@ -131,8 +131,9 @@ export function PlaceCard({
             {category?.icon ?? <MapPin className="h-4 w-4" />}
           </div>
 
-          {/* Middle: Name & Category */}
-          <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          {/* Middle: Name & Expanded Info Snippet */}
+          <div className="min-w-0 flex-1 flex flex-col gap-1 py-1">
+            {/* Row 1: Name & Primary Badges */}
             <div className="flex items-center gap-2">
               <h3 className="line-clamp-1 text-sm font-bold text-stone-800 tracking-tight">
                 {place.name}
@@ -142,22 +143,27 @@ export function PlaceCard({
                   Next
                 </span>
               )}
+              {category && (
+                <span className="text-[9px] text-stone-400 font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-stone-100/50">
+                  {category.name}
+                </span>
+              )}
             </div>
             
-            <div className="flex items-center gap-2 overflow-hidden text-[10px] text-stone-400 font-medium whitespace-nowrap">
-               {category && <span className="font-bold uppercase tracking-wider text-stone-500">{category.name}</span>}
-               {locationTags.length > 0 && (
-                 <span className="flex items-center gap-1.5 border-l pl-2 border-stone-200">
-                   <MapPin className="w-2.5 h-2.5" />
-                   {locationTags[0]}
+            {/* Row 2: Full Address, Schedule, Rating */}
+            <div className="flex items-center gap-2.5 text-[10px] text-stone-400 font-medium overflow-hidden flex-wrap">
+               {displayAddress && (
+                 <span className="flex items-center gap-1.5 text-stone-500/80 max-w-[240px] truncate">
+                   <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-stone-300" />
+                   {displayAddress}
                  </span>
                )}
                {hasSchedule && (
-                 <span className="flex items-center gap-1.5 border-l pl-2 border-stone-200 text-teal-600/80 font-bold">
-                   <CalendarDays className="w-2.5 h-2.5" />
+                 <span className="flex items-center gap-1.5 border-l pl-2.5 border-stone-200 text-teal-600/80 font-bold whitespace-nowrap">
+                   <CalendarDays className="w-2.5 h-2.5 text-teal-500" />
                    {parseDate(place.visit_date)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                    {place.visit_time_from && (
-                     <span className="flex items-center gap-1.5 font-bold">
+                     <span className="flex items-center gap-1 font-bold">
                        <Clock className="w-2.5 h-2.5" />
                        {formatTime(place.visit_time_from)}
                      </span>
@@ -165,18 +171,37 @@ export function PlaceCard({
                  </span>
                )}
                {(place.rating != null || place.price_level != null) && (
-                 <div className="flex items-center gap-2 border-l pl-2 border-stone-200">
+                 <div className="flex items-center gap-2 border-l pl-2.5 border-stone-200 scale-90 origin-left">
                    {place.rating != null && <StarRating rating={place.rating} />}
                    {place.price_level != null && <PriceDots level={place.price_level} />}
                  </div>
                )}
-               {place.note && (
-                 <span className="flex items-center gap-1.5 border-l pl-2 border-stone-200 text-amber-600/70 italic line-clamp-1">
-                   <NotebookPen className="w-2.5 h-2.5" />
-                   {place.note}
-                 </span>
-               )}
             </div>
+
+            {/* Row 3: Tags & Note Snippet */}
+            {(tags.length > 0 || place.note) && (
+              <div className="flex items-center gap-3 overflow-hidden">
+                {tags.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {tags.map((name) => (
+                      <span
+                        key={name}
+                        className="inline-flex items-center gap-0.5 rounded-full border border-teal-100 bg-teal-50/30 px-1.5 py-0.5 text-[9px] font-bold text-teal-600 shadow-xs"
+                      >
+                        <span className="opacity-70">#</span>
+                        {name.toUpperCase()}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {place.note && (
+                  <span className="flex items-center gap-1.5 text-[10px] text-amber-600/70 italic line-clamp-1 border-l pl-3 border-stone-100">
+                    <NotebookPen className="w-2.5 h-2.5" />
+                    {place.note}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Side: Quick Actions & Chevron */}
