@@ -214,7 +214,7 @@ export function UserTransactionReportDrawer({ report, onClose }: UserTransaction
                         </p>
                         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                           {exp.expense_date
-                            ? new Date(exp.expense_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                            ? new Date(exp.expense_date.slice(0, 10) + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                             : '—'}
                           {' · '}{exp.splits.length} split{exp.splits.length !== 1 ? 's' : ''}
                         </p>
