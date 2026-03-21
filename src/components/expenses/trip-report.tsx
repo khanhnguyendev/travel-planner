@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X, TrendingUp, Wallet, Users, CalendarDays } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { TripExpenseReport, MemberReportEntry } from '@/features/expenses/reports';
 import type { BudgetContribution } from '@/lib/types';
@@ -218,7 +218,7 @@ export function TripReport({ report, contributions, trip, onClose }: TripReportP
                         </p>
                         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                           {exp.expense_date
-                            ? formatDate(exp.expense_date)
+                            ? formatDateTime(exp.expense_date, { includeYear: false })
                             : '—'}
                           {exp.category ? ` · ${exp.category}` : ''}
                         </p>
