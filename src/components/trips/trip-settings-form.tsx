@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Globe, Lock, AlertTriangle } from 'lucide-react';
+import { Globe, Lock, AlertTriangle, MapPin, Plus, X } from 'lucide-react';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { updateTrip, updateTripDates, updateTripBudget, archiveTrip } from '@/features/trips/actions';
+import { updateTrip, updateTripDates, updateTripBudget, archiveTrip, updateTripLocations } from '@/features/trips/actions';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { useToast } from '@/components/ui/toast';
 import { formatDate } from '@/lib/format';
@@ -433,6 +433,106 @@ function MoneySection({ trip, hasCurrencyData }: { trip: Trip; hasCurrencyData: 
 }
 
 // -------------------------------------------------------
+// LocationsSection
+// -------------------------------------------------------
+
+function LocationsSection({ trip }: { trip: Trip }) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [isRefreshing, startRefreshTransition] = useTransition();
+  const [locations, setLocations] = useState<string[]>(trip.locations ?? []);
+  const [input, setInput] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  function addLocation() {
+    const trimmed = input.trim();
+    if (!trimmed || locations.includes(trimmed)) { setInput(''); return; }
+    setLocations((prev) => [...prev, trimmed]);
+    setInput('');
+  }
+
+  function removeLocation(loc: string) {
+    setLocations((prev) => prev.filter((l) => l !== loc));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    const result = await updateTripLocations(trip.id, locations);
+    setSaving(false);
+    if (result.ok) {
+      showToast('Locations updated', 'success');
+      startRefreshTransition(() => router.refresh());
+    } else {
+      showToast(result.error ?? 'Failed to save', 'error');
+    }
+  }
+
+  return (
+    <Section title="Locations" description="Areas this trip covers. Each location creates a tag you can assign to places for filtering.">
+      <div className="space-y-4">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLocation(); } }}
+              placeholder="e.g. Đà Lạt, Vĩnh Hy…"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-teal-500"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addLocation}
+            disabled={!input.trim()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors disabled:opacity-40 hover:bg-stone-50"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        </div>
+
+        {locations.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {locations.map((loc) => (
+              <span
+                key={loc}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
+                style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+              >
+                {loc}
+                <button
+                  type="button"
+                  onClick={() => removeLocation(loc)}
+                  className="ml-0.5 hover:opacity-70"
+                  aria-label={`Remove ${loc}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || isRefreshing}
+            className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Save locations'}
+          </button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// -------------------------------------------------------
 // DangerSection
 // -------------------------------------------------------
 
@@ -506,6 +606,7 @@ export function TripSettingsForm({ trip, isOwner, hasCurrencyData }: TripSetting
     <div className="space-y-5">
       <GeneralSection trip={trip} />
       <AppearanceSection trip={trip} />
+      <LocationsSection trip={trip} />
       <DatesSection trip={trip} />
       <VisibilitySection trip={trip} />
       <MoneySection trip={trip} hasCurrencyData={hasCurrencyData} />

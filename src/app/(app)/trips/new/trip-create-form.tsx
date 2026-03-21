@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, X } from 'lucide-react';
+import { Camera, MapPin, Plus, X } from 'lucide-react';
 import { createTrip, updateTrip } from '@/features/trips/actions';
 import { buildPublicStorageUrl } from '@/lib/storage';
 import { useLoadingToast } from '@/components/ui/toast';
@@ -18,12 +18,31 @@ export default function TripCreateForm() {
   const [endDate, setEndDate] = useState('');
   const [budget, setBudget] = useState('');
   const [budgetCurrency, setBudgetCurrency] = useState('VND');
+  const [locations, setLocations] = useState<string[]>([]);
+  const [locationInput, setLocationInput] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const loadingToast = useLoadingToast();
+
+  function addLocation() {
+    const trimmed = locationInput.trim();
+    if (!trimmed) return;
+    if (!locations.includes(trimmed)) {
+      setLocations((prev) => [...prev, trimmed]);
+    }
+    setLocationInput('');
+  }
+
+  function removeLocation(loc: string) {
+    setLocations((prev) => prev.filter((l) => l !== loc));
+  }
+
+  function handleLocationKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') { e.preventDefault(); addLocation(); }
+  }
 
   const CURRENCY_SYMBOLS: Record<string, string> = {
     VND: '₫', USD: '$', EUR: '€', GBP: '£', JPY: '¥', THB: '฿',
@@ -51,7 +70,8 @@ export default function TripCreateForm() {
       startDate || null,
       endDate || null,
       parsedBudget && !isNaN(parsedBudget) ? parsedBudget : null,
-      budgetCurrency
+      budgetCurrency,
+      locations
     );
 
     if (!result.ok) {
@@ -160,6 +180,57 @@ export default function TripCreateForm() {
           placeholder="e.g. Tokyo Summer 2025"
           maxLength={120}
         />
+      </div>
+
+      {/* Locations */}
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text)' }}>
+          Locations{' '}
+          <span className="font-normal" style={{ color: 'var(--color-text-subtle)' }}>(optional)</span>
+        </label>
+        <p className="text-xs mb-2" style={{ color: 'var(--color-text-subtle)' }}>
+          e.g. Đà Lạt, Vĩnh Hy — used to create filter tags for places
+        </p>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
+            <input
+              type="text"
+              value={locationInput}
+              onChange={(e) => setLocationInput(e.target.value)}
+              onKeyDown={handleLocationKeyDown}
+              placeholder="Add a location…"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-teal-500"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'white', color: 'var(--color-text)' }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addLocation}
+            disabled={!locationInput.trim()}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-40 hover:bg-stone-50"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        </div>
+        {locations.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {locations.map((loc) => (
+              <span
+                key={loc}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
+                style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+              >
+                {loc}
+                <button type="button" onClick={() => removeLocation(loc)} className="ml-0.5 hover:opacity-70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Description */}

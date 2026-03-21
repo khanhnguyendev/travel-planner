@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
 import { logActivity } from '@/lib/activity';
 import { createDefaultCategories } from '@/features/categories/actions';
+import { syncLocationTags } from '@/features/tags/actions';
 
 function slog(service: string, msg: string, data?: Record<string, unknown>) {
   const ts = new Date().toISOString();
@@ -26,6 +27,7 @@ const createTripSchema = z.object({
   endDate: z.string().optional().nullable(),
   budget: z.number().positive().optional().nullable(),
   budgetCurrency: z.string().length(3).optional(),
+  locations: z.array(z.string().max(100)).max(20).optional(),
 });
 
 // -------------------------------------------------------
@@ -39,7 +41,8 @@ export async function createTrip(
   startDate?: string | null,
   endDate?: string | null,
   budget?: number | null,
-  budgetCurrency?: string
+  budgetCurrency?: string,
+  locations?: string[]
 ): Promise<ActionResult<{ tripId: string }>> {
   const parsed = createTripSchema.safeParse({
     title,
@@ -49,6 +52,7 @@ export async function createTrip(
     endDate,
     budget,
     budgetCurrency,
+    locations,
   });
 
   if (!parsed.success) {
@@ -81,6 +85,10 @@ export async function createTrip(
     return { ok: false, error: 'Failed to initialize profile' };
   }
 
+  const cleanLocations = (parsed.data.locations ?? [])
+    .map((l) => l.trim())
+    .filter(Boolean);
+
   const { data: trip, error: tripError } = await admin
     .from('trips')
     .insert({
@@ -92,6 +100,7 @@ export async function createTrip(
       end_date: parsed.data.endDate ?? null,
       budget: parsed.data.budget ?? null,
       budget_currency: parsed.data.budgetCurrency ?? 'VND',
+      locations: cleanLocations,
     })
     .select('id')
     .single();
@@ -123,8 +132,11 @@ export async function createTrip(
     meta: { title: parsed.data.title },
   });
 
-  // Seed default place categories for the new trip (non-fatal)
+  // Seed default place categories and location tags for the new trip (non-fatal)
   void createDefaultCategories(trip.id);
+  if (cleanLocations.length > 0) {
+    void syncLocationTags(trip.id, cleanLocations);
+  }
 
   revalidatePath('/dashboard');
 
@@ -545,5 +557,50 @@ export async function archiveTrip(
   revalidatePath('/dashboard');
   revalidatePath(`/trips/${tripId}`);
 
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------
+// updateTripLocations
+// -------------------------------------------------------
+
+export async function updateTripLocations(
+  tripId: string,
+  locations: string[]
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const admin = createAdminClient();
+  const { data: memberData } = await admin
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .eq('invite_status', 'accepted')
+    .single();
+
+  const member = memberData as { role: string } | null;
+  if (!member || !['owner', 'admin'].includes(member.role)) {
+    return { ok: false, error: 'Insufficient permissions' };
+  }
+
+  const clean = locations.map((l) => l.trim()).filter(Boolean);
+
+  const { error } = await admin
+    .from('trips')
+    .update({ locations: clean })
+    .eq('id', tripId);
+
+  if (error) {
+    console.error('updateTripLocations error:', error);
+    return { ok: false, error: 'Failed to update locations' };
+  }
+
+  await syncLocationTags(tripId, clean);
+
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath('/dashboard');
   return { ok: true, data: undefined };
 }
