@@ -2,7 +2,7 @@ import type { Category } from '@/lib/types';
 
 interface CategoryBadgeProps {
   category: Pick<Category, 'name' | 'color' | 'icon'>;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
 }
 
 export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
@@ -13,9 +13,11 @@ export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
   const textColor = isDark ? '#ffffff' : '#1C1917';
 
   const sizeClasses =
-    size === 'sm'
-      ? 'px-2 py-0.5 text-xs gap-1'
-      : 'px-2.5 py-1 text-sm gap-1.5';
+    size === 'xs'
+      ? 'px-1.5 py-0.5 text-[10px] gap-1'
+      : size === 'sm'
+        ? 'px-2 py-0.5 text-xs gap-1'
+        : 'px-2.5 py-1 text-sm gap-1.5';
 
   return (
     <span
