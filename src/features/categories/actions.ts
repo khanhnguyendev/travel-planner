@@ -133,6 +133,40 @@ export async function updateCategory(
 }
 
 // -------------------------------------------------------
+// createDefaultCategories
+// -------------------------------------------------------
+
+const DEFAULT_CATEGORIES: { name: string; icon: string }[] = [
+  { name: 'Restaurant',     icon: '🍽️' },
+  { name: 'Café',           icon: '☕' },
+  { name: 'Attraction',     icon: '🏛️' },
+  { name: 'Shopping',       icon: '🛍️' },
+  { name: 'Nature',         icon: '🌿' },
+  { name: 'Entertainment',  icon: '🎭' },
+  { name: 'Other',          icon: '📍' },
+];
+
+/**
+ * Bulk-inserts the standard set of place categories for a newly created trip.
+ * Silently ignores duplicates (e.g. if called more than once).
+ */
+export async function createDefaultCategories(tripId: string): Promise<void> {
+  const admin = createAdminClient();
+  const rows = DEFAULT_CATEGORIES.map((cat, i) => ({
+    trip_id: tripId,
+    name: cat.name,
+    icon: cat.icon,
+    color: null,
+    sort_order: i,
+    category_type: 'general' as CategoryType,
+  }));
+  const { error } = await admin.from('categories').insert(rows);
+  if (error) {
+    console.error('createDefaultCategories error:', error);
+  }
+}
+
+// -------------------------------------------------------
 // ensureAccommodationCategory
 // -------------------------------------------------------
 

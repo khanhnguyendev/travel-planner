@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/features/auth/actions';
 import { logActivity } from '@/lib/activity';
+import { createDefaultCategories } from '@/features/categories/actions';
 
 function slog(service: string, msg: string, data?: Record<string, unknown>) {
   const ts = new Date().toISOString();
@@ -121,6 +122,9 @@ export async function createTrip(
     action: 'trip.create',
     meta: { title: parsed.data.title },
   });
+
+  // Seed default place categories for the new trip (non-fatal)
+  void createDefaultCategories(trip.id);
 
   revalidatePath('/dashboard');
 
