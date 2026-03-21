@@ -235,12 +235,12 @@ export function PlaceCard({
 
         {/* Note - Stylized for clarity */}
         {place.note && (
-          <div className="flex flex-col gap-1.5 rounded-2xl border border-amber-200 bg-amber-50/30 p-4 shadow-sm border-l-4 border-l-amber-400">
-            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-700/70">
-              <NotebookPen className="w-3.5 h-3.5" />
+          <div className="flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50/30 p-2.5 shadow-sm border-l-4 border-l-amber-400">
+            <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-amber-700/70">
+              <NotebookPen className="w-3 h-3" />
               Note
             </div>
-            <p className="text-[13px] text-stone-700 leading-relaxed italic line-clamp-3">
+            <p className="text-[11px] text-stone-600 leading-relaxed italic line-clamp-2">
               {place.note}
             </p>
           </div>

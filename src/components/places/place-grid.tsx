@@ -36,6 +36,7 @@ interface PlaceGridProps {
   tripEndDate?: string | null;
   onAddPlace?: () => void;
   onPlaceDeleted?: (placeId: string) => void;
+  onPlaceUpdated?: (place: Place) => void;
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (placeId: string) => void;
@@ -69,6 +70,7 @@ export function PlaceGrid({
   tripEndDate,
   onAddPlace,
   onPlaceDeleted,
+  onPlaceUpdated,
   selectMode = false,
   selectedIds,
   onToggleSelect,
@@ -253,6 +255,7 @@ export function PlaceGrid({
           tripEndDate={tripEndDate}
           onClose={() => setOpenPlaceId(null)}
           onDeleted={() => { onPlaceDeleted?.(openPlace.id); setOpenPlaceId(null); }}
+          onUpdated={onPlaceUpdated}
         />
       )}
     </>

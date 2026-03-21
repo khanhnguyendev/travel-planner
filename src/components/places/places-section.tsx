@@ -90,7 +90,7 @@ export function PlacesSection({
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const loadingToast = useLoadingToast();
 
   const editor = canEdit(role);
@@ -164,6 +164,10 @@ export function PlacesSection({
   function handlePlaceDeleted(placeId: string) {
     setPlaces((prev) => prev.filter((p) => p.id !== placeId));
     setSelectedIds((prev) => { const next = new Set(prev); next.delete(placeId); return next; });
+  }
+
+  function handlePlaceUpdated(updatedPlace: Place) {
+    setPlaces((prev) => prev.map((p) => (p.id === updatedPlace.id ? updatedPlace : p)));
   }
 
   async function handleBulkDelete() {
@@ -424,22 +428,22 @@ export function PlacesSection({
 
                     <div className="hidden items-center gap-1 rounded-[1.1rem] border p-1 md:flex" style={{ borderColor: 'var(--color-border)' }}>
                       <button
-                        onClick={() => setViewMode('grid')}
+                        onClick={() => setViewMode('card')}
                         className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
-                          viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                          viewMode === 'card' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
                         )}
-                        title="Grid view"
+                        title="Card view"
                       >
                         <Grid className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => setViewMode('compact')}
+                        onClick={() => setViewMode('list')}
                         className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
-                          viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                          viewMode === 'list' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
                         )}
-                        title="Compact view"
+                        title="List view"
                       >
                         <List className="h-4 w-4" />
                       </button>
@@ -562,22 +566,22 @@ export function PlacesSection({
 
                   <div className="flex flex-shrink-0 items-center gap-1 rounded-full border p-1" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(255,255,255,0.8)' }}>
                     <button
-                      onClick={() => setViewMode('grid')}
+                      onClick={() => setViewMode('card')}
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-full transition-all",
-                        viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
+                        viewMode === 'card' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
                       )}
-                      aria-label="Grid view"
+                      aria-label="Card view"
                     >
                       <Grid className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => setViewMode('compact')}
+                      onClick={() => setViewMode('list')}
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-full transition-all",
-                        viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
+                        viewMode === 'list' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
                       )}
-                      aria-label="Compact view"
+                      aria-label="List view"
                     >
                       <List className="h-3.5 w-3.5" />
                     </button>
@@ -619,6 +623,7 @@ export function PlacesSection({
               viewMode={viewMode}
               onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
               onPlaceDeleted={handlePlaceDeleted}
+              onPlaceUpdated={handlePlaceUpdated}
               selectMode={selectMode}
               selectedIds={selectedIds}
               onToggleSelect={handleToggleSelect}

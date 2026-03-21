@@ -41,6 +41,7 @@ interface PlaceDetailDrawerProps {
   tripEndDate?: string | null;
   onClose: () => void;
   onDeleted?: () => void;
+  onUpdated?: (place: Place) => void;
 }
 
 function StarFull({ rating }: { rating: number }) {
@@ -113,6 +114,7 @@ function ScheduleEditor({
   tripStartDate,
   tripEndDate,
   affectsStops,
+  onUpdated,
 }: {
   place: Place;
   allPlaces: Place[];
@@ -121,6 +123,7 @@ function ScheduleEditor({
   tripStartDate?: string | null;
   tripEndDate?: string | null;
   affectsStops: boolean;
+  onUpdated?: (place: Place) => void;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -172,6 +175,14 @@ function ScheduleEditor({
       setSavedTo(to);
       setSavedBackupId(backupId);
       setConflicts(result.conflicts ?? []);
+      onUpdated?.({
+        ...place,
+        visit_date: date || null,
+        visit_date_end: dateEnd || null,
+        visit_time_from: from || null,
+        visit_time_to: to || null,
+        backup_place_id: backupId || null,
+      });
       setEditing(false);
       emitTripSectionRefresh(tripId, [
         TRIP_REFRESH_SECTIONS.placeDetail,
@@ -348,10 +359,12 @@ function NoteEditor({
   place,
   canEdit,
   tripId,
+  onUpdated,
 }: {
   place: Place;
   canEdit: boolean;
   tripId: string;
+  onUpdated?: (place: Place) => void;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -367,6 +380,7 @@ function NoteEditor({
     setPending(false);
     if (result.ok) {
       resolve('Note saved!', 'success');
+      onUpdated?.({ ...place, note: text.trim() || null });
       setEditing(false);
       emitTripSectionRefresh(tripId, [
         TRIP_REFRESH_SECTIONS.placeDetail,
@@ -576,6 +590,7 @@ export function PlaceDetailDrawer({
   tripEndDate,
   onClose,
   onDeleted,
+  onUpdated,
 }: PlaceDetailDrawerProps) {
   const router = useRouter();
   const [isRefreshing, startRefreshTransition] = useTransition();
@@ -751,7 +766,7 @@ export function PlaceDetailDrawer({
           {/* Schedule + backup */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 text-stone-400">Visit schedule</h3>
-            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripId={tripId} tripStartDate={tripStartDate} tripEndDate={tripEndDate} affectsStops={affectsStops} />
+            <ScheduleEditor place={place} allPlaces={allPlaces} canEdit={canEdit} tripId={tripId} tripStartDate={tripStartDate} tripEndDate={tripEndDate} affectsStops={affectsStops} onUpdated={onUpdated} />
           </div>
 
           {/* Check-in / Check-out (editors only, only if place has a visit date) */}
@@ -775,7 +790,7 @@ export function PlaceDetailDrawer({
                 Note
                 {!canEdit && <span className="font-normal normal-case text-stone-300">(editor only)</span>}
               </h3>
-              <NoteEditor place={place} canEdit={canEdit} tripId={tripId} />
+              <NoteEditor place={place} canEdit={canEdit} tripId={tripId} onUpdated={onUpdated} />
             </div>
           )}
 
