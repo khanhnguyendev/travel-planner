@@ -16,6 +16,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import type { VoteSummaryEntry } from '@/features/votes/queries';
 import { TRIP_TIMEZONE } from '@/lib/date';
+import { extractLocationTag } from '@/lib/address';
 
 interface PlacesSectionProps {
   tripId: string;
@@ -122,6 +123,15 @@ export function PlacesSection({
     [accommodationCategoryIds, places]
   );
 
+  const allLocationTags = useMemo(() => {
+    const set = new Set<string>();
+    planningPlaces.forEach((p) => {
+      const tag = p.address ? extractLocationTag(p.address) : null;
+      if (tag) set.add(tag);
+    });
+    return Array.from(set).sort();
+  }, [planningPlaces]);
+
   useEffect(() => {
     if (selectedCategoryId && !planningCategories.some((category) => category.id === selectedCategoryId)) {
       setSelectedCategoryId(null);
@@ -138,6 +148,15 @@ export function PlacesSection({
       setReviewsByPlaceId((prev) => ({ ...prev, [place.id]: reviews }));
     }
   }
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   function handlePlaceDeleted(placeId: string) {
     setPlaces((prev) => prev.filter((p) => p.id !== placeId));
@@ -251,231 +270,301 @@ export function PlacesSection({
       )}
 
       {(planningPlaces.length > 0 || planningCategories.length > 0) && (
-      <div className="section-shell overflow-hidden p-3 sm:p-5">
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start">
-            {planningPlaces.length > 0 && (
-              <div className="min-w-0 flex-1">
-                <PlaceSearch
-                  places={planningPlaces}
-                  onResults={(filtered) =>
-                    setSearchResults(filtered.length === planningPlaces.length ? null : filtered)
-                  }
+        <div className="flex flex-col gap-6 md:flex-row md:items-start lg:gap-8">
+          {/* Left Sidebar (Desktop Only) */}
+          <aside className="sticky top-24 hidden w-64 flex-shrink-0 flex-col gap-8 border-r pr-6 md:flex lg:w-72" style={{ borderColor: 'var(--color-border-muted)' }}>
+            {/* Categories Section */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Categories</h3>
+              <div className="flex flex-col gap-1.5">
+                <CategoryList
+                  categories={planningCategories}
+                  onSelect={setSelectedCategoryId}
+                  selectedId={selectedCategoryId}
+                  inline={false}
                 />
+                {editor && (
+                  <button
+                    onClick={() => setShowAddCategory(true)}
+                    className="mt-1 flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-stone-400 transition-colors hover:text-stone-600"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add category</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Location Tags Section */}
+            {allLocationTags.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Location</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {allLocationTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedLocationTag(selectedLocationTag === tag ? null : tag)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                        selectedLocationTag === tag
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                      )}
+                    >
+                      <MapPin className="h-3 w-3" />
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              {editor && planningPlaces.length > 0 && !selectMode && (
-                <>
-                  <button
-                    onClick={() => setShowAddPlace(true)}
-                    className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[1.1rem] bg-white px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm transition-transform hover:-translate-y-0.5 md:flex-initial md:min-h-[48px] md:px-5 md:py-3"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add place</span>
-                  </button>
-                  <button
-                    onClick={() => { setSelectMode(true); setSelectedIds(new Set()); }}
-                    className="flex h-[44px] w-[44px] items-center justify-center rounded-[1.1rem] border transition-colors hover:bg-black/[0.03] md:h-[48px] md:w-auto md:px-4"
-                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
-                    title="Select multiple"
-                  >
-                    <CheckSquare className="h-4 w-4" />
-                    <span className="hidden md:ml-2 md:inline">Select</span>
-                  </button>
+            {/* Trip Tags Section */}
+            {tags.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Tags</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => setSelectedTagId(selectedTagId === tag.id ? null : tag.id)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all hover:bg-black/[0.02]",
+                        selectedTagId === tag.id
+                          ? "border-teal-600 bg-teal-50 text-teal-700 shadow-sm"
+                          : "border-stone-200 text-stone-500"
+                      )}
+                    >
+                      #{tag.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                  <div className="ml-auto hidden items-center gap-1 rounded-[1.1rem] border p-1 md:flex" style={{ borderColor: 'var(--color-border)' }}>
+            {/* Sort Section */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Sort By</h3>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as SortOption)}
+                className="w-full rounded-[1rem] border bg-white px-3 py-2 text-sm text-stone-600 outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <div className="min-w-0 flex-1 flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+              {/* Search and Action Bar */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="flex-1">
+                  <PlaceSearch
+                    places={planningPlaces}
+                    onResults={(filtered) =>
+                      setSearchResults(filtered.length === planningPlaces.length ? null : filtered)
+                    }
+                  />
+                </div>
+
+                {!selectMode ? (
+                  <div className="flex items-center gap-2">
+                    {editor && (
+                      <button
+                        onClick={() => setShowAddPlace(true)}
+                        className="btn-primary min-h-[44px] flex-1 md:flex-initial"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add place</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setSelectMode(true); setSelectedIds(new Set()); }}
+                      className="flex h-[44px] w-[44px] items-center justify-center rounded-[1.1rem] border transition-colors hover:bg-black/[0.03] md:h-[48px] md:w-auto md:px-4"
+                      style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
+                      title="Select multiple"
+                    >
+                      <CheckSquare className="h-4 w-4" />
+                      <span className="hidden md:ml-2 md:inline">Select</span>
+                    </button>
+
+                    <div className="hidden items-center gap-1 rounded-[1.1rem] border p-1 md:flex" style={{ borderColor: 'var(--color-border)' }}>
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
+                          viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                        )}
+                        title="Grid view"
+                      >
+                        <Grid className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('compact')}
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
+                          viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                        )}
+                        title="Compact view"
+                      >
+                        <List className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={selectedIds.size === 0 || bulkDeleting}
+                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[1rem] bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-40 md:flex-initial"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+                    </button>
+                    <button
+                      onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[1rem] border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03] md:flex-initial"
+                      style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile-Only Horizontal Filters */}
+              <div className="md:hidden">
+                <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto pb-1.5 pt-1">
+                  <CategoryList
+                  categories={planningCategories}
+                  onSelect={setSelectedCategoryId}
+                  selectedId={selectedCategoryId}
+                  inline={true}
+                />
+
+                {editor && (
+                  <button
+                    onClick={() => setShowAddCategory(true)}
+                    className="inline-flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-full border border-dashed px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-black/[0.03] sm:min-h-[40px]"
+                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Category</span>
+                  </button>
+                )}
+
+                  {/* Mobile Sort Dropdown */}
+                  <div className="flex-shrink-0">
+                    <select
+                      value={sortOption}
+                      onChange={(e) => setSortOption(e.target.value as SortOption)}
+                      className="min-h-[36px] rounded-full border bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 outline-none sm:min-h-[40px]"
+                      style={{ borderColor: 'var(--color-border)' }}
+                    >
+                      {SORT_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {allLocationTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedLocationTag(selectedLocationTag === tag ? null : tag)}
+                      className={cn(
+                        "inline-flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all sm:min-h-[40px]",
+                        selectedLocationTag === tag
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-blue-50 text-blue-600"
+                      )}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>{tag}</span>
+                    </button>
+                  ))}
+
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => setSelectedTagId(selectedTagId === tag.id ? null : tag.id)}
+                      className={cn(
+                        "inline-flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all transition-colors sm:min-h-[40px]",
+                        selectedTagId === tag.id
+                          ? "border-teal-600 bg-teal-50 text-teal-700 shadow-sm"
+                          : "border-stone-200 text-stone-500"
+                      )}
+                    >
+                      <span>#{tag.name}</span>
+                    </button>
+                  ))}
+
+                  <div className="flex flex-shrink-0 items-center gap-1 rounded-full border p-1" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(255,255,255,0.8)' }}>
                     <button
                       onClick={() => setViewMode('grid')}
                       className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
-                        viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                        "flex h-7 w-7 items-center justify-center rounded-full transition-all",
+                        viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
                       )}
-                      title="Grid view"
+                      aria-label="Grid view"
                     >
-                      <Grid className="h-4 w-4" />
+                      <Grid className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => setViewMode('compact')}
                       className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
-                        viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400 hover:text-stone-600"
+                        "flex h-7 w-7 items-center justify-center rounded-full transition-all",
+                        viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
                       )}
-                      title="Compact view"
+                      aria-label="Compact view"
                     >
-                      <List className="h-4 w-4" />
+                      <List className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                </>
-              )}
-              {selectMode && (
-                <div className="flex w-full items-center gap-2 md:w-auto">
-                  <button
-                    onClick={handleBulkDelete}
-                    disabled={selectedIds.size === 0 || bulkDeleting}
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[1rem] bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-40 md:flex-initial"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
-                  </button>
-                  <button
-                    onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[1rem] border px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/[0.03] md:flex-initial"
-                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
 
-          <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto pb-1.5 pt-1">
-            {planningPlaces.length > 1 && (
-              <div className="flex flex-shrink-0 items-center gap-2 rounded-full border bg-white px-3 py-1.5" style={{ borderColor: 'var(--color-border)' }}>
-                <label htmlFor="sort-places" className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                  Sort
-                </label>
-                <select
-                  id="sort-places"
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="bg-transparent text-xs font-semibold outline-none focus:ring-0 sm:text-sm"
-                  style={{ color: 'var(--color-text)' }}
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {planningCategories.length > 0 && (
-              <CategoryList
-                categories={planningCategories}
-                selectedId={selectedCategoryId}
-                onSelect={setSelectedCategoryId}
-                inline
-              />
-            )}
-
-            {tags.length > 0 && (
-              <div className="flex flex-shrink-0 items-center gap-2">
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => setSelectedTagId((prev) => (prev === tag.id ? null : tag.id))}
-                    className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all"
-                    style={{
-                      backgroundColor: selectedTagId === tag.id ? 'var(--color-primary)' : 'white',
-                      color: selectedTagId === tag.id ? 'white' : 'var(--color-text-muted)',
-                      borderColor: selectedTagId === tag.id ? 'var(--color-primary)' : 'var(--color-border)',
-                      boxShadow: selectedTagId === tag.id ? '0 4px 12px rgba(13, 148, 136, 0.2)' : 'none',
-                    }}
-                  >
-                    {tag.name}
-                    {selectedTagId === tag.id && <X className="ml-1.5 h-3 w-3" />}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {selectedLocationTag && (
-              <div className="flex flex-shrink-0 items-center">
-                <button
-                  onClick={() => setSelectedLocationTag(null)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100"
-                >
-                  <MapPin className="h-3 w-3" />
-                  {selectedLocationTag}
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-
-            {editor && (
-              <button
-                onClick={() => setShowAddCategory(true)}
-                className="inline-flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-full border border-dashed px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-black/[0.03] sm:min-h-[40px]"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
-                aria-label="Add category"
-              >
-                <TagIcon className="h-3.5 w-3.5" />
-                <span>+ Category</span>
-              </button>
-            )}
-
-            <div className="flex flex-shrink-0 items-center gap-1 rounded-full border p-1 md:hidden" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(255,255,255,0.8)' }}>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full transition-all",
-                  viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
-                )}
-                aria-label="Grid view"
-              >
-                <Grid className="h-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setViewMode('compact')}
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full transition-all",
-                  viewMode === 'compact' ? "bg-white text-teal-600 shadow-sm" : "text-stone-400"
-                )}
-                aria-label="Compact view"
-              >
-                <List className="h-3.5 h-3.5" />
-              </button>
-            </div>
+            <PlaceGrid
+              places={sortedPlaces}
+              categories={categories}
+              tripId={tripId}
+              selectedCategoryId={selectedCategoryId}
+              selectedTagId={selectedTagId}
+              placeTagIds={placeTagIds}
+              tags={tags}
+              selectedLocationTag={selectedLocationTag}
+              onLocationTagClick={setSelectedLocationTag}
+              voteSummaries={voteSummaries}
+              userVotes={userVotes}
+              reviewsByPlaceId={reviewsByPlaceId}
+              placeExpensesByPlaceId={placeExpensesByPlaceId}
+              nextPlaceId={nextPlaceId}
+              commentsByPlaceId={commentsByPlaceId}
+              commentAuthors={commentAuthors}
+              currentUserId={currentUserId}
+              canVote={canVote}
+              canComment={canComment}
+              showExpenseHistory={canComment}
+              canEdit={editor}
+              tripStartDate={tripStartDate}
+              tripEndDate={tripEndDate}
+              previewMode={previewMode}
+              viewMode={viewMode}
+              onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
+              onPlaceDeleted={handlePlaceDeleted}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+            />
           </div>
         </div>
-      </div>
       )}
-
-      <PlaceGrid
-        places={sortedPlaces}
-        categories={planningCategories}
-        tripId={tripId}
-        selectedCategoryId={selectedCategoryId}
-        selectedTagId={selectedTagId}
-        placeTagIds={placeTagIds}
-        tags={tags}
-        selectedLocationTag={selectedLocationTag}
-        onLocationTagClick={(tag) =>
-          setSelectedLocationTag((prev) => (prev === tag ? null : tag))
-        }
-        voteSummaries={voteSummaries}
-        userVotes={userVotes}
-        reviewsByPlaceId={reviewsByPlaceId}
-        placeExpensesByPlaceId={placeExpensesByPlaceId}
-        nextPlaceId={nextPlaceId}
-        commentsByPlaceId={commentsByPlaceId}
-        commentAuthors={commentAuthors}
-        currentUserId={currentUserId}
-        canVote={canVote}
-        canComment={canComment}
-        showExpenseHistory={canComment}
-        canEdit={editor}
-        tripStartDate={tripStartDate}
-        tripEndDate={tripEndDate}
-        previewMode={previewMode}
-        viewMode={viewMode}
-        onAddPlace={editor ? () => setShowAddPlace(true) : undefined}
-        onPlaceDeleted={handlePlaceDeleted}
-        selectMode={selectMode}
-        selectedIds={selectedIds}
-        onToggleSelect={(id) => setSelectedIds((prev) => {
-          const next = new Set(prev);
-          if (next.has(id)) {
-            next.delete(id);
-          } else {
-            next.add(id);
-          }
-          return next;
-        })}
-      />
     </div>
   );
 }
