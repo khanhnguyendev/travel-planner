@@ -21,7 +21,7 @@ import { getJoinRequests, getMembers, hasRequestedJoin } from '@/features/member
 import { getCategories } from '@/features/categories/queries';
 import { getPlaces, getCommentsByTripId, getPlaceTagIdsByTrip } from '@/features/places/queries';
 import { getTagsByTrip } from '@/features/tags/queries';
-import { getVoteSummary, getUserVote } from '@/features/votes/queries';
+import { getVoteSummary, getUserVotesForTrip } from '@/features/votes/queries';
 import { getExpensesWithSplits } from '@/features/expenses/queries';
 import { calculateMemberBalances } from '@/features/expenses/debt';
 import { createClient } from '@/lib/supabase/server';
@@ -135,6 +135,8 @@ function getStopPointers(places: Place[]) {
 
   const activeTodayIndex = scheduledPlaces.findIndex((place) => {
     if (place.visit_date !== todayKey) return false;
+    // A place that has been checked out is already in the past
+    if (place.actual_checkout_at) return false;
     const start = timeToMinutes(place.visit_time_from, 0);
     const end = timeToMinutes(place.visit_time_to, place.visit_time_from ? start + 90 : (24 * 60));
     return currentMinutes >= start && currentMinutes <= end;
@@ -270,16 +272,17 @@ export default async function TripDetailPage({
   const canComment = isMember;
   const joinRequests = canManage ? await getJoinRequests(tripId) : [];
 
-  const [places, tags, placeTagIds] = await Promise.all([
+  const [places, tags] = await Promise.all([
     getPlaces(tripId),
     getTagsByTrip(tripId),
-    getPlaceTagIdsByTrip(tripId),
   ]);
+
+  const placeTagIds = await getPlaceTagIdsByTrip(tags.map((t) => t.id));
 
   const [voteSummaries, userVotesRaw, reviewsRaw, commentsRaw, expensesWithSplits, activityEntries, transportBookings] =
     await Promise.all([
       getVoteSummary(tripId),
-      user && isMember ? Promise.all(places.map((place) => getUserVote(place.id, user.id))) : [],
+      user && isMember ? getUserVotesForTrip(tripId, user.id) : [],
       (async () => {
         if (places.length === 0) return [];
         const supabase = await createClient();
@@ -298,7 +301,7 @@ export default async function TripDetailPage({
       isMember ? getTransportBookings(tripId) : [],
     ]);
 
-  const userVotes = userVotesRaw.filter(Boolean) as PlaceVote[];
+  const userVotes = userVotesRaw as PlaceVote[];
 
   const reviewsByPlaceId: Record<string, PlaceReview[]> = {};
   for (const review of reviewsRaw as PlaceReview[]) {

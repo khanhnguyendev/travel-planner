@@ -69,27 +69,19 @@ export async function getPlace(id: string): Promise<PlaceWithReviews | null> {
 
 /**
  * Returns a map of place_id → tag_ids[] for all places in a trip.
- * Used for client-side tag filtering without loading full Tag objects per place.
+ * Accepts the trip's tag IDs (already fetched) to avoid an extra round-trip.
  */
 export async function getPlaceTagIdsByTrip(
-  tripId: string
+  tagIds: string[]
 ): Promise<Record<string, string[]>> {
+  if (tagIds.length === 0) return {};
+
   const admin = createAdminClient();
-
-  // Get all place IDs for this trip first, then fetch their place_tags
-  const { data: placesData } = await admin
-    .from('places')
-    .select('id')
-    .eq('trip_id', tripId);
-
-  if (!placesData?.length) return {};
-
-  const placeIds = (placesData as { id: string }[]).map((p) => p.id);
 
   const { data, error } = await admin
     .from('place_tags')
     .select('place_id, tag_id')
-    .in('place_id', placeIds);
+    .in('tag_id', tagIds);
 
   if (error) {
     console.error('getPlaceTagIdsByTrip error:', error);

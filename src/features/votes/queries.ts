@@ -50,6 +50,30 @@ export async function getUserVote(
 }
 
 /**
+ * Returns all votes by a user for a given trip in a single query.
+ * Replaces the N+1 pattern of calling getUserVote per place.
+ */
+export async function getUserVotesForTrip(
+  tripId: string,
+  userId: string
+): Promise<PlaceVote[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('place_votes')
+    .select('*')
+    .eq('trip_id', tripId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('getUserVotesForTrip error:', error);
+    return [];
+  }
+
+  return (data as unknown as PlaceVote[]) ?? [];
+}
+
+/**
  * Returns an aggregate vote summary for all places in a trip.
  */
 export async function getVoteSummary(
