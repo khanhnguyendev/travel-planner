@@ -30,6 +30,8 @@ import { getTripDurationLabel, getTripNow, getTripTodayKey } from '@/lib/date';
 import { normalizePublicStorageUrl } from '@/lib/storage';
 import { ExpenseSummaryCard } from '@/components/expenses/expense-summary-card';
 import { RecentTransactionsList } from '@/components/expenses/recent-transactions-list';
+import { TripReportButton } from '@/components/expenses/trip-report-button';
+import { buildTripExpenseReport } from '@/features/expenses/reports';
 import { CoverImageUpload } from '@/components/trips/cover-image-upload';
 import { BudgetEditor } from '@/components/trips/budget-editor';
 import { AddMoneyDialog } from '@/components/trips/add-money-dialog';
@@ -418,6 +420,11 @@ export default async function TripDetailPage({
     .filter((e) => e.paid_from_pool && e.currency === (trip.budget_currency || 'VND'))
     .reduce((sum, e) => sum + e.amount, 0);
   const recentExpenses = expensesWithSplits.slice(0, 5);
+  const tripExpenseReport = buildTripExpenseReport(
+    expensesWithSplits,
+    contributions,
+    members.map((m) => ({ id: m.profile.id, display_name: m.profile.display_name, avatar_url: m.profile.avatar_url }))
+  );
   const balanceCurrency = trip.budget_currency || expensesWithSplits[0]?.currency || 'VND';
   const memberBalanceMap = new Map(
     calculateMemberBalances(expensesWithSplits)
@@ -737,10 +744,17 @@ export default async function TripDetailPage({
               )}
 
               <div className="mt-4">
-                <div className="mb-3">
+                <div className="mb-3 flex items-center justify-between">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-subtle)' }}>
                     Spending history
                   </p>
+                  {isMember && (
+                    <TripReportButton
+                      tripReport={tripExpenseReport}
+                      contributions={contributions}
+                      trip={trip}
+                    />
+                  )}
                 </div>
 
                 {!isMember ? (
