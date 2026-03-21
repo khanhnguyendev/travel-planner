@@ -13,11 +13,11 @@ interface PlaceGridProps {
   places: Place[];
   categories: Category[];
   tripId: string;
-  selectedCategoryId: string | null;
-  selectedTagId?: string | null;
+  selectedCategoryIds: Set<string>;
+  selectedTagIds: Set<string>;
   placeTagIds?: Record<string, string[]>;
   tags?: Tag[];
-  selectedLocationTag: string | null;
+  selectedLocationTags: Set<string>;
   onLocationTagClick: (tag: string) => void;
   voteSummaries: VoteSummaryEntry[];
   userVotes: PlaceVote[];
@@ -46,11 +46,11 @@ export function PlaceGrid({
   places,
   categories,
   tripId,
-  selectedCategoryId,
-  selectedTagId,
+  selectedCategoryIds,
+  selectedTagIds,
   placeTagIds = {},
   tags = [],
-  selectedLocationTag,
+  selectedLocationTags,
   onLocationTagClick,
   voteSummaries,
   userVotes,
@@ -87,14 +87,14 @@ export function PlaceGrid({
 
   // Filter by selected category, tag, and/or location tag
   const filtered = places.filter((p) => {
-    if (selectedCategoryId && p.category_id !== selectedCategoryId) return false;
-    if (selectedTagId) {
+    if (selectedCategoryIds.size > 0 && !selectedCategoryIds.has(p.category_id)) return false;
+    if (selectedTagIds.size > 0) {
       const tagIds = placeTagIds[p.id] ?? [];
-      if (!tagIds.includes(selectedTagId)) return false;
+      if (!tagIds.some((id) => selectedTagIds.has(id))) return false;
     }
-    if (selectedLocationTag) {
+    if (selectedLocationTags.size > 0) {
       const tag = p.address ? extractLocationTag(p.address) : null;
-      if (tag !== selectedLocationTag) return false;
+      if (!tag || !selectedLocationTags.has(tag)) return false;
     }
     return true;
   });
@@ -120,14 +120,14 @@ export function PlaceGrid({
           <MapPin className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
         </div>
         <p className="mb-1 text-base font-semibold section-title text-stone-800">
-          {selectedCategoryId ? 'No places in this category yet' : 'Add your first destination'}
+          {selectedCategoryIds.size > 0 ? 'No places in these categories yet' : 'Add your first destination'}
         </p>
         <p className="text-sm text-stone-400 max-w-xs mb-5">
-          {selectedCategoryId
-            ? 'Try selecting a different category or add a new place.'
+          {selectedCategoryIds.size > 0
+            ? 'Try selecting different categories or add a new place.'
             : 'Search with Mapbox and build a shortlist your group can vote on.'}
         </p>
-        {!selectedCategoryId && onAddPlace && (
+        {selectedCategoryIds.size === 0 && onAddPlace && (
           <button
             onClick={onAddPlace}
             className="btn-primary inline-flex items-center gap-2 text-sm min-h-[44px]"
@@ -147,8 +147,8 @@ export function PlaceGrid({
           const cat = categoryMap[catId] ?? null;
           return (
             <div key={catId}>
-              {/* Category header — only show when "All" is selected */}
-              {!selectedCategoryId && cat && (
+              {/* Category header — only show when no specific category is filtered or multi-categories shown */}
+              {selectedCategoryIds.size !== 1 && cat && (
                 <div className="mb-4 flex items-center gap-2">
                   {cat.icon && (
                     <span className="text-lg leading-none">{cat.icon}</span>

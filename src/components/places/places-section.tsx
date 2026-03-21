@@ -75,13 +75,13 @@ export function PlacesSection({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [tags] = useState<Tag[]>(initialTags);
   const [placeTagIds] = useState<Record<string, string[]>>(initialPlaceTagIds);
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
   const [voteSummaries] = useState<VoteSummaryEntry[]>(initialVoteSummaries);
   const [userVotes] = useState<PlaceVote[]>(initialUserVotes);
   const [reviewsByPlaceId, setReviewsByPlaceId] = useState<Record<string, PlaceReview[]>>(initialReviewsByPlaceId);
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedLocationTag, setSelectedLocationTag] = useState<string | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
+  const [selectedLocationTags, setSelectedLocationTags] = useState<Set<string>>(new Set());
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -133,10 +133,13 @@ export function PlacesSection({
   }, [planningPlaces]);
 
   useEffect(() => {
-    if (selectedCategoryId && !planningCategories.some((category) => category.id === selectedCategoryId)) {
-      setSelectedCategoryId(null);
-    }
-  }, [planningCategories, selectedCategoryId]);
+    setSelectedCategoryIds((prev: Set<string>) => {
+      const next = new Set(prev);
+      const validIds = new Set(planningCategories.map((c) => c.id));
+      prev.forEach((id: string) => { if (!validIds.has(id)) next.delete(id); });
+      return next.size === prev.size ? prev : next;
+    });
+  }, [planningCategories]);
 
   function handleCategoryCreated(cat: Category) {
     setCategories((prev) => [...prev, cat]);
@@ -275,23 +278,33 @@ export function PlacesSection({
           <aside className="sticky top-24 hidden w-64 flex-shrink-0 flex-col gap-8 border-r pr-6 md:flex lg:w-72" style={{ borderColor: 'var(--color-border-muted)' }}>
             {/* Categories Section */}
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Categories</h3>
-              <div className="flex flex-col gap-1.5">
-                <select
-                  value={selectedCategoryId ?? ''}
-                  onChange={(e) => setSelectedCategoryId(e.target.value || null)}
-                  className="w-full rounded-[1rem] border bg-white px-3 py-2 text-sm text-stone-600 outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                  style={{ borderColor: 'var(--color-border)' }}
-                >
-                  <option value="">All Categories</option>
-                  {planningCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Categories</h3>
+                {selectedCategoryIds.size > 0 && (
+                  <button onClick={() => setSelectedCategoryIds(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-2 scrollbar-hide">
+                {planningCategories.map((cat) => (
+                  <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategoryIds.has(cat.id)}
+                      onChange={() => setSelectedCategoryIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(cat.id)) next.delete(cat.id);
+                        else next.add(cat.id);
+                        return next;
+                      })}
+                      className="h-3.5 w-3.5 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <span className={cn("text-sm transition-colors", selectedCategoryIds.has(cat.id) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>{cat.name}</span>
+                  </label>
+                ))}
                 {editor && (
                   <button
                     onClick={() => setShowAddCategory(true)}
-                    className="mt-1 flex items-center gap-1.5 px-3 py-0.5 text-xs font-semibold text-stone-400 transition-colors hover:text-stone-600"
+                    className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-stone-400 transition-colors hover:text-stone-600"
                   >
                     <Plus className="h-3 w-3" />
                     <span>Add category</span>
@@ -302,34 +315,60 @@ export function PlacesSection({
 
             {/* Location Tags Section */}
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Location</h3>
-              <select
-                value={selectedLocationTag ?? ''}
-                onChange={(e) => setSelectedLocationTag(e.target.value || null)}
-                className="w-full rounded-[1rem] border bg-white px-3 py-2 text-sm text-stone-600 outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                style={{ borderColor: 'var(--color-border)' }}
-              >
-                <option value="">All Locations</option>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Location</h3>
+                {selectedLocationTags.size > 0 && (
+                  <button onClick={() => setSelectedLocationTags(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
                 {allLocationTags.map((tag) => (
-                  <option key={tag} value={tag}>{tag}</option>
+                  <label key={tag} className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedLocationTags.has(tag)}
+                      onChange={() => setSelectedLocationTags(prev => {
+                        const next = new Set(prev);
+                        if (next.has(tag)) next.delete(tag);
+                        else next.add(tag);
+                        return next;
+                      })}
+                      className="h-3.5 w-3.5 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={cn("text-sm transition-colors", selectedLocationTags.has(tag) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>{tag}</span>
+                  </label>
                 ))}
-              </select>
+                {allLocationTags.length === 0 && <span className="text-xs text-stone-400 italic">No locations found</span>}
+              </div>
             </div>
 
             {/* Trip Tags Section */}
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Tags</h3>
-              <select
-                value={selectedTagId ?? ''}
-                onChange={(e) => setSelectedTagId(e.target.value || null)}
-                className="w-full rounded-[1rem] border bg-white px-3 py-2 text-sm text-stone-600 outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                style={{ borderColor: 'var(--color-border)' }}
-              >
-                <option value="">All Tags</option>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400">Tags</h3>
+                {selectedTagIds.size > 0 && (
+                  <button onClick={() => setSelectedTagIds(new Set())} className="text-[10px] font-bold text-teal-600 hover:text-teal-700">CLEAR</button>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
                 {tags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>#{tag.name}</option>
+                  <label key={tag.id} className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedTagIds.has(tag.id)}
+                      onChange={() => setSelectedTagIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(tag.id)) next.delete(tag.id);
+                        else next.add(tag.id);
+                        return next;
+                      })}
+                      className="h-3.5 w-3.5 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <span className={cn("text-sm transition-colors", selectedTagIds.has(tag.id) ? "font-semibold text-stone-800" : "text-stone-500 group-hover:text-stone-700")}>#{tag.name}</span>
+                  </label>
                 ))}
-              </select>
+                {tags.length === 0 && <span className="text-xs text-stone-400 italic">No tags found</span>}
+              </div>
             </div>
 
             {/* Sort Section */}
@@ -431,44 +470,70 @@ export function PlacesSection({
               {/* Mobile-Only Horizontal Filters */}
               <div className="md:hidden">
                 <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto pb-1.5 pt-1">
-                  {/* Category Select */}
-                  <select
-                    value={selectedCategoryId ?? ''}
-                    onChange={(e) => setSelectedCategoryId(e.target.value || null)}
-                    className="min-h-[36px] flex-shrink-0 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 outline-none sm:min-h-[40px]"
-                    style={{ borderColor: 'var(--color-border)' }}
-                  >
-                    <option value="">Category</option>
-                    {planningCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
+                  {/* Category Multi-Selection (Horizontal Toggles) */}
+                  {planningCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategoryIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(cat.id)) next.delete(cat.id);
+                        else next.add(cat.id);
+                        return next;
+                      })}
+                      className={cn(
+                        "inline-flex min-h-[36px] flex-shrink-0 items-center rounded-full border px-4 py-1.5 text-xs font-semibold transition-all sm:min-h-[40px]",
+                        selectedCategoryIds.has(cat.id)
+                          ? "bg-stone-800 text-white border-stone-800 shadow-sm"
+                          : "bg-white text-stone-600 hover:bg-stone-50"
+                      )}
+                      style={{ borderColor: selectedCategoryIds.has(cat.id) ? undefined : 'var(--color-border)' }}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
 
-                  {/* Location Select */}
-                  <select
-                    value={selectedLocationTag ?? ''}
-                    onChange={(e) => setSelectedLocationTag(e.target.value || null)}
-                    className="min-h-[36px] flex-shrink-0 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 outline-none sm:min-h-[40px]"
-                    style={{ borderColor: 'var(--color-border)' }}
-                  >
-                    <option value="">Location</option>
-                    {allLocationTags.map((tag) => (
-                      <option key={tag} value={tag}>{tag}</option>
-                    ))}
-                  </select>
+                  {/* Location Multi-Selection */}
+                  {allLocationTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedLocationTags(prev => {
+                        const next = new Set(prev);
+                        if (next.has(tag)) next.delete(tag);
+                        else next.add(tag);
+                        return next;
+                      })}
+                      className={cn(
+                        "inline-flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all sm:min-h-[40px]",
+                        selectedLocationTags.has(tag)
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                      )}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>{tag}</span>
+                    </button>
+                  ))}
 
-                  {/* Tags Select */}
-                  <select
-                    value={selectedTagId ?? ''}
-                    onChange={(e) => setSelectedTagId(e.target.value || null)}
-                    className="min-h-[36px] flex-shrink-0 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 outline-none sm:min-h-[40px]"
-                    style={{ borderColor: 'var(--color-border)' }}
-                  >
-                    <option value="">Tags</option>
-                    {tags.map((tag) => (
-                      <option key={tag.id} value={tag.id}>#{tag.name}</option>
-                    ))}
-                  </select>
+                  {/* Tags Multi-Selection */}
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => setSelectedTagIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(tag.id)) next.delete(tag.id);
+                        else next.add(tag.id);
+                        return next;
+                      })}
+                      className={cn(
+                        "inline-flex min-h-[36px] flex-shrink-0 items-center px-4 py-1.5 rounded-full border text-xs font-semibold transition-all sm:min-h-[40px]",
+                        selectedTagIds.has(tag.id)
+                          ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                          : "bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200"
+                      )}
+                    >
+                      #{tag.name}
+                    </button>
+                  ))}
 
                   {/* Sort Select */}
                   <div className="flex-shrink-0">
@@ -525,12 +590,17 @@ export function PlacesSection({
               places={sortedPlaces}
               categories={categories}
               tripId={tripId}
-              selectedCategoryId={selectedCategoryId}
-              selectedTagId={selectedTagId}
+              selectedCategoryIds={selectedCategoryIds}
+              selectedTagIds={selectedTagIds}
               placeTagIds={placeTagIds}
               tags={tags}
-              selectedLocationTag={selectedLocationTag}
-              onLocationTagClick={setSelectedLocationTag}
+              selectedLocationTags={selectedLocationTags}
+              onLocationTagClick={(tag) => setSelectedLocationTags((prev: Set<string>) => {
+                const next = new Set(prev);
+                if (next.has(tag)) next.delete(tag);
+                else next.add(tag);
+                return next;
+              })}
               voteSummaries={voteSummaries}
               userVotes={userVotes}
               reviewsByPlaceId={reviewsByPlaceId}
