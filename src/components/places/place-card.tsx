@@ -144,18 +144,36 @@ export function PlaceCard({
               )}
             </div>
             
-            <div className="flex items-center gap-2 overflow-hidden">
-               {category && <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">{category.name}</span>}
+            <div className="flex items-center gap-2 overflow-hidden text-[10px] text-stone-400 font-medium whitespace-nowrap">
+               {category && <span className="font-bold uppercase tracking-wider text-stone-500">{category.name}</span>}
                {locationTags.length > 0 && (
-                 <span className="flex items-center gap-1 text-[10px] text-stone-300 font-medium">
+                 <span className="flex items-center gap-1.5 border-l pl-2 border-stone-200">
                    <MapPin className="w-2.5 h-2.5" />
                    {locationTags[0]}
                  </span>
                )}
                {hasSchedule && (
-                 <span className="flex items-center gap-1 border-l pl-2 text-[10px] text-teal-600/80 font-bold">
+                 <span className="flex items-center gap-1.5 border-l pl-2 border-stone-200 text-teal-600/80 font-bold">
                    <CalendarDays className="w-2.5 h-2.5" />
                    {parseDate(place.visit_date)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                   {place.visit_time_from && (
+                     <span className="flex items-center gap-1.5 font-bold">
+                       <Clock className="w-2.5 h-2.5" />
+                       {formatTime(place.visit_time_from)}
+                     </span>
+                   )}
+                 </span>
+               )}
+               {(place.rating != null || place.price_level != null) && (
+                 <div className="flex items-center gap-2 border-l pl-2 border-stone-200">
+                   {place.rating != null && <StarRating rating={place.rating} />}
+                   {place.price_level != null && <PriceDots level={place.price_level} />}
+                 </div>
+               )}
+               {place.note && (
+                 <span className="flex items-center gap-1.5 border-l pl-2 border-stone-200 text-amber-600/70 italic line-clamp-1">
+                   <NotebookPen className="w-2.5 h-2.5" />
+                   {place.note}
                  </span>
                )}
             </div>
