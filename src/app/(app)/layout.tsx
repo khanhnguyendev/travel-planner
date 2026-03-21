@@ -25,12 +25,12 @@ async function UserMenu({ userId }: { userId: string }) {
     <>
       {/* Desktop user menu */}
       <div className="hidden md:flex items-center gap-2">
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
+        <Link href="/profile" className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-colors hover:bg-white/70" style={{ backgroundColor: 'var(--color-bg-subtle)' }}>
           <Avatar user={{ display_name: displayName, avatar_url: profile?.avatar_url ?? null }} size="sm" />
           <span className="text-sm font-medium max-w-[120px] truncate" style={{ color: 'var(--color-text)' }}>
             {displayName}
           </span>
-        </div>
+        </Link>
         <form action={async () => { 'use server'; await signOut(); }}>
           <button
             type="submit"

@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronRight,
   Compass,
+  UserCircle,
 } from 'lucide-react';
 import { signOut } from '@/features/auth/actions';
 import { cn } from '@/lib/utils';
@@ -180,6 +181,27 @@ export function MobileNav({ displayName }: MobileNavProps) {
                       </p>
                       <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                         Start a new shared itinerary
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4" style={{ color: 'var(--color-text-subtle)' }} />
+                </Link>
+
+                <Link
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-[52px] items-center justify-between rounded-2xl px-4 py-3 metric-tile"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-100 text-stone-600">
+                      <UserCircle className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                        Profile
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                        Edit your display name
                       </p>
                     </div>
                   </div>
