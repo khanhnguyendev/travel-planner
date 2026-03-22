@@ -7,7 +7,7 @@ import { X, TrendingUp, Wallet, Users, CalendarDays, Download, CheckCircle2, Loa
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { TripExpenseReport, MemberReportEntry } from '@/features/expenses/reports';
-import { buildExpensesCsv } from '@/features/expenses/reports';
+import { buildExpensesCsv, buildTripExpenseReport } from '@/features/expenses/reports';
 import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { BudgetContribution, Trip } from '@/lib/types';
 
@@ -34,8 +34,23 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
   const [activeCurrency, setActiveCurrency] = useState(defaultCurrency);
   const [settledDebtKeys, setSettledDebtKeys] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const isMultiCurrency = currencies.length > 1;
   const router = useRouter();
+
+  // Filter expenses by date range for section data
+  const filteredExpenses = expenses.filter((exp) => {
+    const day = exp.expense_date ? exp.expense_date.slice(0, 10) : exp.created_at.slice(0, 10);
+    if (dateFrom && day < dateFrom) return false;
+    if (dateTo && day > dateTo) return false;
+    return true;
+  });
+
+  // Recompute report sections from filtered expenses
+  const filteredReport = dateFrom || dateTo
+    ? buildFilteredSections(filteredExpenses, report)
+    : report;
 
   if (!mounted) return null;
 
@@ -90,15 +105,15 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
     .reduce((sum, c) => sum + c.amount, 0);
 
   const budget = trip.budget && trip.budget_currency === activeCurrency ? trip.budget : null;
-  const total = report.totalByCurrency[activeCurrency] ?? 0;
+  const total = filteredReport.totalByCurrency[activeCurrency] ?? 0;
   const budgetPercent = budget ? Math.min(Math.round((total / budget) * 100), 100) : null;
 
-  const categoryEntries = report.categoryBreakdown.filter((c) => c.currency === activeCurrency);
-  const memberEntries = report.memberBreakdown
+  const categoryEntries = filteredReport.categoryBreakdown.filter((c) => c.currency === activeCurrency);
+  const memberEntries = filteredReport.memberBreakdown
     .filter((m) => m.currency === activeCurrency)
     .sort((a, b) => b.paid - a.paid);
-  const debtEntries = report.debts.filter((d) => d.currency === activeCurrency);
-  const dailyEntries = report.dailySpend.filter((d) => d.currency === activeCurrency);
+  const debtEntries = filteredReport.debts.filter((d) => d.currency === activeCurrency);
+  const dailyEntries = filteredReport.dailySpend.filter((d) => d.currency === activeCurrency);
 
   return createPortal(
     <>
@@ -173,6 +188,41 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
             </div>
           )}
 
+          {/* Date range filter */}
+          <div
+            className="flex items-center gap-2 border-b px-5 py-3 flex-shrink-0"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }}>
+              From
+            </span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="input flex-1 min-w-0 text-xs py-1"
+            />
+            <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }}>
+              To
+            </span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="input flex-1 min-w-0 text-xs py-1"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                className="flex-shrink-0 text-xs font-semibold"
+                style={{ color: 'var(--color-text-subtle)' }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
 
@@ -183,8 +233,9 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                   {formatCurrency(total, activeCurrency)}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                  {report.expenseCount} expense{report.expenseCount !== 1 ? 's' : ''}
+                  {filteredReport.expenseCount} expense{filteredReport.expenseCount !== 1 ? 's' : ''}
                   {isMultiCurrency && ` · ${activeCurrency} only`}
+                  {(dateFrom || dateTo) && ' · filtered'}
                 </p>
                 {budget && budgetPercent !== null && (
                   <div className="mt-3">
@@ -312,10 +363,10 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
             )}
 
             {/* Top expenses */}
-            {report.topExpenses.length > 0 && (
+            {filteredReport.topExpenses.length > 0 && (
               <Section title="Top Expenses" icon={<TrendingUp className="h-4 w-4" />}>
                 <div className="space-y-2">
-                  {report.topExpenses.map((exp, i) => (
+                  {filteredReport.topExpenses.map((exp, i) => (
                     <div key={exp.id} className="flex items-center gap-3 rounded-xl p-3 metric-tile">
                       <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }}>
                         #{i + 1}
@@ -344,6 +395,18 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
     </>,
     document.body
   );
+}
+
+function buildFilteredSections(
+  filtered: ExpenseWithSplits[],
+  original: TripExpenseReport
+): TripExpenseReport {
+  const memberProfiles = original.memberBreakdown.map((m) => ({
+    id: m.userId,
+    display_name: m.displayName,
+    avatar_url: m.avatarUrl,
+  }));
+  return buildTripExpenseReport(filtered, [], memberProfiles);
 }
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
