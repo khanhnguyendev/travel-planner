@@ -13,7 +13,7 @@ import { PlaceExpenseSummary } from '@/components/places/place-expense-summary';
 import { emitTripSectionRefresh } from '@/components/trips/trip-refresh';
 import { TRIP_REFRESH_SECTIONS } from '@/components/trips/trip-refresh-keys';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { getTripTodayKey, getTripNow, formatInTripTimezone } from '@/lib/date';
+import { getTripTodayKey, getTripNow, formatInTripTimezone, TRIP_TIMEZONE } from '@/lib/date';
 
 interface AccommodationSectionProps {
   places: Place[];
@@ -33,39 +33,73 @@ interface AccommodationSectionProps {
   tripEndDate?: string | null;
 }
 
-function formatDate(dateStr: string): string {
-  return formatInTripTimezone(new Date(dateStr + 'T00:00:00+07:00'), {
+function formatDate(dateStr: string, timeStr?: string | null): string {
+  const date = new Date(dateStr + 'T' + (timeStr || '00:00') + ':00+07:00');
+  const dStr = formatInTripTimezone(date, {
     weekday: 'short', month: 'short', day: 'numeric',
   });
+  if (timeStr) {
+    return `${dStr}, ${timeStr}`;
+  }
+  return dStr;
 }
 
 
 function getAccommodationStatus(place: Place): 'current' | 'upcoming' | 'completed' {
   const now = getTripNow().getTime();
-  const todayKey = getTripTodayKey();
 
+  // Helper to get comparable UTC ms from local date/time parts
+  const getTs = (dateStr: string, timeStr?: string | null) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const [h, min] = (timeStr || '00:00').split(':').map(Number);
+    return Date.UTC(y, m - 1, d, h, min);
+  };
+
+  // Helper to convert real ISO string to "fake UTC" used by getTripNow
+  const isoToFakeTs = (iso: string) => {
+    const d = new Date(iso);
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: TRIP_TIMEZONE,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+    const parts = formatter.formatToParts(d);
+    const get = (type: string) => parts.find(p => p.type === type)!.value;
+    return Date.UTC(
+      parseInt(get('year')),
+      parseInt(get('month')) - 1,
+      parseInt(get('day')),
+      parseInt(get('hour')),
+      parseInt(get('minute')),
+      parseInt(get('second'))
+    );
+  };
+
+  // 1. Check actuals first
   if (place.actual_checkin_at) {
-    const actualCheckin = new Date(place.actual_checkin_at).getTime();
-    const actualCheckout = place.actual_checkout_at ? new Date(place.actual_checkout_at).getTime() : null;
+    const actualIn = isoToFakeTs(place.actual_checkin_at);
+    const actualOut = place.actual_checkout_at ? isoToFakeTs(place.actual_checkout_at) : null;
 
-    if (!Number.isNaN(actualCheckin) && actualCheckin <= now && (!actualCheckout || Number.isNaN(actualCheckout) || actualCheckout > now)) {
+    if (actualIn <= now && (!actualOut || actualOut > now)) {
       return 'current';
     }
-
-    if (actualCheckout && !Number.isNaN(actualCheckout) && actualCheckout <= now) {
+    if (actualOut && actualOut <= now) {
       return 'completed';
     }
   }
 
-  if (place.visit_date && place.checkout_date) {
-    if (todayKey < place.visit_date) return 'upcoming';
-    if (todayKey > place.checkout_date) return 'completed';
-    return 'current';
-  }
-
+  // 2. Check scheduled dates and times
   if (place.visit_date) {
-    if (todayKey < place.visit_date) return 'upcoming';
-    if (todayKey > place.visit_date) return 'completed';
+    // Check-in datetime (Default 14:00)
+    const checkinTs = getTs(place.visit_date, place.visit_time_from || '14:00');
+
+    // Check-out datetime (Default 12:00 next day or same day)
+    const checkoutDate = place.checkout_date || place.visit_date;
+    const checkoutTs = getTs(checkoutDate, place.visit_time_to || '12:00');
+
+    if (now < checkinTs) return 'upcoming';
+    if (now > checkoutTs) return 'completed';
     return 'current';
   }
 
@@ -80,7 +114,9 @@ function DatesEditor({ place, canEdit, editing, setEditing }: {
 }) {
   const router = useRouter();
   const [checkIn, setCheckIn] = useState(place.visit_date ?? '');
+  const [checkInTime, setCheckInTime] = useState(place.visit_time_from ?? '14:00');
   const [checkOut, setCheckOut] = useState(place.checkout_date ?? '');
+  const [checkOutTime, setCheckOutTime] = useState(place.visit_time_to ?? '12:00');
   const [pending, setPending] = useState(false);
   const [, startRefreshTransition] = useTransition();
   const loadingToast = useLoadingToast();
@@ -90,7 +126,9 @@ function DatesEditor({ place, canEdit, editing, setEditing }: {
     const resolve = loadingToast('Saving dates…');
     const result = await updatePlaceSchedule(place.id, {
       visit_date: checkIn || null,
+      visit_time_from: checkInTime || null,
       checkout_date: checkOut || null,
+      visit_time_to: checkOutTime || null,
     });
     setPending(false);
     if (result.ok) {
@@ -113,61 +151,85 @@ function DatesEditor({ place, canEdit, editing, setEditing }: {
 
   if (!editing) {
     return (
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap text-stone-600">
         <span
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: '#F0FDF4', color: '#15803D' }}
+          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-semibold border bg-white shadow-sm"
+          style={{ borderColor: '#DCFCE7', color: '#15803D' }}
         >
           <CalendarDays className="w-3.5 h-3.5" />
-          Check-in: {place.visit_date ? formatDate(place.visit_date) : <span className="opacity-60">Not set</span>}
+          Check-in: {place.visit_date ? formatDate(place.visit_date, place.visit_time_from) : <span className="opacity-60">Not set</span>}
         </span>
         <span
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: '#FFF7ED', color: '#C2410C' }}
+          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-semibold border bg-white shadow-sm"
+          style={{ borderColor: '#FFEDD5', color: '#C2410C' }}
         >
           <CalendarDays className="w-3.5 h-3.5" />
-          Check-out: {place.checkout_date ? formatDate(place.checkout_date) : <span className="opacity-60">Not set</span>}
+          Check-out: {place.checkout_date ? formatDate(place.checkout_date, place.visit_time_to) : <span className="opacity-60">Not set</span>}
         </span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-end gap-2 flex-wrap">
-      <div>
-        <label className="block text-xs font-medium text-stone-500 mb-1">Check-in</label>
-        <input
-          type="date"
-          value={checkIn}
-          onChange={(e) => setCheckIn(e.target.value)}
-          className="text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-        />
+    <div className="flex items-end gap-2 flex-wrap p-3 rounded-xl bg-stone-50 border border-stone-200 shadow-inner">
+      <div className="flex-1 min-w-[120px]">
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">Check-in</label>
+        <div className="flex gap-1">
+          <input
+            type="date"
+            value={checkIn}
+            onChange={(e) => setCheckIn(e.target.value)}
+            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+          <input
+            type="time"
+            value={checkInTime}
+            onChange={(e) => setCheckInTime(e.target.value)}
+            className="w-20 text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-stone-500 mb-1">Check-out</label>
-        <input
-          type="date"
-          value={checkOut}
-          onChange={(e) => setCheckOut(e.target.value)}
-          className="text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-        />
+      <div className="flex-1 min-w-[120px]">
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">Check-out</label>
+        <div className="flex gap-1">
+          <input
+            type="date"
+            value={checkOut}
+            onChange={(e) => setCheckOut(e.target.value)}
+            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+          <input
+            type="time"
+            value={checkOutTime}
+            onChange={(e) => setCheckOutTime(e.target.value)}
+            className="w-20 text-xs px-2 py-1.5 rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
       </div>
-      <button
-        onClick={handleSave}
-        disabled={pending}
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
-      >
-        <Check className="w-3.5 h-3.5" />
-        Save
-      </button>
-      <button
-        onClick={() => { setEditing(false); setCheckIn(place.visit_date ?? ''); setCheckOut(place.checkout_date ?? ''); }}
-        disabled={pending}
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
-      >
-        <X className="w-3 h-3" />
-        Cancel
-      </button>
+      <div className="flex gap-1">
+        <button
+          onClick={handleSave}
+          disabled={pending}
+          className="inline-flex h-[34px] items-center gap-1 text-xs px-3 rounded-lg bg-teal-600 font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors shadow-sm"
+        >
+          <Check className="w-3.5 h-3.5" />
+          Save
+        </button>
+        <button
+          onClick={() => { 
+            setEditing(false); 
+            setCheckIn(place.visit_date ?? ''); 
+            setCheckInTime(place.visit_time_from ?? '14:00');
+            setCheckOut(place.checkout_date ?? ''); 
+            setCheckOutTime(place.visit_time_to ?? '12:00');
+          }}
+          disabled={pending}
+          className="inline-flex h-[34px] items-center gap-1 text-xs px-3 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 transition-colors font-medium shadow-sm"
+        >
+          <X className="w-3.5 h-3.5" />
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
