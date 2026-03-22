@@ -335,6 +335,8 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                   {debtEntries.map((d, i) => {
                     const fromMember = report.memberBreakdown.find((m) => m.userId === d.from);
                     const toMember = report.memberBreakdown.find((m) => m.userId === d.to);
+                    const fromName = fromMember?.displayName ?? 'Unknown';
+                    const toName = d.to === 'pool' ? 'Pool' : (toMember?.displayName ?? 'Unknown');
                     const key = `${d.from}|${d.to}|${d.currency}`;
                     const isSettled = settledDebtKeys.has(key);
                     return (
@@ -344,9 +346,9 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                           size="sm"
                         />
                         <span className="text-sm flex-1 min-w-0" style={{ color: isSettled ? 'var(--color-text-subtle)' : 'var(--color-text)' }}>
-                          <span className="font-semibold">{fromMember?.displayName ?? 'Unknown'}</span>
+                          <span className="font-semibold">{fromName}</span>
                           <span style={{ color: 'var(--color-text-subtle)' }}> owes </span>
-                          <span className="font-semibold">{toMember?.displayName ?? 'Unknown'}</span>
+                          <span className="font-semibold">{toName}</span>
                         </span>
                         <span className="text-sm font-bold flex-shrink-0" style={{ color: isSettled ? '#0D9488' : '#EF4444' }}>
                           {formatCurrency(d.amount, d.currency)}
