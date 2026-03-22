@@ -4,15 +4,17 @@ import { useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { TripReport } from './trip-report';
 import type { TripExpenseReport } from '@/features/expenses/reports';
+import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { BudgetContribution, Trip } from '@/lib/types';
 
 interface TripReportButtonProps {
   tripReport: TripExpenseReport;
+  expenses: ExpenseWithSplits[];
   contributions: BudgetContribution[];
   trip: Trip;
 }
 
-export function TripReportButton({ tripReport, contributions, trip }: TripReportButtonProps) {
+export function TripReportButton({ tripReport, expenses, contributions, trip }: TripReportButtonProps) {
   const [open, setOpen] = useState(false);
 
   if (tripReport.expenseCount === 0) return null;
@@ -32,6 +34,7 @@ export function TripReportButton({ tripReport, contributions, trip }: TripReport
       {open && (
         <TripReport
           report={tripReport}
+          expenses={expenses}
           contributions={contributions}
           trip={trip}
           onClose={() => setOpen(false)}

@@ -173,6 +173,49 @@ export function buildTripExpenseReport(
 }
 
 // -------------------------------------------------------
+// CSV export
+// -------------------------------------------------------
+
+function escapeCsv(value: string | number | null | undefined): string {
+  if (value == null) return '';
+  const str = String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+export function buildExpensesCsv(
+  expenses: ExpenseWithSplits[],
+  memberProfiles: { id: string; display_name: string | null }[]
+): string {
+  const nameMap = new Map(memberProfiles.map((p) => [p.id, p.display_name ?? p.id]));
+
+  const headers = ['Date', 'Title', 'Category', 'Amount', 'Currency', 'Paid By', 'From Pool', 'Split With', 'Notes'];
+
+  const rows = expenses.map((exp) => {
+    const paidBy = nameMap.get(exp.paid_by_user_id) ?? exp.paid_by_user_id;
+    const splitWith = exp.splits
+      .map((s) => `${nameMap.get(s.user_id) ?? s.user_id} (${s.amount_owed})`)
+      .join('; ');
+    const date = exp.expense_date ? exp.expense_date.slice(0, 10) : '';
+    return [
+      escapeCsv(date),
+      escapeCsv(exp.title),
+      escapeCsv(exp.category),
+      escapeCsv(exp.amount),
+      escapeCsv(exp.currency),
+      escapeCsv(paidBy),
+      escapeCsv(exp.paid_from_pool ? 'Yes' : 'No'),
+      escapeCsv(splitWith),
+      escapeCsv(exp.note),
+    ].join(',');
+  });
+
+  return [headers.join(','), ...rows].join('\n');
+}
+
+// -------------------------------------------------------
 // Per-user transaction report
 // -------------------------------------------------------
 

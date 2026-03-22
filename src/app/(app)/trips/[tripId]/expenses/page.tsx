@@ -139,6 +139,7 @@ export default async function ExpensesPage({
         <ExpenseReportShell
           tripReport={tripReport}
           userReports={userReports}
+          expenses={expensesWithSplits}
           contributions={contributions}
           trip={trip}
         />

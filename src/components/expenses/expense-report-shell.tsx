@@ -6,11 +6,13 @@ import { Avatar } from '@/components/ui/avatar';
 import { TripReport } from './trip-report';
 import { UserTransactionReportDrawer } from './user-transaction-report';
 import type { TripExpenseReport, UserTransactionReport } from '@/features/expenses/reports';
+import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { BudgetContribution, Trip } from '@/lib/types';
 
 interface ExpenseReportShellProps {
   tripReport: TripExpenseReport;
   userReports: UserTransactionReport[];
+  expenses: ExpenseWithSplits[];
   contributions: BudgetContribution[];
   trip: Trip;
 }
@@ -18,6 +20,7 @@ interface ExpenseReportShellProps {
 export function ExpenseReportShell({
   tripReport,
   userReports,
+  expenses,
   contributions,
   trip,
 }: ExpenseReportShellProps) {
@@ -89,6 +92,7 @@ export function ExpenseReportShell({
       {showTripReport && (
         <TripReport
           report={tripReport}
+          expenses={expenses}
           contributions={contributions}
           trip={trip}
           onClose={() => setShowTripReport(false)}

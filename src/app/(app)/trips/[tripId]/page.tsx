@@ -751,6 +751,7 @@ export default async function TripDetailPage({
                   {isMember && (
                     <TripReportButton
                       tripReport={tripExpenseReport}
+                      expenses={expensesWithSplits}
                       contributions={contributions}
                       trip={trip}
                     />

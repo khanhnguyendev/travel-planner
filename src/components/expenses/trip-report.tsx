@@ -2,20 +2,23 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { X, TrendingUp, Wallet, Users, CalendarDays } from 'lucide-react';
+import { X, TrendingUp, Wallet, Users, CalendarDays, Download } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { TripExpenseReport, MemberReportEntry } from '@/features/expenses/reports';
+import { buildExpensesCsv } from '@/features/expenses/reports';
+import type { ExpenseWithSplits } from '@/features/expenses/queries';
 import type { BudgetContribution, Trip } from '@/lib/types';
 
 interface TripReportProps {
   report: TripExpenseReport;
+  expenses: ExpenseWithSplits[];
   contributions: BudgetContribution[];
   trip: Trip;
   onClose: () => void;
 }
 
-export function TripReport({ report, contributions, trip, onClose }: TripReportProps) {
+export function TripReport({ report, expenses, contributions, trip, onClose }: TripReportProps) {
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -31,6 +34,21 @@ export function TripReport({ report, contributions, trip, onClose }: TripReportP
   const isMultiCurrency = currencies.length > 1;
 
   if (!mounted) return null;
+
+  function handleDownloadCsv() {
+    const memberProfiles = report.memberBreakdown.map((m) => ({
+      id: m.userId,
+      display_name: m.displayName,
+    }));
+    const csv = buildExpensesCsv(expenses, memberProfiles);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trip.title.replace(/\s+/g, '_')}_expenses.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const totalContributed = contributions
     .filter((c) => c.currency === activeCurrency)
@@ -76,13 +94,24 @@ export function TripReport({ report, contributions, trip, onClose }: TripReportP
                 Trip Report
               </h2>
             </div>
-            <button
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-stone-100"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" style={{ color: 'var(--color-text-subtle)' }} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDownloadCsv}
+                className="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors hover:bg-stone-100"
+                style={{ color: 'var(--color-text-subtle)' }}
+                title="Download CSV"
+              >
+                <Download className="h-3.5 w-3.5" />
+                CSV
+              </button>
+              <button
+                onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-stone-100"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" style={{ color: 'var(--color-text-subtle)' }} />
+              </button>
+            </div>
           </div>
 
           {/* Currency switcher — only when multi-currency */}
