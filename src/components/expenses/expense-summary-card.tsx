@@ -59,7 +59,9 @@ function CollapsedRow({
 }) {
   const emoji = expense.category ? EXPENSE_CATEGORY_EMOJIS[expense.category] : null;
   const payerName = expense.paid_by_profile.display_name ?? 'Unknown';
-  const date = formatDateTime(expense.expense_date ?? expense.created_at);
+  const date = expense.expense_date
+    ? formatDate(expense.expense_date.slice(0, 10) + 'T00:00:00')
+    : formatDateTime(expense.created_at);
   const splitCount = expense.splits.length;
   const previewSplits = expense.splits.slice(0, 3);
 

@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Wallet, TrendingUp, CheckCircle, Clock } from 'lucide-react';
-import { formatCurrency, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { UserTransactionReport } from '@/features/expenses/reports';
 
@@ -214,7 +214,7 @@ export function UserTransactionReportDrawer({ report, onClose }: UserTransaction
                         </p>
                         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                           {exp.expense_date
-                            ? formatDateTime(exp.expense_date, { includeYear: false })
+                            ? formatDate(exp.expense_date.slice(0, 10) + 'T00:00:00')
                             : '—'}
                           {' · '}{exp.splits.length} split{exp.splits.length !== 1 ? 's' : ''}
                         </p>
