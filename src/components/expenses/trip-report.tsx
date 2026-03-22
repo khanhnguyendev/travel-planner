@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useTransition, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { X, TrendingUp, Wallet, Users, CalendarDays, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, TrendingUp, Wallet, Users, CalendarDays, Download, CheckCircle2, Loader2 } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { TripExpenseReport, MemberReportEntry } from '@/features/expenses/reports';
@@ -31,9 +32,43 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
     : currencies[0] ?? 'VND';
 
   const [activeCurrency, setActiveCurrency] = useState(defaultCurrency);
+  const [settledDebtKeys, setSettledDebtKeys] = useState<Set<string>>(new Set());
+  const [isPending, startTransition] = useTransition();
   const isMultiCurrency = currencies.length > 1;
+  const router = useRouter();
 
   if (!mounted) return null;
+
+  async function handleSettleDebt(fromUserId: string, toUserId: string, currency: string) {
+    const key = `${fromUserId}|${toUserId}|${currency}`;
+    // Find all pending splits: user fromUserId owes money in expenses paid by toUserId
+    const splitsToSettle = expenses.flatMap((exp) => {
+      if (exp.currency !== currency) return [];
+      if (exp.paid_from_pool) return [];
+      if (exp.paid_by_user_id !== toUserId) return [];
+      return exp.splits.filter(
+        (s) => s.user_id === fromUserId && s.status === 'pending'
+      );
+    });
+
+    if (splitsToSettle.length === 0) {
+      setSettledDebtKeys((prev) => new Set(prev).add(key));
+      return;
+    }
+
+    await Promise.all(
+      splitsToSettle.map((split) =>
+        fetch('/api/expenses/splits', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ splitId: split.id, status: 'settled' }),
+        })
+      )
+    );
+
+    setSettledDebtKeys((prev) => new Set(prev).add(key));
+    startTransition(() => { router.refresh(); });
+  }
 
   function handleDownloadCsv() {
     const memberProfiles = report.memberBreakdown.map((m) => ({
@@ -228,20 +263,40 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                   {debtEntries.map((d, i) => {
                     const fromMember = report.memberBreakdown.find((m) => m.userId === d.from);
                     const toMember = report.memberBreakdown.find((m) => m.userId === d.to);
+                    const key = `${d.from}|${d.to}|${d.currency}`;
+                    const isSettled = settledDebtKeys.has(key);
                     return (
                       <div key={i} className="flex items-center gap-3 rounded-xl p-3 metric-tile">
                         <Avatar
                           user={{ display_name: fromMember?.displayName ?? null, avatar_url: fromMember?.avatarUrl ?? null }}
                           size="sm"
                         />
-                        <span className="text-sm flex-1" style={{ color: 'var(--color-text)' }}>
+                        <span className="text-sm flex-1 min-w-0" style={{ color: isSettled ? 'var(--color-text-subtle)' : 'var(--color-text)' }}>
                           <span className="font-semibold">{fromMember?.displayName ?? 'Unknown'}</span>
                           <span style={{ color: 'var(--color-text-subtle)' }}> owes </span>
                           <span className="font-semibold">{toMember?.displayName ?? 'Unknown'}</span>
                         </span>
-                        <span className="text-sm font-bold" style={{ color: '#EF4444' }}>
+                        <span className="text-sm font-bold flex-shrink-0" style={{ color: isSettled ? '#0D9488' : '#EF4444' }}>
                           {formatCurrency(d.amount, d.currency)}
                         </span>
+                        <button
+                          type="button"
+                          disabled={isSettled || isPending}
+                          onClick={() => handleSettleDebt(d.from, d.to, d.currency)}
+                          className="flex-shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+                          style={
+                            isSettled
+                              ? { backgroundColor: '#f0fdf4', color: '#0D9488' }
+                              : { backgroundColor: 'var(--color-bg-subtle)', color: 'var(--color-text-subtle)' }
+                          }
+                          title={isSettled ? 'Settled' : 'Mark as settled'}
+                        >
+                          {isSettled
+                            ? <CheckCircle2 className="h-3.5 w-3.5" />
+                            : isPending
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <CheckCircle2 className="h-3.5 w-3.5" />}
+                        </button>
                       </div>
                     );
                   })}
