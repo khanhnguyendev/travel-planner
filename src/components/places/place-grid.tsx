@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Plus } from 'lucide-react';
+import { MapPin, Plus, ChevronDown } from 'lucide-react';
 import type { Place, Category, PlaceVote, PlaceReview, PlaceComment, PlaceExpenseHistoryEntry, Tag } from '@/lib/types';
 import { PlaceCard } from './place-card';
 import { extractLocationTag } from '@/lib/address';
@@ -77,6 +77,7 @@ export function PlaceGrid({
   viewMode = 'card',
 }: PlaceGridProps) {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(new Set());
 
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
   const tagNameMap = Object.fromEntries(tags.map((t) => [t.id, t.name]));
@@ -86,6 +87,15 @@ export function PlaceGrid({
   const userVoteMap = Object.fromEntries(
     userVotes.map((v) => [v.place_id, v])
   );
+
+  const toggleCategory = (catId: string) => {
+    setCollapsedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      return next;
+    });
+  };
 
   // Filter by selected category, tag, and/or location tag
   const filtered = places.filter((p) => {
@@ -147,86 +157,107 @@ export function PlaceGrid({
       <div className="space-y-8">
         {Array.from(grouped.entries()).map(([catId, catPlaces]) => {
           const cat = categoryMap[catId] ?? null;
+          const isCollapsed = collapsedCategoryIds.has(catId);
           const isList = viewMode === 'list';
 
           return (
             <div key={catId} className="w-full">
               {/* Category header — only show when no specific category is filtered or multi-categories shown */}
               {selectedCategoryIds.size !== 1 && cat && (
-                <div className="mb-4 flex items-center gap-2">
-                  {cat.icon && (
-                    <span className="text-lg leading-none">{cat.icon}</span>
-                  )}
-                  <h3
-                    className="text-sm font-semibold section-title text-stone-800"
-                  >
-                    {cat.name}
-                  </h3>
-                  <span
-                    className="rounded-full px-2 py-0.5 text-xs"
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.8)',
-                      color: 'var(--color-text-muted)',
-                    }}
-                  >
-                    {catPlaces.length}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleCategory(catId)}
+                  className="group mb-4 flex w-full items-center justify-between text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    {cat.icon && (
+                      <span className="text-lg leading-none">{cat.icon}</span>
+                    )}
+                    <h3
+                      className="text-sm font-semibold section-title text-stone-800"
+                    >
+                      {cat.name}
+                    </h3>
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.8)',
+                        color: 'var(--color-text-muted)',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      {catPlaces.length}
+                    </span>
+                  </div>
+                  <div className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-full bg-white/50 text-stone-400 shadow-sm ring-1 ring-stone-900/5 transition-all group-hover:bg-white group-hover:text-stone-600",
+                    isCollapsed ? "-rotate-90" : "rotate-0"
+                  )}>
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                </button>
               )}
 
               {/* View mode transition: Card Grid vs List Row */}
-              <div className={cn(
-                isList 
-                  ? "flex flex-col gap-3" 
-                  : "grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8"
-              )}>
-                {catPlaces.map((place) => {
-                  const isSelected = selectedIds?.has(place.id) ?? false;
-                  return (
-                    <div key={place.id} className="relative">
-                      {selectMode && (
-                        <button
-                          type="button"
-                          onClick={() => onToggleSelect?.(place.id)}
-                          className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
-                          style={{
-                            backgroundColor: isSelected ? '#0D9488' : 'white',
-                            borderColor: isSelected ? '#0D9488' : '#D1D5DB',
-                          }}
-                          aria-label={isSelected ? 'Deselect' : 'Select'}
-                        >
-                          {isSelected && (
-                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </button>
-                      )}
-                      <PlaceCard
-                        place={place}
-                        category={cat}
-                        tripId={tripId}
-                        voteSummary={voteSummaryMap[place.id] ?? null}
-                        userVote={userVoteMap[place.id] ?? null}
-                        comments={commentsByPlaceId[place.id] ?? []}
-                        placeExpenses={placeExpensesByPlaceId[place.id] ?? []}
-                        canVote={!selectMode && canVote}
-                        isNext={place.id === nextPlaceId}
-                        previewMode={previewMode}
-                        viewMode={viewMode}
-                        tags={(placeTagIds[place.id] ?? []).map((id) => tagNameMap[id]).filter(Boolean)}
-                        onClick={
-                          previewMode
-                            ? undefined
-                            : selectMode
-                              ? () => onToggleSelect?.(place.id)
-                              : () => setOpenPlaceId(place.id)
-                        }
-                        onLocationTagClick={selectMode ? undefined : onLocationTagClick}
-                      />
-                    </div>
-                  );
-                })}
+              <div 
+                className={cn(
+                  "overflow-hidden transition-all duration-300 ease-in-out",
+                  isCollapsed ? "max-h-0 opacity-0" : "max-h-[10000px] opacity-100"
+                )}
+              >
+                <div className={cn(
+                  isList 
+                    ? "flex flex-col gap-3" 
+                    : "grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pb-2"
+                )}>
+                  {catPlaces.map((place) => {
+                    const isSelected = selectedIds?.has(place.id) ?? false;
+                    return (
+                      <div key={place.id} className="relative">
+                        {selectMode && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleSelect?.(place.id)}
+                            className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
+                            style={{
+                              backgroundColor: isSelected ? '#0D9488' : 'white',
+                              borderColor: isSelected ? '#0D9488' : '#D1D5DB',
+                            }}
+                            aria-label={isSelected ? 'Deselect' : 'Select'}
+                          >
+                            {isSelected && (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                        <PlaceCard
+                          place={place}
+                          category={cat}
+                          tripId={tripId}
+                          voteSummary={voteSummaryMap[place.id] ?? null}
+                          userVote={userVoteMap[place.id] ?? null}
+                          comments={commentsByPlaceId[place.id] ?? []}
+                          placeExpenses={placeExpensesByPlaceId[place.id] ?? []}
+                          canVote={!selectMode && canVote}
+                          isNext={place.id === nextPlaceId}
+                          previewMode={previewMode}
+                          viewMode={viewMode}
+                          tags={(placeTagIds[place.id] ?? []).map((id) => tagNameMap[id]).filter(Boolean)}
+                          onClick={
+                            previewMode
+                              ? undefined
+                              : selectMode
+                                ? () => onToggleSelect?.(place.id)
+                                : () => setOpenPlaceId(place.id)
+                          }
+                          onLocationTagClick={selectMode ? undefined : onLocationTagClick}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
