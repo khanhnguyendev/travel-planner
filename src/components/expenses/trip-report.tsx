@@ -4,7 +4,7 @@ import { useState, useTransition, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { X, TrendingUp, Wallet, Users, CalendarDays, Download, CheckCircle2, Loader2 } from 'lucide-react';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { Avatar } from '@/components/ui/avatar';
 import type { TripExpenseReport, MemberReportEntry } from '@/features/expenses/reports';
 import { buildExpensesCsv, buildTripExpenseReport } from '@/features/expenses/reports';
@@ -399,7 +399,7 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                           {exp.title}
                         </p>
                         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-                          {exp.expense_date ? formatDateTime(exp.expense_date, { includeYear: false }) : '—'}
+                          {exp.expense_date ? formatDate(exp.expense_date.slice(0, 10) + 'T00:00:00') : '—'}
                           {exp.category ? ` · ${exp.category}` : ''}
                           {isMultiCurrency && exp.currency !== activeCurrency ? ` · ${exp.currency}` : ''}
                         </p>
