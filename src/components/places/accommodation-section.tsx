@@ -34,12 +34,13 @@ interface AccommodationSectionProps {
 }
 
 function formatDate(dateStr: string, timeStr?: string | null): string {
-  const date = new Date(dateStr + 'T' + (timeStr || '00:00') + ':00+07:00');
+  const hhmm = timeStr ? timeStr.slice(0, 5) : '00:00';
+  const date = new Date(`${dateStr}T${hhmm}:00+07:00`);
   const dStr = formatInTripTimezone(date, {
     weekday: 'short', month: 'short', day: 'numeric',
   });
   if (timeStr) {
-    return `${dStr}, ${timeStr}`;
+    return `${dStr}, ${hhmm}`;
   }
   return dStr;
 }
