@@ -36,19 +36,23 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
   const [isPending, startTransition] = useTransition();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const isMultiCurrency = currencies.length > 1;
   const router = useRouter();
 
-  // Filter expenses by date range for section data
+  // Filter expenses by date range + category for section recompute
   const filteredExpenses = expenses.filter((exp) => {
     const day = exp.expense_date ? exp.expense_date.slice(0, 10) : exp.created_at.slice(0, 10);
     if (dateFrom && day < dateFrom) return false;
     if (dateTo && day > dateTo) return false;
+    if (activeCategory && (exp.category ?? 'Other') !== activeCategory) return false;
     return true;
   });
 
+  const hasFilter = !!(dateFrom || dateTo || activeCategory);
+
   // Recompute report sections from filtered expenses
-  const filteredReport = dateFrom || dateTo
+  const filteredReport = hasFilter
     ? buildFilteredSections(filteredExpenses, report)
     : report;
 
@@ -174,7 +178,7 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                 <button
                   key={cur}
                   type="button"
-                  onClick={() => setActiveCurrency(cur)}
+                  onClick={() => { setActiveCurrency(cur); setActiveCategory(null); }}
                   className="flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
                   style={
                     activeCurrency === cur
@@ -235,7 +239,7 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
                   {filteredReport.expenseCount} expense{filteredReport.expenseCount !== 1 ? 's' : ''}
                   {isMultiCurrency && ` · ${activeCurrency} only`}
-                  {(dateFrom || dateTo) && ' · filtered'}
+                  {hasFilter && ' · filtered'}
                 </p>
                 {budget && budgetPercent !== null && (
                   <div className="mt-3">
@@ -264,34 +268,51 @@ export function TripReport({ report, expenses, contributions, trip, onClose }: T
 
             {/* Category breakdown */}
             {categoryEntries.length > 0 && (
-              <Section title="By Category" icon={<CalendarDays className="h-4 w-4" />}>
+              <Section
+                title="By Category"
+                icon={<CalendarDays className="h-4 w-4" />}
+                hint={activeCategory ? `Filtered: ${activeCategory}` : 'Click to drill down'}
+              >
                 <div className="space-y-2">
-                  {categoryEntries.map((entry) => (
-                    <div key={entry.category} className="flex items-center gap-3">
-                      <span className="w-6 text-center text-base">{entry.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
-                            {entry.category}
-                          </span>
-                          <span className="text-sm font-semibold ml-2 flex-shrink-0" style={{ color: 'var(--color-text)' }}>
-                            {formatCurrency(entry.amount, entry.currency)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
-                            <div
-                              className="h-full rounded-full"
-                              style={{ width: `${entry.percent}%`, backgroundColor: 'var(--color-primary)' }}
-                            />
+                  {categoryEntries.map((entry) => {
+                    const isActive = activeCategory === entry.category;
+                    return (
+                      <button
+                        key={entry.category}
+                        type="button"
+                        onClick={() => setActiveCategory(isActive ? null : entry.category)}
+                        className="w-full flex items-center gap-3 rounded-lg p-1.5 text-left transition-colors"
+                        style={{ backgroundColor: isActive ? 'var(--color-primary-light)' : 'transparent' }}
+                      >
+                        <span className="w-6 text-center text-base flex-shrink-0">{entry.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                              {entry.category}
+                            </span>
+                            <span className="text-sm font-semibold ml-2 flex-shrink-0" style={{ color: 'var(--color-text)' }}>
+                              {formatCurrency(entry.amount, entry.currency)}
+                            </span>
                           </div>
-                          <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }}>
-                            {entry.percent}%
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${entry.percent}%`,
+                                  backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-primary)',
+                                  opacity: isActive ? 1 : 0.6,
+                                }}
+                              />
+                            </div>
+                            <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--color-text-subtle)' }}>
+                              {entry.percent}%
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               </Section>
             )}
@@ -409,12 +430,13 @@ function buildFilteredSections(
   return buildTripExpenseReport(filtered, [], memberProfiles);
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, hint, children }: { title: string; icon: React.ReactNode; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
         <span style={{ color: 'var(--color-primary)' }}>{icon}</span>
         <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{title}</h3>
+        {hint && <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>· {hint}</span>}
       </div>
       {children}
     </div>
